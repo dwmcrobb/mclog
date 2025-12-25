@@ -1,0 +1,16 @@
+name: "mclog"
+version: "@TAGVERSION@"
+origin: "net/mclog"
+prefix: "@prefix@"
+www: "http://www.mcplex.net"
+maintainer: "dwm@mcplex.net"
+comment: "Secure logging in C++"
+desc: "Secure logging in C++ for FreeBSD, macOS and Debian distributions."
+licenselogic: "single"
+licenses: ["BSD"]
+categories: ["net"]
+files: {
+}
+scripts: {
+  post-install: "#!/bin/sh\nldconfig @prefix@/lib\n"
+}

@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# Unload mclogd from launchd.
+if [ -f /Library/LaunchDaemons/net.mcplex.mclogd.plist ]; then
+    launchctl unload -w /Library/LaunchDaemons/net.mcplex.mclogd.plist
+fi
+
+echo "home: " ${HOME} > /tmp/install.log

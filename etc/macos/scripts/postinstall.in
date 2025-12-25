@@ -1,0 +1,79 @@
+#!/bin/sh
+
+#----------------------------------------------------------------------------
+key_in_keys_file() {
+    keyfile=$1
+    keysfile=$2
+    local kikf=1
+    if [ -f ${keyfile} ]; then
+	if [ -f ${keysfile} ]; then
+	    local key=`cat ${keyfile} | cut -d' ' -f1`
+	    if [ -n "${key}" ]; then
+		grep "${key}" ${keysfile} > /dev/null 2>&1
+		if [ $? -eq 0 ]; then
+		    kikf=0
+		fi
+	    fi
+	fi
+    fi
+    return ${kikf}
+}
+
+#----------------------------------------------------------------------------
+user_known_to_mclogd () {
+    return $(key_in_keys_file ${USER_KEY} ${MCLOGD_KNOWN_KEYS})
+}
+
+#----------------------------------------------------------------------------
+mclogd_known_to_user () {
+    return $(key_in_keys_file ${MCLOGD_KEY} ${USER_KNOWN_KEYS})
+}
+
+#----------------------------------------------------------------------------
+add_user_to_known_keys () {
+    if [ -f ${USER_KEY} ]; then
+	local key=`cat ${USER_KEY}`
+	echo ${key} >> ${MCLOGD_KNOWN_KEYS}
+    fi
+}
+
+#----------------------------------------------------------------------------
+add_mclogd_to_user_known_keys () {
+    if [ -f ${MCLOGD_KEY} ]; then
+	local key=`cat ${MCLOGD_KEY}`
+	echo ${key} >> ${USER_KNOWN_KEYS}
+    fi
+}
+
+#----------------------------------------------------------------------------
+#  main
+#----------------------------------------------------------------------------
+export PATH=${PATH}:@prefix@/bin
+
+USER_KEY=${HOME}/.credence/id_ed25519.pub
+USER_KNOWN_KEYS=${HOME}/.credence/known_keys
+MCLOGD_KEY=@prefix@/etc/mclogd/id_ed25519.pub
+MCLOGD_KNOWN_KEYS=@prefix@/etc/mclogd/known_keys
+
+#  Create directory for our credence keys if it doesn't exist.
+if [ ! -d @prefix@/etc/mclogd ]; then         
+    mkdir @prefix@/etc/mclogd
+fi                                                                          
+
+# Check for existing mclogd key, create if it doesn't exist.
+if [ ! -f ${MCLOGD_KEY} ]; then
+    credence keygen -i mclogd@`hostname` -d @prefix@/etc/mclogd
+fi
+
+# and set up the installation user to use mclogd.
+user_known_to_mclogd
+if [ $? -ne 0 ]; then
+    add_user_to_known_keys
+fi
+mclogd_known_to_user
+if [ $? -ne 0 ]; then
+    add_mclogd_to_user_known_keys
+fi
+
+# And load mclogd into launchd.
+launchctl load -w /Library/LaunchDaemons/net.mcplex.mclogd.plist

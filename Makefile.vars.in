@@ -1,0 +1,26 @@
+TOP              := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+BUILD_DOCS       := @BUILD_DOCS@
+CXX              := @CXX@
+CXXFLAGS         := @CXXFLAGS@
+DWMDIR           := @DWMDIR@
+DWMINCS          := @DWMINCS@
+DWMLIBS          := @DWMLIBS@
+EXTINCS          := @EXTINCS@
+INSTALL          := @LIBTOOL@ --mode=install $(TOP)/install-sh
+INSTALLPREFIX    := @prefix@
+LIBTOOL	         := @LIBTOOL@
+LIBTOOLCOMPILE   := $(LIBTOOL) --mode=compile --tag=CXX ${CXX}
+LINK             := ${LIBTOOL} --mode=link --tag=CXX ${CXX}
+MCLOGINCS        := -I$(TOP)/classes/include
+MCLOGLIB         := $(TOP)/classes/lib/libDwmMclog.la
+OSNAME           := @OSNAME@
+PTHREADCXXFLAGS  := @PTHREADCXXFLAGS@
+STAGING_DIR      := @STAGING_DIR@
+TARDIR           := @TARDIR@@prefix@
+VERSION          := @DWM_VERSION@
+
+TARGETS := $(TARGETS)
+CLEANTARGETS := $(CLEANTARGETS)
+DEPSTARGETS := $(DEPSTARGETS)
+DISTCLEANTARGETS := $(DISTCLEANTARGETS)
+TARTARGETS := $(TARTARGETS)

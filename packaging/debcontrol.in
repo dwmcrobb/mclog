@@ -1,0 +1,10 @@
+Section: net
+Priority: optional
+Maintainer: Daniel McRobb <dwm@mcplex.net>
+Build-Depends: debhelper-compat (= 12), autotools-dev
+Standards-Version: 4.4.1
+Homepage: http://www.mcplex.net
+Package: mclog
+Version: @TAGVERSION@
+Architecture: @DEBARCH@
+Description: Secure logging in C++.

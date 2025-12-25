@@ -1,0 +1,11 @@
+prefix=@prefix@
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include/libDwmMclog
+
+Name: mclog
+Description: Secure logging in C++
+Version: @TAGVERSION@
+Requires: libDwmCredence
+Libs: @PTHREADLDFLAGS@ -L${libdir} -lDwmCredence @DWMLIBS@ -lsodium @OSLIBS@
+Cflags: @PTHREADCXXFLAGS@ -I${includedir} @BOOSTINC@
