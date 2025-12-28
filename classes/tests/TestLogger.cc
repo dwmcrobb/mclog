@@ -58,6 +58,6 @@ int main(int argc, char *argv[])
                      Dwm::Mclog::Facility::user));
   for (;;) {
     logger.Log(Dwm::Mclog::Severity::info, "hello there.");
-    sleep(1);
+    usleep(300000);
   }
 }

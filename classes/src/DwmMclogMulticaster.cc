@@ -1,6 +1,4 @@
 //===========================================================================
-// @(#) $DwmPath$
-//===========================================================================
 //  Copyright (c) Daniel W. McRobb 2025
 //  All rights reserved.
 //
@@ -56,8 +54,6 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  
-    //------------------------------------------------------------------------
     Multicaster::Multicaster()
         : _fd(-1), _run(false), _thread(), _outQueue()
     {
@@ -67,10 +63,16 @@ namespace Dwm {
       std::ofstream  ofs("/tmp/mclogd.key");
       StreamIO::Write(ofs, _key);
       ofs.close();
+
+      _nextSendTime = Clock::now() + std::chrono::milliseconds(1000);
+    }
+
+    //------------------------------------------------------------------------
+    Multicaster::~Multicaster()
+    {
+      Close();
     }
     
-    //------------------------------------------------------------------------
-    //!  
     //------------------------------------------------------------------------
     bool Multicaster::Open(const Ipv4Address & intfAddr,
                            const Ipv4Address & groupAddr, uint16_t port)
@@ -96,30 +98,6 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
-    //!  
-    //------------------------------------------------------------------------
-    size_t Multicaster::EncryptMessage(const Message & msg,
-                                       char *buf, size_t buflen)
-    {
-      size_t  rc = 0;
-      
-      std::ostringstream  os;
-      msg.Write(os);
-      std::spanstream  sps{std::span{buf,buflen}};
-      Credence::Nonce  nonce;
-      if (nonce.Write(sps)) {
-        std::string  cipherText;
-        Credence::XChaCha20Poly1305::Encrypt(cipherText, os.str(), nonce, _key);
-        if (sps.write((caddr_t)cipherText.data(), cipherText.size())) {
-          rc = sps.tellp();
-        }
-      }
-      return rc;
-    }
-
-    //------------------------------------------------------------------------
-    //!  
-    //------------------------------------------------------------------------
     bool Multicaster::Send(const Message & msg)
     {
       return _outQueue.PushBack(msg);
@@ -140,54 +118,55 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
+    bool Multicaster::SendPacket(char *buf, std::span<char> cipherSpan,
+                                 size_t csLen)
+    {
+      bool  rc = false;
+      Credence::Nonce  nonce;
+      std::span  sp = cipherSpan;
+      if (Credence::XChaCha20Poly1305::Encrypt(sp, csLen, nonce, _key)) {
+        std::spanstream  nonceStream{std::span{buf,24}};
+        if (nonce.Write(nonceStream)) {
+          sockaddr_in  dst;
+          memset(&dst, 0, sizeof(dst));
+          dst.sin_family = PF_INET;
+          dst.sin_addr.s_addr = _groupAddr.Raw();
+          dst.sin_port = htons(_port);
+          ssize_t  sendrc = sendto(_fd, buf, 24 + sp.size(), 0,
+                                   (sockaddr *)&dst, sizeof(dst));
+          rc = ((24 + sp.size()) == sendrc);
+        }
+      }
+      return rc;
+    }
+    
+    //------------------------------------------------------------------------
     void Multicaster::Run()
     {
-      sockaddr_in  dst;
-      memset(&dst, 0, sizeof(dst));
-      dst.sin_addr.s_addr = _groupAddr.Raw();
-      dst.sin_port = htons(_port);
-
       char  buf[1400];
       std::span<char>  cipherSpan{&buf[0] + 24, sizeof(buf) - 24};
-      std::spanstream  nonceStream{std::span{buf,24}};
       std::spanstream  cipherStream{cipherSpan};
-      
-      std::spanstream  sps{std::span{buf,sizeof(buf)}};
       
       Message  msg;
       while (_run) {
         if (_outQueue.TimedWaitForNotEmpty(std::chrono::milliseconds(500))) {
+          auto  now = Clock::now();
           while (_outQueue.PopFront(msg)) {
-            if (msg.StreamedLength() + cipherStream.tellp() + 16
-                > (sizeof(buf) - 24)) {
-              std::span  sp = cipherSpan;
-              Credence::Nonce  nonce;
-              if (Credence::XChaCha20Poly1305::Encrypt(sp,
-                                                       cipherStream.tellp(),
-                                                       nonce, _key)) {
-                nonce.Write(nonceStream);
-                nonceStream.seekp(0);
-                ssize_t  sendrc = sendto(_fd, buf, 24 + sp.size(), 0,
-                                         (sockaddr *)&dst, sizeof(dst));
-                cipherStream.seekp(0);
-              }
+            if ((msg.StreamedLength() + cipherStream.tellp() + 16
+                 > (sizeof(buf) - 24))
+                || (now > _nextSendTime)) {
+              SendPacket(buf, cipherSpan, cipherStream.tellp());
+              _nextSendTime = now + std::chrono::milliseconds(1000);
+              cipherStream.seekp(0);
             }
             msg.Write(cipherStream);
           }
         }
         else {
           if (cipherStream.tellp()) {
-            std::span  sp = cipherSpan;
-            Credence::Nonce  nonce;
-            if (Credence::XChaCha20Poly1305::Encrypt(sp,
-                                                     cipherStream.tellp(),
-                                                     nonce, _key)) {
-              nonce.Write(nonceStream);
-              nonceStream.seekp(0);
-              ssize_t  sendrc = sendto(_fd, buf, 24 + sp.size(), 0,
-                                       (sockaddr *)&dst, sizeof(dst));
-              cipherStream.seekp(0);
-            }
+            SendPacket(buf, cipherSpan, cipherStream.tellp());
+            _nextSendTime = Clock::now() + std::chrono::milliseconds(1000);
+            cipherStream.seekp(0);
           }
         }
         

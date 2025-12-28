@@ -40,6 +40,9 @@
 #ifndef _DWMMCLOGMULTICASTER_HH_
 #define _DWMMCLOGMULTICASTER_HH_
 
+#include <chrono>
+#include <span>
+
 #include "DwmIpv4Address.hh"
 #include "DwmThreadQueue.hh"
 #include "DwmMclogMessage.hh"
@@ -54,10 +57,32 @@ namespace Dwm {
     class Multicaster
     {
     public:
+      using Clock = std::chrono::system_clock;
+      
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
       Multicaster();
+
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      ~Multicaster();
+      
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
       bool Open(const Ipv4Address & intfAddr, const Ipv4Address & groupAddr,
                 uint16_t port);
+
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
       bool Send(const Message & msg);
+
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
       void Close();
       
     private:
@@ -68,8 +93,9 @@ namespace Dwm {
       Ipv4Address             _groupAddr;
       uint16_t                _port;
       std::string             _key;
+      Clock::time_point       _nextSendTime;
 
-      size_t EncryptMessage(const Message & msg, char *buf, size_t buflen);
+      bool SendPacket(char *buf, std::span<char> cipherSpan, size_t csLen);
       void Run();
     };
     
