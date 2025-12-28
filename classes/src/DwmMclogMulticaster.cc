@@ -86,6 +86,8 @@ namespace Dwm {
           inAddr.s_addr = intfAddr.Raw();
           if (setsockopt(_fd, IPPROTO_IP, IP_MULTICAST_IF,
                          &inAddr, sizeof(inAddr)) == 0) {
+            _run = true;
+            _thread = std::thread(&Multicaster::Run, this);
             rc = true;
           }
         }
@@ -114,35 +116,15 @@ namespace Dwm {
       }
       return rc;
     }
-    
+
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
     bool Multicaster::Send(const Message & msg)
     {
-      bool  rc = false;
-
-      sockaddr_in  dst;
-      memset(&dst, 0, sizeof(dst));
-      dst.sin_addr.s_addr = _groupAddr.Raw();
-      dst.sin_port = htons(_port);
-
-      char  buf[1500];
-      size_t  enclen = EncryptMessage(msg, buf, sizeof(buf));
-      if (enclen) {
-        std::cerr << "Multicasting " << enclen << " bytes for "
-                  << msg.StreamedLength() << " byte Message\n";
-        ssize_t  sendrc = sendto(_fd, buf, enclen, 0,
-                                 (sockaddr *)&dst, sizeof(dst));
-        if (sendrc > 0) {
-          rc = true;
-        }
-      }
-      return rc;
+      return _outQueue.PushBack(msg);
     }
 
-    //------------------------------------------------------------------------
-    //!  
     //------------------------------------------------------------------------
     void Multicaster::Close()
     {
@@ -157,19 +139,60 @@ namespace Dwm {
       return;
     }
 
-    bool Multicaster::EncryptPacket(const char *plain, size_t plainLen,
-                                    
+    //------------------------------------------------------------------------
     void Multicaster::Run()
     {
+      sockaddr_in  dst;
+      memset(&dst, 0, sizeof(dst));
+      dst.sin_addr.s_addr = _groupAddr.Raw();
+      dst.sin_port = htons(_port);
+
+      char  buf[1400];
+      std::span<char>  cipherSpan{&buf[0] + 24, sizeof(buf) - 24};
+      std::spanstream  nonceStream{std::span{buf,24}};
+      std::spanstream  cipherStream{cipherSpan};
+      
+      std::spanstream  sps{std::span{buf,sizeof(buf)}};
+      
+      Message  msg;
       while (_run) {
-        _outQueue.WaitForNotEmpty();
-        char  buf[1500];
-        std::spanstream  sps{std::span{buf,sizeof(buf)}};
-        while (! _outQueue.empty()) {
-          Message  msg;
-          outQueue.PopFront(msg);
-          if (sps.tellp() + msg.StreamedLength() + 40 > sizeof(buf)) {
-            
+        if (_outQueue.TimedWaitForNotEmpty(std::chrono::milliseconds(500))) {
+          while (_outQueue.PopFront(msg)) {
+            if (msg.StreamedLength() + cipherStream.tellp() + 16
+                > (sizeof(buf) - 24)) {
+              std::span  sp = cipherSpan;
+              Credence::Nonce  nonce;
+              if (Credence::XChaCha20Poly1305::Encrypt(sp,
+                                                       cipherStream.tellp(),
+                                                       nonce, _key)) {
+                nonce.Write(nonceStream);
+                nonceStream.seekp(0);
+                ssize_t  sendrc = sendto(_fd, buf, 24 + sp.size(), 0,
+                                         (sockaddr *)&dst, sizeof(dst));
+                cipherStream.seekp(0);
+              }
+            }
+            msg.Write(cipherStream);
+          }
+        }
+        else {
+          if (cipherStream.tellp()) {
+            std::span  sp = cipherSpan;
+            Credence::Nonce  nonce;
+            if (Credence::XChaCha20Poly1305::Encrypt(sp,
+                                                     cipherStream.tellp(),
+                                                     nonce, _key)) {
+              nonce.Write(nonceStream);
+              nonceStream.seekp(0);
+              ssize_t  sendrc = sendto(_fd, buf, 24 + sp.size(), 0,
+                                       (sockaddr *)&dst, sizeof(dst));
+              cipherStream.seekp(0);
+            }
+          }
+        }
+        
+      }
+      return;
     }
     
     
