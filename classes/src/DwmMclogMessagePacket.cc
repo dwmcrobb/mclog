@@ -32,22 +32,15 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file DwmMclogMulticaster.hh
+//!  @file DwmMclogMessagePacket.cc
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-#ifndef _DWMMCLOGMULTICASTER_HH_
-#define _DWMMCLOGMULTICASTER_HH_
+extern "C" {
+  #include <sodium.h>
+}
 
-#include <chrono>
-#include <span>
-
-#include "DwmIpv4Address.hh"
-#include "DwmThreadQueue.hh"
-#include "DwmCredenceKeyStash.hh"
-#include "DwmCredenceKnownKeys.hh"
-#include "DwmMclogMessage.hh"
 #include "DwmMclogMessagePacket.hh"
 
 namespace Dwm {
@@ -57,59 +50,31 @@ namespace Dwm {
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    class Multicaster
+    ssize_t MessagePacket::SendTo(int fd, const std::string & secretKey,
+                                  struct sockaddr *dst, socklen_t dstlen)
     {
-    public:
-      using Clock = std::chrono::system_clock;
-      
-      //----------------------------------------------------------------------
-      //!  
-      //----------------------------------------------------------------------
-      Multicaster();
-
-      //----------------------------------------------------------------------
-      //!  
-      //----------------------------------------------------------------------
-      ~Multicaster();
-      
-      //----------------------------------------------------------------------
-      //!  
-      //----------------------------------------------------------------------
-      bool Open(const Ipv4Address & intfAddr, const Ipv4Address & groupAddr,
-                uint16_t port);
-
-      //----------------------------------------------------------------------
-      //!  
-      //----------------------------------------------------------------------
-      bool Send(const Message & msg);
-
-      //----------------------------------------------------------------------
-      //!  
-      //----------------------------------------------------------------------
-      void Close();
-
-      //----------------------------------------------------------------------
-      //!  
-      //----------------------------------------------------------------------
-      std::string Key() const
-      { return _key; }
-        
-    private:
-      int                     _fd;
-      std::atomic<bool>       _run;
-      std::thread             _thread;
-      Thread::Queue<Message>  _outQueue;
-      Ipv4Address             _groupAddr;
-      uint16_t                _port;
-      std::string             _key;
-      Clock::time_point       _nextSendTime;
-
-      bool SendPacket(MessagePacket & pkt);
-      void Run();
-    };
+      constexpr auto  xcc20p1305enc =
+        crypto_aead_xchacha20poly1305_ietf_encrypt;
+      ssize_t        rc = -1;
+      const size_t   nonceLen = crypto_secretbox_NONCEBYTES;
+      randombytes_buf(_buf, nonceLen);
+      const size_t   macLen = crypto_aead_xchacha20poly1305_ietf_ABYTES;
+      unsigned long long  cbuflen = (size_t)_payload.tellp() + macLen;
+      if (xcc20p1305enc((uint8_t *)_buf + nonceLen, &cbuflen,
+                        (const uint8_t *)_buf + nonceLen,
+                        (size_t)_payload.tellp(),
+                        nullptr, 0,
+                        nullptr, (const uint8_t *)_buf,  // nonce
+                        (const uint8_t *)secretKey.data()) == 0) {
+        rc = sendto(fd, _buf, nonceLen + cbuflen, 0, dst, dstlen);
+      }
+      else {
+        std::cerr << "Encryption failed!!!\n";
+      }
+      _payload.seekp(0);
+      return rc;
+    }
     
   }  // namespace Mclog
 
 }  // namespace Dwm
-
-#endif  // _DWMMCLOGMULTICASTER_HH_

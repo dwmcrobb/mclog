@@ -32,23 +32,21 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file DwmMclogMulticaster.hh
+//!  @file DwmMclogMulticastReceiver.hh
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-#ifndef _DWMMCLOGMULTICASTER_HH_
-#define _DWMMCLOGMULTICASTER_HH_
+#ifndef _DWMMCLOGMULTICASTRECEIVER_HH_
+#define _DWMMCLOGMULTICASTRECEIVER_HH_
 
-#include <chrono>
-#include <span>
+#include <mutex>
+#include <thread>
+#include <vector>
 
 #include "DwmIpv4Address.hh"
 #include "DwmThreadQueue.hh"
-#include "DwmCredenceKeyStash.hh"
-#include "DwmCredenceKnownKeys.hh"
 #include "DwmMclogMessage.hh"
-#include "DwmMclogMessagePacket.hh"
 
 namespace Dwm {
 
@@ -57,54 +55,30 @@ namespace Dwm {
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    class Multicaster
+    class MulticastReceiver
     {
     public:
-      using Clock = std::chrono::system_clock;
-      
-      //----------------------------------------------------------------------
-      //!  
-      //----------------------------------------------------------------------
-      Multicaster();
-
-      //----------------------------------------------------------------------
-      //!  
-      //----------------------------------------------------------------------
-      ~Multicaster();
-      
-      //----------------------------------------------------------------------
-      //!  
-      //----------------------------------------------------------------------
-      bool Open(const Ipv4Address & intfAddr, const Ipv4Address & groupAddr,
+      MulticastReceiver();
+      ~MulticastReceiver();
+      bool Open(const Ipv4Address & groupAddr, const Ipv4Address & intfAddr,
                 uint16_t port);
-
-      //----------------------------------------------------------------------
-      //!  
-      //----------------------------------------------------------------------
-      bool Send(const Message & msg);
-
-      //----------------------------------------------------------------------
-      //!  
-      //----------------------------------------------------------------------
       void Close();
-
-      //----------------------------------------------------------------------
-      //!  
-      //----------------------------------------------------------------------
-      std::string Key() const
-      { return _key; }
-        
+      bool AddInputQueue(Thread::Queue<Message> *queue);
+      
     private:
-      int                     _fd;
-      std::atomic<bool>       _run;
-      std::thread             _thread;
-      Thread::Queue<Message>  _outQueue;
-      Ipv4Address             _groupAddr;
-      uint16_t                _port;
-      std::string             _key;
-      Clock::time_point       _nextSendTime;
-
-      bool SendPacket(MessagePacket & pkt);
+      int                                    _fd;
+      Ipv4Address                            _groupAddr;
+      Ipv4Address                            _intfAddr;
+      uint16_t                               _port;
+      std::mutex                             _queuesMutex;
+      std::vector<Thread::Queue<Message> *>  _queues;
+      std::thread                            _thread;
+      std::atomic<bool>                      _run;
+      std::map<Ipv4Address,std::string>      _senderKeys;
+      
+      bool BindSocket();
+      bool JoinGroup();
+      std::string SenderKey(const Ipv4Address & addr);
       void Run();
     };
     
@@ -112,4 +86,4 @@ namespace Dwm {
 
 }  // namespace Dwm
 
-#endif  // _DWMMCLOGMULTICASTER_HH_
+#endif  // _DWMMCLOGMULTICASTRECEIVER_HH_

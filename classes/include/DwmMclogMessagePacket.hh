@@ -32,23 +32,22 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file DwmMclogMulticaster.hh
+//!  @file DwmMclogMessagePacket.hh
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-#ifndef _DWMMCLOGMULTICASTER_HH_
-#define _DWMMCLOGMULTICASTER_HH_
+#ifndef _DWMMCLOGMESSAGEPACKET_HH_
+#define _DWMMCLOGMESSAGEPACKET_HH_
 
-#include <chrono>
+extern "C" {
+  #include <sys/socket.h>
+}
+
 #include <span>
+#include <spanstream>
 
-#include "DwmIpv4Address.hh"
-#include "DwmThreadQueue.hh"
-#include "DwmCredenceKeyStash.hh"
-#include "DwmCredenceKnownKeys.hh"
-#include "DwmMclogMessage.hh"
-#include "DwmMclogMessagePacket.hh"
+#include "DwmStreamIO.hh"
 
 namespace Dwm {
 
@@ -57,59 +56,53 @@ namespace Dwm {
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    class Multicaster
+    class MessagePacket
     {
     public:
-      using Clock = std::chrono::system_clock;
-      
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
-      Multicaster();
+      MessagePacket(char *buf, size_t buflen)
+          : _buf(buf), _buflen(buflen), _payload{std::span{buf+24,buflen-24}}
+      { assert(_buf && (_buflen > 40)); }
 
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
-      ~Multicaster();
-      
-      //----------------------------------------------------------------------
-      //!  
-      //----------------------------------------------------------------------
-      bool Open(const Ipv4Address & intfAddr, const Ipv4Address & groupAddr,
-                uint16_t port);
+      template <typename T>
+      bool Add(const T & t)
+      {
+        auto  prevPos = _payload.tellp();
+        if (StreamIO::Write(_payload, t)) {
+          std::cerr << "Added message to packet\n";
+          return true;
+        }
+        std::cerr << "Failed to add message to packet\n";
+        _payload.clear();
+        _payload.seekp(prevPos);
+        return false;
+      }
 
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
-      bool Send(const Message & msg);
+      ssize_t SendTo(int fd, const std::string & secretKey,
+                     struct sockaddr *dst, socklen_t dstlen);
 
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
-      void Close();
-
-      //----------------------------------------------------------------------
-      //!  
-      //----------------------------------------------------------------------
-      std::string Key() const
-      { return _key; }
+      bool HasPayload()
+      { return _payload.tellp() != 0; }
         
     private:
-      int                     _fd;
-      std::atomic<bool>       _run;
-      std::thread             _thread;
-      Thread::Queue<Message>  _outQueue;
-      Ipv4Address             _groupAddr;
-      uint16_t                _port;
-      std::string             _key;
-      Clock::time_point       _nextSendTime;
-
-      bool SendPacket(MessagePacket & pkt);
-      void Run();
+      char             *_buf;
+      size_t            _buflen;
+      std::spanstream   _payload;
     };
     
   }  // namespace Mclog
 
 }  // namespace Dwm
 
-#endif  // _DWMMCLOGMULTICASTER_HH_
+#endif  // _DWMMCLOGMESSAGEPACKET_HH_

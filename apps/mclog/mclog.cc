@@ -50,12 +50,31 @@ extern "C" {
 #include "DwmCredenceXChaCha20Poly1305.hh"
 #include "DwmStreamIO.hh"
 #include "DwmMclogMessage.hh"
+#include "DwmMclogMulticastReceiver.hh"
 
 //----------------------------------------------------------------------------
 //!  
 //----------------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
+#if 1
+  Dwm::Mclog::MulticastReceiver  mcastRecv;
+  if (mcastRecv.Open(Dwm::Ipv4Address("224.225.226.227"),
+                     Dwm::Ipv4Address("192.168.168.57"), 3456)) {
+    Dwm::Thread::Queue<Dwm::Mclog::Message> msgQueue;
+    mcastRecv.AddInputQueue(&msgQueue);
+
+    for (;;) {
+      msgQueue.WaitForNotEmpty();
+      while (! msgQueue.Empty()) {
+        Dwm::Mclog::Message  msg;
+        msgQueue.PopFront(msg);
+        std::cout << msg;
+      }
+    }
+  }
+  
+#else
   std::ifstream  is("/tmp/mclogd.key");
   std::string    key;
   Dwm::StreamIO::Read(is, key);
@@ -120,6 +139,7 @@ int main(int argc, char *argv[])
     }
     
   }
+#endif
   return 0;
 }
 

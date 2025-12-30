@@ -48,6 +48,7 @@ extern "C" {
 #include "DwmCredenceKXKeyPair.hh"
 #include "DwmCredenceXChaCha20Poly1305.hh"
 #include "DwmMclogMulticaster.hh"
+#include "DwmMclogMessagePacket.hh"
 
 namespace Dwm {
 
@@ -118,58 +119,41 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
-    bool Multicaster::SendPacket(char *buf, std::span<char> cipherSpan,
-                                 size_t csLen)
+    bool Multicaster::SendPacket(MessagePacket & pkt)
     {
-      bool  rc = false;
-      Credence::Nonce  nonce;
-      std::span  sp = cipherSpan;
-      if (Credence::XChaCha20Poly1305::Encrypt(sp, csLen, nonce, _key)) {
-        std::spanstream  nonceStream{std::span{buf,24}};
-        if (nonce.Write(nonceStream)) {
-          sockaddr_in  dst;
-          memset(&dst, 0, sizeof(dst));
-          dst.sin_family = PF_INET;
-          dst.sin_addr.s_addr = _groupAddr.Raw();
-          dst.sin_port = htons(_port);
-          ssize_t  sendrc = sendto(_fd, buf, 24 + sp.size(), 0,
-                                   (sockaddr *)&dst, sizeof(dst));
-          rc = ((24 + sp.size()) == sendrc);
-        }
-      }
-      return rc;
+      sockaddr_in  dst;
+      memset(&dst, 0, sizeof(dst));
+      dst.sin_family = PF_INET;
+      dst.sin_addr.s_addr = _groupAddr.Raw();
+      dst.sin_port = htons(_port);
+      ssize_t  sendrc = pkt.SendTo(_fd, _key, (sockaddr *)&dst, sizeof(dst));
+      return (0 < sendrc);
     }
     
     //------------------------------------------------------------------------
     void Multicaster::Run()
     {
       char  buf[1400];
-      std::span<char>  cipherSpan{&buf[0] + 24, sizeof(buf) - 24};
-      std::spanstream  cipherStream{cipherSpan};
-      
+      MessagePacket  pkt(buf, sizeof(buf));
       Message  msg;
       while (_run) {
         if (_outQueue.TimedWaitForNotEmpty(std::chrono::milliseconds(500))) {
           auto  now = Clock::now();
           while (_outQueue.PopFront(msg)) {
-            if ((msg.StreamedLength() + cipherStream.tellp() + 16
-                 > (sizeof(buf) - 24))
-                || (now > _nextSendTime)) {
-              SendPacket(buf, cipherSpan, cipherStream.tellp());
+            if ((! pkt.Add(msg))
+                || ((now > _nextSendTime) && pkt.HasPayload())) {
+              SendPacket(pkt);
               _nextSendTime = now + std::chrono::milliseconds(1000);
-              cipherStream.seekp(0);
+              pkt.Add(msg);
             }
-            msg.Write(cipherStream);
           }
         }
         else {
-          if (cipherStream.tellp()) {
-            SendPacket(buf, cipherSpan, cipherStream.tellp());
+          if (pkt.HasPayload()) {
+            SendPacket(pkt);
             _nextSendTime = Clock::now() + std::chrono::milliseconds(1000);
-            cipherStream.seekp(0);
           }
         }
-        
       }
       return;
     }
