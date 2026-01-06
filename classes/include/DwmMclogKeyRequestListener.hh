@@ -1,6 +1,4 @@
 //===========================================================================
-// @(#) $DwmPath$
-//===========================================================================
 //  Copyright (c) Daniel W. McRobb 2025
 //  All rights reserved.
 //
@@ -34,38 +32,63 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file mclogd.cc
+//!  @file DwmMclogKeyRequestListener.hh
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-extern "C" {
-  #include <unistd.h>
-}
+#ifndef _DWMMCLOGKEYREQUESTLISTENER_HH_
+#define _DWMMCLOGKEYREQUESTLISTENER_HH_
 
-#include "DwmSysLogger.hh"
-#include "DwmMclogLocalReceiver.hh"
-#include "DwmMclogMulticaster.hh"
+#include <cstdint>
+#include <deque>
+#include <map>
+#include <thread>
 
-int main(int argc, char *argv[])
-{
-  Dwm::SysLogger::Open("mclogd", LOG_PERROR, LOG_USER);                                              
-  Dwm::Mclog::LocalReceiver  localReceiver;
-  Dwm::Mclog::Multicaster    mcaster;
-  Dwm::Thread::Queue<Dwm::Mclog::Message>  msgQueue;
+#include "DwmMclogKeyRequestClient.hh"
+#include "DwmMclogKeyRequestClientAddr.hh"
 
-  mcaster.Open(Dwm::Ipv4Address("192.168.168.57"),
-               Dwm::Ipv4Address("224.225.226.227"), 3456);
-  
-  localReceiver.Start(&msgQueue);
-  for (;;) {
-    if (msgQueue.TimedWaitForNotEmpty(std::chrono::milliseconds(300))) {
-      Dwm::Mclog::Message  msg;
-      while (msgQueue.PopFront(msg)) {
-        mcaster.Send(msg);
+namespace Dwm {
+
+  namespace Mclog {
+
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    class KeyRequestListener
+    {
+    public:
+      KeyRequestListener()
+          : _port(0), _mcastKey(nullptr), _fd(-1), _thread(), _run(false),
+            _clients(), _clientsDone()
+      {
       }
-    }
-  }
-  localReceiver.Stop();
-  return 0;
-}
+
+      ~KeyRequestListener();
+
+      bool Start(const Ipv4Address & addr, uint16_t port,
+                 const std::string *mcastKey);
+      bool Stop();
+      
+    private:
+      Ipv4Address         _addr;
+      uint16_t            _port;
+      const std::string  *_mcastKey;
+      int                 _fd;
+      std::thread         _thread;
+      std::atomic<bool>   _run;
+      
+      std::map<KeyRequestClientAddr,KeyRequestClient>               _clients;
+      std::deque<std::pair<KeyRequestClientAddr,KeyRequestClient>>  _clientsDone;
+      
+      void ClearExpired();
+      void Run();
+      bool Listen();
+      void ProcessPackets();
+    };
+
+  }  // namespace Mclog
+    
+}  // namespace Dwm
+
+#endif  // _DWMMCLOGKEYREQUESTLISTENER_HH_

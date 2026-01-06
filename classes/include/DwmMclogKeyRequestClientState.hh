@@ -32,23 +32,26 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file DwmMclogMessagePacket.hh
+//!  @file DwmMcLogKeyRequestClientState.hh
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-#ifndef _DWMMCLOGMESSAGEPACKET_HH_
-#define _DWMMCLOGMESSAGEPACKET_HH_
+#ifndef _DWMMCLOGKEYREQUESTCLIENTSTATE_HH_
+#define _DWMMCLOGKEYREQUESTCLIENTSTATE_HH_
 
 extern "C" {
+  #include <sys/types.h>
   #include <sys/socket.h>
-  #include <sodium.h>
+  #include <netinet/in.h>
+  #include <sys/select.h>
+  #include <sys/time.h>
 }
 
-#include <span>
-#include <spanstream>
+#include <vector>
 
-#include "DwmStreamIO.hh"
+#include "DwmCredenceKXKeyPair.hh"
+#include "DwmCredenceKeyStash.hh"
 
 namespace Dwm {
 
@@ -57,86 +60,72 @@ namespace Dwm {
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    class MessagePacket
+    class KeyRequestClientState
     {
     public:
-      static const size_t k_nonceLen = crypto_secretbox_NONCEBYTES;
-      static const size_t k_macLen = crypto_aead_xchacha20poly1305_ietf_ABYTES;
-      static const size_t k_minPacketLen = k_nonceLen + k_macLen;
-
-      //----------------------------------------------------------------------
-      //!  
-      //----------------------------------------------------------------------
-      MessagePacket(char *buf, size_t buflen)
-          : _buf(buf), _buflen(buflen),
-            _payload{std::span{buf + k_nonceLen,
-                               buflen - (k_nonceLen + k_macLen)}},
-            _payloadLength(0)
-      { assert(_buf && (_buflen > k_minPacketLen)); }
-
-      //----------------------------------------------------------------------
-      //!  
-      //----------------------------------------------------------------------
-      template <typename T>
-      bool Add(const T & t)
-      {
-        bool  rc = false;
-        auto  prevPos = _payload.tellp();
-        if (StreamIO::Write(_payload, t)) {
-          _payloadLength = _payload.tellp();
-          rc = true;
-        }
-        else {
-          _payload.clear();
-          _payload.seekp(prevPos);
-        }
-        _payloadLength = _payload.tellp();
-        return rc;
-      }
-
-      //----------------------------------------------------------------------
-      //!  
-      //----------------------------------------------------------------------
-      ssize_t SendTo(int fd, const std::string & secretKey,
-                     const sockaddr *dst, socklen_t dstlen);
-
-      //----------------------------------------------------------------------
-      //!  
-      //----------------------------------------------------------------------
-      ssize_t RecvFrom(int fd, const std::string & secretKey,
-                       struct sockaddr *src, socklen_t *srclen);
-
-      //----------------------------------------------------------------------
-      //!  
-      //----------------------------------------------------------------------
-      ssize_t Decrypt(size_t recvlen, const std::string & secretKey);
+      using State = bool (KeyRequestClientState::*)(int,
+                                                    const struct sockaddr_in &,
+                                                    char *, size_t);
       
       //----------------------------------------------------------------------
-      //!  Does this always work?
+      //!  
       //----------------------------------------------------------------------
-      bool HasPayload()
-      { return _payloadLength > 0; }
+      KeyRequestClientState(const std::string *mcastKey);
 
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
-      std::spanstream & Payload()
-      { return _payload; }
+      ~KeyRequestClientState();
+      
+      bool ProcessPacket(int fd, const sockaddr_in & src,
+                         char *buf, size_t buflen)
+      { return (this->*_state)(fd, src, buf, buflen); }
+      
+      bool Initial(int fd, const sockaddr_in & src,
+                   char *buf, size_t buflen);
+      bool KXKeySent(int fd, const sockaddr_in & src,
+                     char *buf, size_t buflen);
+      bool IDSent(int fd, const sockaddr_in & src,
+                  char *buf, size_t buflen);
+      bool Failure(int fd, const sockaddr_in & src,
+                   char *buf, size_t buflen);
+      
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      const State CurrentState() const
+      { return _state; }
+      
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      const std::string & StateName() const;
+      
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      time_t LastStateChangeTime() const
+      { return _lastStateChangeTime; }
       
     private:
-#if 0
-      static const size_t  _nonceLen = crypto_secretbox_NONCEBYTES;
-      static const size_t  _macLen = crypto_aead_xchacha20poly1305_ietf_ABYTES;
-      static const size_t  _minPacketLen = _nonceLen + _macLen;
-#endif    
-      char             *_buf;
-      size_t            _buflen;
-      std::spanstream   _payload;
-      size_t            _payloadLength;
+      static Credence::KeyStash  _keyStash;
+      
+      uint16_t                    _port;
+      State                       _state;
+      time_t                      _lastStateChangeTime;
+      Credence::KXKeyPair         _keyPair;
+      Credence::ShortString<255>  _theirKX;
+      std::string                 _sharedKey;
+      std::string                 _theirId;
+      const std::string          *_mcastKey;
+      
+      void ChangeState(State newState);
+      bool SendIdAndSig(int fd, const sockaddr_in & dst);
+      bool IsValidUser(const std::string & id, const std::string & signedMsg);
     };
-    
-  }  // namespace Mclog
 
+  }  // namespace Mclog
+  
 }  // namespace Dwm
 
-#endif  // _DWMMCLOGMESSAGEPACKET_HH_
+#endif  // _DWMMCLOGKEYREQUESTCLIENTSTATE_HH_

@@ -32,23 +32,25 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file DwmMclogMessagePacket.hh
+//!  @file DwmMcLogKeyRequestClient.hh
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-#ifndef _DWMMCLOGMESSAGEPACKET_HH_
-#define _DWMMCLOGMESSAGEPACKET_HH_
+#ifndef _DWMMCLOGKEYREQUESTCLIENT_HH_
+#define _DWMMCLOGKEYREQUESTCLIENT_HH_
 
-extern "C" {
-  #include <sys/socket.h>
-  #include <sodium.h>
-}
+#include <cstdint>
+#include <ctime>
+#include <iostream>  // for debugging
+#include <vector>
+#include "spanstream"
 
-#include <span>
-#include <spanstream>
-
-#include "DwmStreamIO.hh"
+#include "DwmIpv4Address.hh"
+#include "DwmSysLogger.hh"
+#include "DwmCredenceKXKeyPair.hh"
+#include "DwmCredenceUtils.hh"
+#include "DwmMclogKeyRequestClientState.hh"
 
 namespace Dwm {
 
@@ -57,86 +59,80 @@ namespace Dwm {
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    class MessagePacket
+    class KeyRequestClient
     {
     public:
-      static const size_t k_nonceLen = crypto_secretbox_NONCEBYTES;
-      static const size_t k_macLen = crypto_aead_xchacha20poly1305_ietf_ABYTES;
-      static const size_t k_minPacketLen = k_nonceLen + k_macLen;
-
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
-      MessagePacket(char *buf, size_t buflen)
-          : _buf(buf), _buflen(buflen),
-            _payload{std::span{buf + k_nonceLen,
-                               buflen - (k_nonceLen + k_macLen)}},
-            _payloadLength(0)
-      { assert(_buf && (_buflen > k_minPacketLen)); }
-
+      KeyRequestClient(const std::string *mcastKey)
+          : _lastReceive(time((std::time_t *)0)), _state(mcastKey)
+      {}
+      
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
-      template <typename T>
-      bool Add(const T & t)
+      KeyRequestClient(const KeyRequestClient & krc)
+        : _state(krc._state)
       {
-        bool  rc = false;
-        auto  prevPos = _payload.tellp();
-        if (StreamIO::Write(_payload, t)) {
-          _payloadLength = _payload.tellp();
-          rc = true;
-        }
-        else {
-          _payload.clear();
-          _payload.seekp(prevPos);
-        }
-        _payloadLength = _payload.tellp();
-        return rc;
+        _lastReceive = krc._lastReceive;
       }
 
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
-      ssize_t SendTo(int fd, const std::string & secretKey,
-                     const sockaddr *dst, socklen_t dstlen);
-
-      //----------------------------------------------------------------------
-      //!  
-      //----------------------------------------------------------------------
-      ssize_t RecvFrom(int fd, const std::string & secretKey,
-                       struct sockaddr *src, socklen_t *srclen);
-
-      //----------------------------------------------------------------------
-      //!  
-      //----------------------------------------------------------------------
-      ssize_t Decrypt(size_t recvlen, const std::string & secretKey);
+      KeyRequestClient & operator = (const KeyRequestClient & krc)
+      {
+        if (&krc != this) {
+          _state = krc._state;
+          _lastReceive = krc._lastReceive;
+        }
+        return *this;
+      }
       
       //----------------------------------------------------------------------
-      //!  Does this always work?
+      //!  
       //----------------------------------------------------------------------
-      bool HasPayload()
-      { return _payloadLength > 0; }
+      bool ProcessPacket(int fd, const sockaddr_in & src,
+                         char *buf, size_t buflen)
+      {
+        Syslog(LOG_DEBUG, "Received %llu bytes from %s:%hu",
+               buflen, ((std::string)Ipv4Address(src.sin_addr.s_addr)).c_str(),
+               ntohs(src.sin_port));
+        _lastReceive = time((time_t *)0);
+        return _state.ProcessPacket(fd, src, buf, buflen);
+      }
 
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
-      std::spanstream & Payload()
-      { return _payload; }
+      bool Success() const
+      {
+        return (_state.CurrentState()
+                == &KeyRequestClientState::IDSent);
+      }
       
-    private:
-#if 0
-      static const size_t  _nonceLen = crypto_secretbox_NONCEBYTES;
-      static const size_t  _macLen = crypto_aead_xchacha20poly1305_ietf_ABYTES;
-      static const size_t  _minPacketLen = _nonceLen + _macLen;
-#endif    
-      char             *_buf;
-      size_t            _buflen;
-      std::spanstream   _payload;
-      size_t            _payloadLength;
-    };
-    
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      time_t LastStateChangeTime() const
+      { return _state.LastStateChangeTime(); }
+      
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      time_t LastReceive() const
+      {
+        return _lastReceive;
+      }
+
+  private:
+    time_t                 _lastReceive;
+    KeyRequestClientState  _state;
+  };
+
   }  // namespace Mclog
-
+  
 }  // namespace Dwm
 
-#endif  // _DWMMCLOGMESSAGEPACKET_HH_
+#endif  // _DWMMCLOGKEYREQUESTCLIENT_HH_

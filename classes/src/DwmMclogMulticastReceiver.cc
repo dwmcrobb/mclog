@@ -38,11 +38,13 @@
 //---------------------------------------------------------------------------
 
 #include <algorithm>
-#include <fstream>
 #include <spanstream>
 
+#include "DwmSysLogger.hh"
 #include "DwmCredenceXChaCha20Poly1305.hh"
+#include "DwmMclogKeyRequester.hh"
 #include "DwmMclogMulticastReceiver.hh"
+#include "DwmMclogMessagePacket.hh"
 
 namespace Dwm {
 
@@ -52,7 +54,7 @@ namespace Dwm {
     MulticastReceiver::MulticastReceiver()
         : _fd(-1), _groupAddr(), _intfAddr(), _port(0), _queuesMutex(),
           _queues(), _thread(), _run(false)
-    {}
+    { }
 
     //------------------------------------------------------------------------
     MulticastReceiver::~MulticastReceiver()
@@ -72,6 +74,9 @@ namespace Dwm {
           locAddr.sin_family = PF_INET;
           locAddr.sin_port = htons(_port);
           locAddr.sin_addr.s_addr = _groupAddr.Raw();
+#ifndef __linux__
+          locAddr.sin_len = sizeof(locAddr);
+#endif
           if (::bind(_fd, (sockaddr *)&locAddr, sizeof(locAddr)) == 0) {
             rc = true;
           }
@@ -159,16 +164,23 @@ namespace Dwm {
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    std::string MulticastReceiver::SenderKey(const Ipv4Address & addr)
+    std::string MulticastReceiver::SenderKey(const sockaddr_in & sockAddr)
     {
-      auto  it = _senderKeys.find(addr);
+      MulticastSource  src(sockAddr);
+      auto  it = _senderKeys.find(src);
       if (it != _senderKeys.end()) {
         return it->second;
       }
       else {
-        //  Need to fetch key here!!!
-        return std::string();
+        std::cerr << "src.Port(): " << src.Port() << '\n';
+        KeyRequester  keyRequester(src.Addr(), _port + 1);
+        std::string   key = keyRequester.GetKey();
+        if (! key.empty()) {
+          _senderKeys[src] = key;
+          return key;
+        }
       }
+      return std::string();
     }
     
     //------------------------------------------------------------------------
@@ -176,13 +188,7 @@ namespace Dwm {
     //------------------------------------------------------------------------
     void MulticastReceiver::Run()
     {
-      using namespace Dwm::Credence;
-      using Dwm::Credence::Nonce;
-
-      std::ifstream  is("/tmp/mclogd.key");
-      std::string    senderKey;
-      Dwm::StreamIO::Read(is, senderKey);
-      is.close();
+      Syslog(LOG_INFO, "MulticastReceiver started");
 
       if (0 <= _fd) {
         fd_set       fds;
@@ -200,21 +206,17 @@ namespace Dwm {
               char  buf[1500];
               socklen_t  fromAddrLen = sizeof(fromAddr);
               ssize_t  recvrc = recvfrom(_fd, buf, sizeof(buf), 0,
-                                         (sockaddr *)&fromAddr, &fromAddrLen);
+                                         (sockaddr *)&fromAddr,              
+                                         &fromAddrLen);
               if (recvrc > 0) {
-                std::cerr << "Received " << recvrc << " bytes\n";
-                Nonce  nonce;
-                std::spanstream  sps{std::span{buf,(size_t)recvrc}};
-                if (nonce.Read(sps)) {
-                  std::span  cipherSpan{
-                    &buf[0] + nonce.StreamedLength(),
-                    recvrc - nonce.StreamedLength()
-                  };
-                  if (XChaCha20Poly1305::Decrypt(cipherSpan,
-                                                 nonce, senderKey)) {
-                    std::spanstream  mss{cipherSpan};
+                std::string  senderKey = SenderKey(fromAddr);
+                if (! senderKey.empty()) {
+                  MessagePacket  pkt(buf, sizeof(buf));
+                  ssize_t  decrc = pkt.Decrypt(recvrc, senderKey);
+                  if (decrc > 0) {
+                    std::cerr << "Received " << recvrc << " bytes\n";
                     Dwm::Mclog::Message  msg;
-                    while (msg.Read(mss)) {
+                    while (msg.Read(pkt.Payload())) {
                       for (auto q : _queues) {
                         q->PushBack(msg);
                       }

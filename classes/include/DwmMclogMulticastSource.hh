@@ -1,7 +1,5 @@
 //===========================================================================
-// @(#) $DwmPath$
-//===========================================================================
-//  Copyright (c) Daniel W. McRobb 2025
+//  Copyright (c) Daniel W. McRobb 2026
 //  All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
@@ -34,38 +32,56 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file mclogd.cc
+//!  @file DwmMclogMulticastSource.hh
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-extern "C" {
-  #include <unistd.h>
-}
+#ifndef _DWMMCLOGMULTICASTSOURCE_HH_
+#define _DWMMCLOGMULTICASTSOURCE_HH_
 
-#include "DwmSysLogger.hh"
-#include "DwmMclogLocalReceiver.hh"
-#include "DwmMclogMulticaster.hh"
+#include "DwmIpv4Address.hh"
 
-int main(int argc, char *argv[])
-{
-  Dwm::SysLogger::Open("mclogd", LOG_PERROR, LOG_USER);                                              
-  Dwm::Mclog::LocalReceiver  localReceiver;
-  Dwm::Mclog::Multicaster    mcaster;
-  Dwm::Thread::Queue<Dwm::Mclog::Message>  msgQueue;
+namespace Dwm {
 
-  mcaster.Open(Dwm::Ipv4Address("192.168.168.57"),
-               Dwm::Ipv4Address("224.225.226.227"), 3456);
-  
-  localReceiver.Start(&msgQueue);
-  for (;;) {
-    if (msgQueue.TimedWaitForNotEmpty(std::chrono::milliseconds(300))) {
-      Dwm::Mclog::Message  msg;
-      while (msgQueue.PopFront(msg)) {
-        mcaster.Send(msg);
+  namespace Mclog {
+
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    class MulticastSource
+    {
+    public:
+      MulticastSource(const sockaddr_in & sockAddr);
+
+      const Ipv4Address & Addr() const
+      { return _addr; }
+
+      uint16_t Port() const
+      { return _port; }
+        
+      bool operator == (const MulticastSource &) const = default;
+
+      bool operator < (const MulticastSource & src) const
+      {
+        if (_addr < src._addr) {
+          return true;
+        }
+        else if (_addr == src._addr) {
+          if (_port < src._port) {
+            return true;
+          }
+        }
+        return false;
       }
-    }
-  }
-  localReceiver.Stop();
-  return 0;
-}
+      
+    private:
+      Ipv4Address  _addr;
+      uint16_t     _port;
+    };
+    
+  }  // namespace Mclog
+
+}  // namespace Dwm
+
+#endif  // _DWMMCLOGMULTICASTSOURCE_HH_

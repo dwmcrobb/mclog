@@ -1,7 +1,5 @@
 //===========================================================================
-// @(#) $DwmPath$
-//===========================================================================
-//  Copyright (c) Daniel W. McRobb 2025
+//  Copyright (c) Daniel W. McRobb 2026
 //  All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
@@ -34,38 +32,24 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file mclogd.cc
+//!  @file DwmMclogMulticastSource.cc
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-extern "C" {
-  #include <unistd.h>
-}
+#include "DwmMclogMulticastSource.hh"
 
-#include "DwmSysLogger.hh"
-#include "DwmMclogLocalReceiver.hh"
-#include "DwmMclogMulticaster.hh"
+namespace Dwm {
 
-int main(int argc, char *argv[])
-{
-  Dwm::SysLogger::Open("mclogd", LOG_PERROR, LOG_USER);                                              
-  Dwm::Mclog::LocalReceiver  localReceiver;
-  Dwm::Mclog::Multicaster    mcaster;
-  Dwm::Thread::Queue<Dwm::Mclog::Message>  msgQueue;
+  namespace Mclog {
 
-  mcaster.Open(Dwm::Ipv4Address("192.168.168.57"),
-               Dwm::Ipv4Address("224.225.226.227"), 3456);
-  
-  localReceiver.Start(&msgQueue);
-  for (;;) {
-    if (msgQueue.TimedWaitForNotEmpty(std::chrono::milliseconds(300))) {
-      Dwm::Mclog::Message  msg;
-      while (msgQueue.PopFront(msg)) {
-        mcaster.Send(msg);
-      }
-    }
-  }
-  localReceiver.Stop();
-  return 0;
-}
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    MulticastSource::MulticastSource(const sockaddr_in & sockAddr)
+        : _addr(sockAddr.sin_addr.s_addr), _port(ntohs(sockAddr.sin_port))
+    {}
+    
+  }  // namespace Mclog
+
+}  // namespace Dwm

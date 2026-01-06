@@ -1,5 +1,5 @@
 //===========================================================================
-//  Copyright (c) Daniel W. McRobb 2025
+//  Copyright (c) Daniel W. McRobb 2026
 //  All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
@@ -32,23 +32,24 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file DwmMclogMessagePacket.hh
+//!  @file DwmMclogKeyRequesterState.hh
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-#ifndef _DWMMCLOGMESSAGEPACKET_HH_
-#define _DWMMCLOGMESSAGEPACKET_HH_
+#ifndef _DWMMCLOGKEYREQUESTERSTATE_HH_
+#define _DWMMCLOGKEYREQUESTERSTATE_HH_
 
 extern "C" {
+  #include <sys/types.h>
   #include <sys/socket.h>
-  #include <sodium.h>
+  #include <netinet/in.h>
+  #include <sys/select.h>
+  #include <sys/time.h>
 }
 
-#include <span>
-#include <spanstream>
-
-#include "DwmStreamIO.hh"
+#include "DwmCredenceKXKeyPair.hh"
+#include "DwmCredenceKeyStash.hh"
 
 namespace Dwm {
 
@@ -57,86 +58,86 @@ namespace Dwm {
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    class MessagePacket
+    class KeyRequesterState
     {
     public:
-      static const size_t k_nonceLen = crypto_secretbox_NONCEBYTES;
-      static const size_t k_macLen = crypto_aead_xchacha20poly1305_ietf_ABYTES;
-      static const size_t k_minPacketLen = k_nonceLen + k_macLen;
-
+      using State = bool (KeyRequesterState::*)(int, const sockaddr_in &,
+                                               char *, size_t);
+      
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
-      MessagePacket(char *buf, size_t buflen)
-          : _buf(buf), _buflen(buflen),
-            _payload{std::span{buf + k_nonceLen,
-                               buflen - (k_nonceLen + k_macLen)}},
-            _payloadLength(0)
-      { assert(_buf && (_buflen > k_minPacketLen)); }
-
+      KeyRequesterState(uint16_t port);
+      
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
-      template <typename T>
-      bool Add(const T & t)
+      bool ProcessPacket(int fd, const sockaddr_in & src, char *buf,
+                         size_t buflen)
       {
-        bool  rc = false;
-        auto  prevPos = _payload.tellp();
-        if (StreamIO::Write(_payload, t)) {
-          _payloadLength = _payload.tellp();
-          rc = true;
-        }
-        else {
-          _payload.clear();
-          _payload.seekp(prevPos);
-        }
-        _payloadLength = _payload.tellp();
-        return rc;
+        return (this->*_currentState)(fd, src, buf, buflen);
       }
-
-      //----------------------------------------------------------------------
-      //!  
-      //----------------------------------------------------------------------
-      ssize_t SendTo(int fd, const std::string & secretKey,
-                     const sockaddr *dst, socklen_t dstlen);
-
-      //----------------------------------------------------------------------
-      //!  
-      //----------------------------------------------------------------------
-      ssize_t RecvFrom(int fd, const std::string & secretKey,
-                       struct sockaddr *src, socklen_t *srclen);
-
-      //----------------------------------------------------------------------
-      //!  
-      //----------------------------------------------------------------------
-      ssize_t Decrypt(size_t recvlen, const std::string & secretKey);
       
       //----------------------------------------------------------------------
-      //!  Does this always work?
+      //!  
       //----------------------------------------------------------------------
-      bool HasPayload()
-      { return _payloadLength > 0; }
-
+      bool Initial(int fd, const sockaddr_in & src, char *buf, size_t buflen);
+      
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
-      std::spanstream & Payload()
-      { return _payload; }
+      bool KXKeySent(int fd, const sockaddr_in & src,
+                     char *buf, size_t buflen);
       
+      bool IDSent(int fd, const sockaddr_in & src, char *buf, size_t buflen);
+      bool Success(int fd, const sockaddr_in & src, char *buf, size_t buflen);
+      bool Failure(int fd, const sockaddr_in & src, char *buf, size_t buflen);
+      
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      const std::string & StateName() const;
+      
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      void ChangeState(State state);
+      
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      State CurrentState() const
+      { return _currentState; }
+      
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      const Credence::KXKeyPair KX() const
+      { return _kxKeyPair; }
+      
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      const std::string & McastKey() const
+      { return _mcastKey; }
+        
     private:
-#if 0
-      static const size_t  _nonceLen = crypto_secretbox_NONCEBYTES;
-      static const size_t  _macLen = crypto_aead_xchacha20poly1305_ietf_ABYTES;
-      static const size_t  _minPacketLen = _nonceLen + _macLen;
-#endif    
-      char             *_buf;
-      size_t            _buflen;
-      std::spanstream   _payload;
-      size_t            _payloadLength;
+      static Credence::KeyStash  _keyStash;
+      uint16_t                   _port;
+      State                      _currentState;
+      time_t                     _lastStateChangeTime;
+      Credence::KXKeyPair        _kxKeyPair;
+      Credence::ShortString<255> _theirKX;
+      std::string                _sharedKey;
+      std::string                _theirId;
+      std::string                _mcastKey;
+      
+      bool SendIdAndSig(int fd, const sockaddr_in & dst);
+      bool IsValidUser(const std::string & id, const std::string & signedMsg);
     };
-    
-  }  // namespace Mclog
 
+  }  // namespace Mclog
+  
 }  // namespace Dwm
 
-#endif  // _DWMMCLOGMESSAGEPACKET_HH_
+#endif  // _DWMMCLOGKEYREQUESTERSTATE_HH_

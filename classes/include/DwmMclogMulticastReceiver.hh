@@ -47,6 +47,7 @@
 #include "DwmIpv4Address.hh"
 #include "DwmThreadQueue.hh"
 #include "DwmMclogMessage.hh"
+#include "DwmMclogMulticastSource.hh"
 
 namespace Dwm {
 
@@ -74,11 +75,11 @@ namespace Dwm {
       std::vector<Thread::Queue<Message> *>  _queues;
       std::thread                            _thread;
       std::atomic<bool>                      _run;
-      std::map<Ipv4Address,std::string>      _senderKeys;
+      std::map<MulticastSource,std::string>  _senderKeys;
       
       bool BindSocket();
       bool JoinGroup();
-      std::string SenderKey(const Ipv4Address & addr);
+      std::string SenderKey(const sockaddr_in & sockAddr);
       void Run();
     };
     

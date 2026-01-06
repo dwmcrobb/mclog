@@ -47,9 +47,11 @@ extern "C" {
 #include <spanstream>
 
 #include "DwmIpv4Address.hh"
-#include "DwmCredenceXChaCha20Poly1305.hh"
 #include "DwmStreamIO.hh"
+#include "DwmSysLogger.hh"
+#include "DwmCredenceXChaCha20Poly1305.hh"
 #include "DwmMclogMessage.hh"
+#include "DwmMclogKeyRequester.hh"
 #include "DwmMclogMulticastReceiver.hh"
 
 //----------------------------------------------------------------------------
@@ -58,6 +60,14 @@ extern "C" {
 int main(int argc, char *argv[])
 {
 #if 1
+  Dwm::SysLogger::Open("mclog", LOG_PERROR, LOG_USER);
+
+#if 0
+  Dwm::Mclog::KeyRequester
+    keyRequester(Dwm::Ipv4Address("192.168.168.57"), 3457);
+  keyRequester.Knock();
+#endif
+  
   Dwm::Mclog::MulticastReceiver  mcastRecv;
   if (mcastRecv.Open(Dwm::Ipv4Address("224.225.226.227"),
                      Dwm::Ipv4Address("192.168.168.57"), 3456)) {
@@ -74,71 +84,6 @@ int main(int argc, char *argv[])
     }
   }
   
-#else
-  std::ifstream  is("/tmp/mclogd.key");
-  std::string    key;
-  Dwm::StreamIO::Read(is, key);
-  is.close();
-  
-  int  fd = socket(PF_INET, SOCK_DGRAM, 0);
-  if (0 <= fd) {
-    sockaddr_in  locAddr;
-    memset(&locAddr, 0, sizeof(locAddr));
-    locAddr.sin_family = PF_INET;
-    locAddr.sin_port = htons(3456);
-    locAddr.sin_addr.s_addr = inet_addr("224.225.226.227");
-    if (::bind(fd, (sockaddr *)&locAddr, sizeof(locAddr)) == 0) {
-      struct ip_mreq group;
-
-      group.imr_multiaddr.s_addr = inet_addr("224.225.226.227");
-      group.imr_interface.s_addr = inet_addr("192.168.168.57");
-      if (setsockopt(fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&group,
-                     sizeof(group)) == 0) {
-        fd_set       fds;
-        sockaddr_in  fromAddr;
-        timeval      tv;
-        auto  reset_tv  = [&] () -> void
-        { tv.tv_sec = 0; tv.tv_usec = 100000; };
-        auto  reset_fds = [&] () -> void
-        { FD_ZERO(&fds); FD_SET(fd, &fds); };
-        for (;;) {
-          reset_tv();
-          reset_fds();
-          if (select(fd+1, &fds, nullptr, nullptr, &tv) > 0) {
-            if (FD_ISSET(fd, &fds)) {
-              char  buf[1500];
-              socklen_t  fromAddrLen = sizeof(fromAddr);
-              ssize_t  recvrc = recvfrom(fd, buf, sizeof(buf), 0,
-                                         (sockaddr *)&fromAddr, &fromAddrLen);
-              if (recvrc > 0) {
-                std::cerr << "Received " << recvrc << " bytes\n";
-                Dwm::Credence::Nonce  nonce;
-                std::spanstream  sps{std::span{buf,(size_t)recvrc}};
-                if (nonce.Read(sps)) {
-                  std::string  ciphertext(&(buf[0]) + sps.tellg(),
-                                          recvrc - sps.tellg());
-                  std::string  plaintext;
-                  if (Dwm::Credence::XChaCha20Poly1305::Decrypt(plaintext,
-                                                                ciphertext,
-                                                                nonce, key)) {
-                    std::spanstream  mss{std::span{plaintext.data(), plaintext.size()}};
-                    Dwm::Mclog::Message  msg;
-                    while (msg.Read(mss)) {
-                      std::cout << msg;
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-    else {
-      std::cerr << "bind() failed\n";
-    }
-    
-  }
 #endif
   return 0;
 }

@@ -51,29 +51,87 @@ namespace Dwm {
     //!  
     //------------------------------------------------------------------------
     ssize_t MessagePacket::SendTo(int fd, const std::string & secretKey,
-                                  struct sockaddr *dst, socklen_t dstlen)
+                                  const sockaddr *dst, socklen_t dstlen)
     {
       constexpr auto  xcc20p1305enc =
         crypto_aead_xchacha20poly1305_ietf_encrypt;
       ssize_t        rc = -1;
-      const size_t   nonceLen = crypto_secretbox_NONCEBYTES;
-      randombytes_buf(_buf, nonceLen);
-      const size_t   macLen = crypto_aead_xchacha20poly1305_ietf_ABYTES;
-      unsigned long long  cbuflen = (size_t)_payload.tellp() + macLen;
-      if (xcc20p1305enc((uint8_t *)_buf + nonceLen, &cbuflen,
-                        (const uint8_t *)_buf + nonceLen,
-                        (size_t)_payload.tellp(),
+      randombytes_buf(_buf, k_nonceLen);
+      unsigned long long  cbuflen = _payloadLength + k_macLen;
+      if (xcc20p1305enc((uint8_t *)_buf + k_nonceLen, &cbuflen,
+                        (const uint8_t *)_buf + k_nonceLen, _payloadLength,
                         nullptr, 0,
                         nullptr, (const uint8_t *)_buf,  // nonce
                         (const uint8_t *)secretKey.data()) == 0) {
-        rc = sendto(fd, _buf, nonceLen + cbuflen, 0, dst, dstlen);
+        rc = sendto(fd, _buf, k_nonceLen + cbuflen, 0, dst, dstlen);
+        if (rc != k_nonceLen + cbuflen) {
+          std::cerr << "sendto() failed: " << strerror(errno) << " ("
+                    << errno << ")\n";
+        }
       }
       else {
         std::cerr << "Encryption failed!!!\n";
       }
       _payload.seekp(0);
+      _payloadLength = 0;
       return rc;
     }
+
+    //------------------------------------------------------------------------
+    ssize_t MessagePacket::Decrypt(size_t recvlen,
+                                   const std::string & secretKey)
+    {
+      ssize_t  rc = -1;
+      if (recvlen > (k_nonceLen + k_macLen)) {
+        constexpr auto  xcc20p1305dec =
+          crypto_aead_xchacha20poly1305_ietf_decrypt;
+        unsigned long long plainLen = recvlen - (k_nonceLen + k_macLen);
+        if (xcc20p1305dec((uint8_t *)_buf + k_nonceLen,
+                          &plainLen, nullptr,
+                          (const uint8_t *)_buf + k_nonceLen,
+                          recvlen - k_nonceLen,
+                          nullptr, 0,
+                          (const uint8_t *)_buf,
+                          (const uint8_t *)secretKey.data()) == 0) {
+          rc = recvlen;
+          _payloadLength = plainLen;
+          _payload = std::spanstream{std::span{_buf + k_nonceLen,              
+                                     _payloadLength}};
+        }
+        else {
+          _payload = std::spanstream{std::span{_buf + k_nonceLen,0}};
+          _payloadLength = 0;
+        }
+      }
+      else {
+        _payload = std::spanstream{std::span{_buf + k_nonceLen,0}};
+        _payloadLength = 0;
+      }
+      return rc;
+    }
+    
+    //------------------------------------------------------------------------
+    ssize_t MessagePacket::RecvFrom(int fd, const std::string & secretKey,
+                                    struct sockaddr *src, socklen_t *srclen)
+    {
+      ssize_t  rc = -1;
+      _payloadLength = 0;
+      ssize_t  recvrc = recvfrom(fd, _buf, _buflen, 0, src, srclen);
+      if (recvrc > 0) {
+        rc = 0;
+        if (recvrc > k_minPacketLen) {
+          rc = Decrypt(recvrc, secretKey);
+        }
+        else {
+          _payload = std::spanstream{std::span{_buf,0}};
+        }
+      }
+      else {
+        _payload = std::spanstream{std::span{_buf,0}};
+      }
+      return rc;
+    }
+    
     
   }  // namespace Mclog
 

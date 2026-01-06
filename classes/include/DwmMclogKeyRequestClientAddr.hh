@@ -1,6 +1,4 @@
 //===========================================================================
-// @(#) $DwmPath$
-//===========================================================================
 //  Copyright (c) Daniel W. McRobb 2025
 //  All rights reserved.
 //
@@ -34,38 +32,61 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file mclogd.cc
+//!  @file DwmMcLogKeyRequestClientAddr.hh
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-extern "C" {
-  #include <unistd.h>
-}
+#ifndef _DWMMCLOGKEYREQUESTCLIENTADDR_HH_
+#define _DWMMCLOGKEYREQUESTCLIENTADDR_HH_
 
-#include "DwmSysLogger.hh"
-#include "DwmMclogLocalReceiver.hh"
-#include "DwmMclogMulticaster.hh"
 
-int main(int argc, char *argv[])
-{
-  Dwm::SysLogger::Open("mclogd", LOG_PERROR, LOG_USER);                                              
-  Dwm::Mclog::LocalReceiver  localReceiver;
-  Dwm::Mclog::Multicaster    mcaster;
-  Dwm::Thread::Queue<Dwm::Mclog::Message>  msgQueue;
+#include "DwmIpv4Address.hh"
 
-  mcaster.Open(Dwm::Ipv4Address("192.168.168.57"),
-               Dwm::Ipv4Address("224.225.226.227"), 3456);
-  
-  localReceiver.Start(&msgQueue);
-  for (;;) {
-    if (msgQueue.TimedWaitForNotEmpty(std::chrono::milliseconds(300))) {
-      Dwm::Mclog::Message  msg;
-      while (msgQueue.PopFront(msg)) {
-        mcaster.Send(msg);
+namespace Dwm {
+
+  namespace Mclog {
+
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    class KeyRequestClientAddr
+    {
+    public:
+      KeyRequestClientAddr(const Ipv4Address & addr, uint16_t port)
+          : _addr(addr), _port(port)
+      {}
+      
+      KeyRequestClientAddr(const KeyRequestClientAddr &) = default;
+      
+      KeyRequestClientAddr & operator = (const KeyRequestClientAddr &) = default;
+      
+      bool operator < (const KeyRequestClientAddr & pkcAddr) const
+      {
+        if (_addr < pkcAddr._addr) {
+          return true;
+        }
+        else if (_addr == pkcAddr._addr) {
+          return (_port < pkcAddr._port);
+        }
+        return false;
       }
-    }
-  }
-  localReceiver.Stop();
-  return 0;
-}
+      
+      bool operator == (const KeyRequestClientAddr &) const = default;
+      
+      const Ipv4Address & Addr() const
+      { return _addr; }
+      
+      uint16_t Port() const
+      { return _port; }
+      
+    private:
+      Ipv4Address  _addr;
+      uint16_t     _port;
+    };
+
+  }  // namespace Mclog
+  
+}  // namespace Dwm
+
+#endif  // _DWMMCLOGKEYREQUESTCLIENTADDR_HH_

@@ -49,6 +49,7 @@
 #include "DwmCredenceKnownKeys.hh"
 #include "DwmMclogMessage.hh"
 #include "DwmMclogMessagePacket.hh"
+#include "DwmMclogKeyRequestListener.hh"
 
 namespace Dwm {
 
@@ -103,7 +104,8 @@ namespace Dwm {
       uint16_t                _port;
       std::string             _key;
       Clock::time_point       _nextSendTime;
-
+      KeyRequestListener      _keyRequestListener;
+      
       bool SendPacket(MessagePacket & pkt);
       void Run();
     };

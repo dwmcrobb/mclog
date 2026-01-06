@@ -1,7 +1,5 @@
 //===========================================================================
-// @(#) $DwmPath$
-//===========================================================================
-//  Copyright (c) Daniel W. McRobb 2025
+//  Copyright (c) Daniel W. McRobb 2026
 //  All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
@@ -34,38 +32,50 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file mclogd.cc
+//!  @file DwmMclogKeyRequester.hh
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-extern "C" {
-  #include <unistd.h>
-}
+#ifndef _DWMMCLOGKEYREQUESTER_HH_
+#define _DWMMCLOGKEYREQUESTER_HH_
 
-#include "DwmSysLogger.hh"
-#include "DwmMclogLocalReceiver.hh"
-#include "DwmMclogMulticaster.hh"
+#include <cstdint>
+#include <map>
+#include <vector>
 
-int main(int argc, char *argv[])
-{
-  Dwm::SysLogger::Open("mclogd", LOG_PERROR, LOG_USER);                                              
-  Dwm::Mclog::LocalReceiver  localReceiver;
-  Dwm::Mclog::Multicaster    mcaster;
-  Dwm::Thread::Queue<Dwm::Mclog::Message>  msgQueue;
+#include "DwmIpv4Address.hh"
+#include "DwmMclogKeyRequesterState.hh"
 
-  mcaster.Open(Dwm::Ipv4Address("192.168.168.57"),
-               Dwm::Ipv4Address("224.225.226.227"), 3456);
-  
-  localReceiver.Start(&msgQueue);
-  for (;;) {
-    if (msgQueue.TimedWaitForNotEmpty(std::chrono::milliseconds(300))) {
-      Dwm::Mclog::Message  msg;
-      while (msgQueue.PopFront(msg)) {
-        mcaster.Send(msg);
-      }
-    }
-  }
-  localReceiver.Stop();
-  return 0;
-}
+namespace Dwm {
+
+  namespace Mclog {
+
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    class KeyRequester
+    {
+    public:
+      KeyRequester(const Dwm::Ipv4Address & servAddr, uint16_t port)
+          : _servAddr(servAddr), _port(port), _fd(-1), _state(port)
+      {}
+      
+      KeyRequester(Dwm::Ipv4Address && servAddr, uint16_t port)
+          : _servAddr(servAddr), _port(port), _fd(-1), _state(_port)
+      {}
+      
+      std::string GetKey();
+      
+    private:
+      uint16_t            _port;
+      Ipv4Address         _servAddr;
+      int                 _fd;
+      KeyRequesterState   _state;
+    };
+
+  }  // namespace Mclog
+
+}  // namespace Dwm
+
+#endif  // _DWMMCLOGKEYREQUESTER_HH_

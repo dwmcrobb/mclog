@@ -109,7 +109,7 @@ namespace Dwm {
                 std::spanstream  sps{std::span{buf, (size_t)recvrc}};
                 Message  msg;
                 while (msg.Read(sps)) {
-                  std::cerr << msg;
+                  // std::cerr << msg;
                   _msgQueue->PushBack(msg);
                 }
               }

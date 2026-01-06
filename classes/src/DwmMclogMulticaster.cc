@@ -41,7 +41,6 @@ extern "C" {
   #include <sys/socket.h>
 }
 
-#include <fstream>
 #include <spanstream>
 #include <sstream>
 
@@ -56,15 +55,12 @@ namespace Dwm {
 
     //------------------------------------------------------------------------
     Multicaster::Multicaster()
-        : _fd(-1), _run(false), _thread(), _outQueue()
+        : _fd(-1), _run(false), _thread(), _outQueue(), _groupAddr(), _port(0),
+          _key(), _keyRequestListener()
     {
       Credence::KXKeyPair  key1;
       Credence::KXKeyPair  key2;
       _key = key2.SharedKey(key1.PublicKey().Value());
-      std::ofstream  ofs("/tmp/mclogd.key");
-      StreamIO::Write(ofs, _key);
-      ofs.close();
-
       _nextSendTime = Clock::now() + std::chrono::milliseconds(1000);
     }
 
@@ -89,9 +85,17 @@ namespace Dwm {
           inAddr.s_addr = intfAddr.Raw();
           if (setsockopt(_fd, IPPROTO_IP, IP_MULTICAST_IF,
                          &inAddr, sizeof(inAddr)) == 0) {
-            _run = true;
-            _thread = std::thread(&Multicaster::Run, this);
-            rc = true;
+            sockaddr_in  bindAddr;
+            memset(&bindAddr, 0, sizeof(bindAddr));
+            bindAddr.sin_family = PF_INET;
+            bindAddr.sin_addr.s_addr = inAddr.s_addr;
+            bindAddr.sin_port = 0;
+            bind(_fd, (struct sockaddr *)&bindAddr, sizeof(bindAddr));
+            if (_keyRequestListener.Start(intfAddr, _port + 1, &_key)) {
+              _run = true;
+              _thread = std::thread(&Multicaster::Run, this);
+              rc = true;
+            }
           }
         }
       }
@@ -107,6 +111,8 @@ namespace Dwm {
     //------------------------------------------------------------------------
     void Multicaster::Close()
     {
+      _keyRequestListener.Stop();
+      
       _run = false;
       if (_thread.joinable()) {
         _thread.join();
@@ -126,6 +132,9 @@ namespace Dwm {
       dst.sin_family = PF_INET;
       dst.sin_addr.s_addr = _groupAddr.Raw();
       dst.sin_port = htons(_port);
+#ifndef __linux__
+      dst.sin_len = sizeof(dst);
+#endif
       ssize_t  sendrc = pkt.SendTo(_fd, _key, (sockaddr *)&dst, sizeof(dst));
       return (0 < sendrc);
     }
@@ -140,19 +149,21 @@ namespace Dwm {
         if (_outQueue.TimedWaitForNotEmpty(std::chrono::milliseconds(500))) {
           auto  now = Clock::now();
           while (_outQueue.PopFront(msg)) {
-            if ((! pkt.Add(msg))
-                || ((now > _nextSendTime) && pkt.HasPayload())) {
-              SendPacket(pkt);
+            if (! pkt.Add(msg)) {
+              if (! SendPacket(pkt)) {
+                std::cerr << "SendPacket() failed\n";
+              }
               _nextSendTime = now + std::chrono::milliseconds(1000);
               pkt.Add(msg);
             }
           }
         }
-        else {
-          if (pkt.HasPayload()) {
-            SendPacket(pkt);
-            _nextSendTime = Clock::now() + std::chrono::milliseconds(1000);
+        auto  now = Clock::now();
+        if (pkt.HasPayload() && (now > _nextSendTime)) {
+          if (! SendPacket(pkt)) {
+            std::cerr << "SendPacket() failed\n";
           }
+          _nextSendTime = now + std::chrono::milliseconds(1000);
         }
       }
       return;

@@ -56,8 +56,10 @@ int main(int argc, char *argv[])
   Dwm::Mclog::Logger  logger;
   assert(logger.Open("TestLogger", Dwm::Mclog::Logger::logStderr,
                      Dwm::Mclog::Facility::user));
+  uint64_t  i = 0;
   for (;;) {
-    logger.Log(Dwm::Mclog::Severity::info, "hello there.");
-    usleep(300000);
+    logger.Log(Dwm::Mclog::Severity::info, std::to_string(i) + " hello there.");
+    ++i;
+    usleep(50000);
   }
 }
