@@ -59,15 +59,8 @@ extern "C" {
 //----------------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
-#if 1
   Dwm::SysLogger::Open("mclog", LOG_PERROR, LOG_USER);
 
-#if 0
-  Dwm::Mclog::KeyRequester
-    keyRequester(Dwm::Ipv4Address("192.168.168.57"), 3457);
-  keyRequester.Knock();
-#endif
-  
   Dwm::Mclog::MulticastReceiver  mcastRecv;
   if (mcastRecv.Open(Dwm::Ipv4Address("224.225.226.227"),
                      Dwm::Ipv4Address("192.168.168.57"), 3456)) {
@@ -84,7 +77,6 @@ int main(int argc, char *argv[])
     }
   }
   
-#endif
   return 0;
 }
 
