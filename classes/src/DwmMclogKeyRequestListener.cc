@@ -37,6 +37,10 @@
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
+extern "C" {
+  #include <sodium.h>
+}
+
 #include <cassert>
 #include <iostream>
 
@@ -119,7 +123,7 @@ namespace Dwm {
               krcAddr(Ipv4Address(clientAddr.sin_addr.s_addr),
                       ntohs(clientAddr.sin_port));
             auto [clientit, dontCare] =
-              _clients.insert({krcAddr,KeyRequestClient(_mcastKey)});
+              _clients.insert({krcAddr,KeyRequestClientState(_mcastKey)});
             if (clientit->second.ProcessPacket(_fd, clientAddr, buf, recvrc)) {
               if (clientit->second.Success()) {
                 _clientsDone.push_back(*clientit);

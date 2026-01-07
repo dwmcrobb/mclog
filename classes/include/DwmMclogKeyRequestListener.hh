@@ -45,7 +45,7 @@
 #include <map>
 #include <thread>
 
-#include "DwmMclogKeyRequestClient.hh"
+#include "DwmMclogKeyRequestClientState.hh"
 #include "DwmMclogKeyRequestClientAddr.hh"
 
 namespace Dwm {
@@ -78,8 +78,8 @@ namespace Dwm {
       std::thread         _thread;
       std::atomic<bool>   _run;
       
-      std::map<KeyRequestClientAddr,KeyRequestClient>               _clients;
-      std::deque<std::pair<KeyRequestClientAddr,KeyRequestClient>>  _clientsDone;
+      std::map<KeyRequestClientAddr,KeyRequestClientState>               _clients;
+      std::deque<std::pair<KeyRequestClientAddr,KeyRequestClientState>>  _clientsDone;
       
       void ClearExpired();
       void Run();

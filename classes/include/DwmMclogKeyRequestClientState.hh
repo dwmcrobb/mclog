@@ -106,6 +106,12 @@ namespace Dwm {
       //----------------------------------------------------------------------
       time_t LastStateChangeTime() const
       { return _lastStateChangeTime; }
+
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      bool Success()
+      { return (_state == &KeyRequestClientState::IDSent); }
       
     private:
       static Credence::KeyStash  _keyStash;

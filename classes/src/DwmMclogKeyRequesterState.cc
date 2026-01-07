@@ -136,8 +136,7 @@ namespace Dwm {
               //  xxx - Not ideal....
               _mcastKey = origMsg.substr(_kxKeyPair.PublicKey().Value().size());
               rc = true;
-              Syslog(LOG_INFO, "%s authenticated, got key of length %llu",
-                     id.c_str(), _mcastKey.size());
+              Syslog(LOG_INFO, "%s authenticated", id.c_str());
             }
             else {
               Syslog(LOG_ERR, "Signed message content mismatch from id '%s'",
