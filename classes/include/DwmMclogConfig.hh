@@ -1,5 +1,5 @@
 //===========================================================================
-//  Copyright (c) Daniel W. McRobb 2025
+//  Copyright (c) Daniel W. McRobb 2026
 //  All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
@@ -32,43 +32,52 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file mclogd.cc
+//!  @file DwmMclogConfig.hh
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-extern "C" {
-  #include <unistd.h>
-}
+#ifndef _DWMMCLOGCONFIG_HH_
+#define _DWMMCLOGCONFIG_HH_
 
-#include "DwmSysLogger.hh"
-#include "DwmMclogLocalReceiver.hh"
-#include "DwmMclogMulticaster.hh"
+#include "DwmIpv4Address.hh"
 
-int main(int argc, char *argv[])
-{
-  Dwm::SysLogger::Open("mclogd", LOG_PERROR, LOG_USER);                                              
-  Dwm::Mclog::LocalReceiver  localReceiver;
-  Dwm::Mclog::Multicaster    mcaster;
-  Dwm::Thread::Queue<Dwm::Mclog::Message>  msgQueue;
+namespace Dwm {
 
-  Dwm::Mclog::Config  config;
-  config.mcast.groupAddr = Dwm::Ipv4Address("224.225.226.227");
-  config.mcast.intfAddr = Dwm::Ipv4Address("192.168.168.57");
-  config.mcast.dstPort = 3456;
-  config.service.keyDirectory = "/usr/local/etc/mclogd";
-  
-  mcaster.Open(config);
-  
-  localReceiver.Start(&msgQueue);
-  for (;;) {
-    if (msgQueue.TimedWaitForNotEmpty(std::chrono::milliseconds(300))) {
-      Dwm::Mclog::Message  msg;
-      while (msgQueue.PopFront(msg)) {
-        mcaster.Send(msg);
-      }
-    }
-  }
-  localReceiver.Stop();
-  return 0;
-}
+  namespace Mclog {
+
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    class MulticastConfig
+    {
+    public:
+      Ipv4Address  groupAddr;
+      Ipv4Address  intfAddr;
+      uint16_t     dstPort;
+    };
+
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    class ServiceConfig
+    {
+    public:
+      std::string  keyDirectory;
+    };
+    
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    class Config
+    {
+    public:
+      MulticastConfig  mcast;
+      ServiceConfig    service;
+    };
+    
+  }  // namespace Mclog
+
+}  // namespace Dwm
+
+#endif  // _DWMMCLOGCONFIG_HH_

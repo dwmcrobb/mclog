@@ -71,18 +71,17 @@ namespace Dwm {
     }
     
     //------------------------------------------------------------------------
-    bool Multicaster::Open(const Ipv4Address & intfAddr,
-                           const Ipv4Address & groupAddr, uint16_t port)
+    bool Multicaster::Open(const Config & config)
     {
       bool  rc = false;
       if (0 > _fd) {
-        _groupAddr = groupAddr;
-        _port = port;
+        _groupAddr = config.mcast.groupAddr;
+        _port = config.mcast.dstPort;
 
         _fd = socket(PF_INET, SOCK_DGRAM, 0);
         if (0 <= _fd) {
           in_addr  inAddr;
-          inAddr.s_addr = intfAddr.Raw();
+          inAddr.s_addr = config.mcast.intfAddr.Raw();
           if (setsockopt(_fd, IPPROTO_IP, IP_MULTICAST_IF,
                          &inAddr, sizeof(inAddr)) == 0) {
             sockaddr_in  bindAddr;
@@ -91,7 +90,7 @@ namespace Dwm {
             bindAddr.sin_addr.s_addr = inAddr.s_addr;
             bindAddr.sin_port = 0;
             bind(_fd, (struct sockaddr *)&bindAddr, sizeof(bindAddr));
-            if (_keyRequestListener.Start(intfAddr, _port + 1, &_key)) {
+            if (_keyRequestListener.Start(config.mcast.intfAddr, _port + 1, &_key)) {
               _run = true;
               _thread = std::thread(&Multicaster::Run, this);
               rc = true;

@@ -50,6 +50,7 @@
 #include "DwmMclogMessage.hh"
 #include "DwmMclogMessagePacket.hh"
 #include "DwmMclogKeyRequestListener.hh"
+#include "DwmMclogConfig.hh"
 
 namespace Dwm {
 
@@ -76,8 +77,7 @@ namespace Dwm {
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
-      bool Open(const Ipv4Address & intfAddr, const Ipv4Address & groupAddr,
-                uint16_t port);
+      bool Open(const Config & config);
 
       //----------------------------------------------------------------------
       //!  
