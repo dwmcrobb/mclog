@@ -59,20 +59,21 @@ namespace Dwm {
     {
     public:
       KeyRequestListener()
-          : _port(0), _mcastKey(nullptr), _fd(-1), _thread(), _run(false),
-            _clients(), _clientsDone()
+          : _port(0), _keyDir(nullptr), _mcastKey(nullptr), _fd(-1),
+            _thread(), _run(false), _clients(), _clientsDone()
       {
       }
 
       ~KeyRequestListener();
 
       bool Start(const Ipv4Address & addr, uint16_t port,
-                 const std::string *mcastKey);
+                 const std::string *keyDir, const std::string *mcastKey);
       bool Stop();
       
     private:
       Ipv4Address         _addr;
       uint16_t            _port;
+      const std::string  *_keyDir;
       const std::string  *_mcastKey;
       int                 _fd;
       std::thread         _thread;

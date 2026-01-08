@@ -55,8 +55,6 @@ namespace Dwm {
 
   namespace Mclog {
 
-  Credence::KeyStash  KeyRequestClientState::_keyStash;
-
     //------------------------------------------------------------------------
     const std::string & KeyRequestClientState::StateName() const
     {
@@ -74,10 +72,11 @@ namespace Dwm {
     }
     
     //------------------------------------------------------------------------
-    KeyRequestClientState::KeyRequestClientState(const std::string *mcastKey)
+    KeyRequestClientState::KeyRequestClientState(const std::string *keyDir,
+                                                 const std::string *mcastKey)
         : _state(&KeyRequestClientState::Initial),
           _lastStateChangeTime(time((time_t *)0)), _keyPair(), _sharedKey(),
-          _theirId(), _mcastKey(mcastKey)
+          _theirId(), _keyDir(keyDir), _mcastKey(mcastKey)
     {}
     
     //------------------------------------------------------------------------
@@ -137,7 +136,8 @@ namespace Dwm {
       char  sendbuf[1500];
       std::spanstream  sps{std::span{sendbuf,sizeof(sendbuf)}};
       Credence::Ed25519KeyPair  myKeys;
-      if (_keyStash.Get(myKeys)) {
+      Credence::KeyStash  keyStash(*_keyDir);
+      if (keyStash.Get(myKeys)) {
         MessagePacket  pkt(sendbuf, sizeof(sendbuf));
         pkt.Add(myKeys.PublicKey().Id());
         std::string  signedMsg;
@@ -158,7 +158,7 @@ namespace Dwm {
                                             const std::string & signedMsg)
     {
       bool  rc = false;
-      Credence::KnownKeys  knownKeys;
+      Credence::KnownKeys  knownKeys(*_keyDir);
       std::string  key = knownKeys.Find(id);
       if (! key.empty()) {
         std::string  origMsg;

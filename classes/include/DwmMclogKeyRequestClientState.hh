@@ -70,7 +70,8 @@ namespace Dwm {
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
-      KeyRequestClientState(const std::string *mcastKey);
+      KeyRequestClientState(const std::string *keyDir,
+                            const std::string *mcastKey);
 
       //----------------------------------------------------------------------
       //!  
@@ -114,8 +115,6 @@ namespace Dwm {
       { return (_state == &KeyRequestClientState::IDSent); }
       
     private:
-      static Credence::KeyStash  _keyStash;
-      
       uint16_t                    _port;
       State                       _state;
       time_t                      _lastStateChangeTime;
@@ -123,6 +122,7 @@ namespace Dwm {
       Credence::ShortString<255>  _theirKX;
       std::string                 _sharedKey;
       std::string                 _theirId;
+      const std::string          *_keyDir;
       const std::string          *_mcastKey;
       
       void ChangeState(State newState);

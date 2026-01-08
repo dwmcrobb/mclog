@@ -123,7 +123,7 @@ namespace Dwm {
               krcAddr(Ipv4Address(clientAddr.sin_addr.s_addr),
                       ntohs(clientAddr.sin_port));
             auto [clientit, dontCare] =
-              _clients.insert({krcAddr,KeyRequestClientState(_mcastKey)});
+              _clients.insert({krcAddr,KeyRequestClientState(_keyDir, _mcastKey)});
             if (clientit->second.ProcessPacket(_fd, clientAddr, buf, recvrc)) {
               if (clientit->second.Success()) {
                 _clientsDone.push_back(*clientit);
@@ -144,6 +144,7 @@ namespace Dwm {
     //!  
     //------------------------------------------------------------------------
     bool KeyRequestListener::Start(const Ipv4Address & addr, uint16_t port,
+                                   const std::string *keyDir,
                                    const std::string *mcastKey)
     {
       assert(nullptr != mcastKey);
@@ -153,6 +154,7 @@ namespace Dwm {
       if (! _run) {
         _addr = addr;
         _port = port;
+        _keyDir = keyDir;
         _mcastKey = mcastKey;
         _run = true;
         _thread = std::thread(&KeyRequestListener::Run, this);

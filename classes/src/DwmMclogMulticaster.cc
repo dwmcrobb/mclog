@@ -89,7 +89,9 @@ namespace Dwm {
             bindAddr.sin_addr.s_addr = inAddr.s_addr;
             bindAddr.sin_port = 0;
             bind(_fd, (struct sockaddr *)&bindAddr, sizeof(bindAddr));
-            if (_keyRequestListener.Start(config.mcast.intfAddr, _port + 1, &_key)) {
+            if (_keyRequestListener.Start(config.mcast.intfAddr, _port + 1,
+                                          &config.service.keyDirectory,
+                                          &_key)) {
               _run = true;
               _thread = std::thread(&Multicaster::Run, this);
               rc = true;
