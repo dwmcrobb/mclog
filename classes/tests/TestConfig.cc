@@ -48,8 +48,8 @@ int main(int argc, char *argv[])
   
   assert(cfg.Parse("../../etc/mclogd.cfg"));
   assert(cfg.service.keyDirectory == "/usr/local/etc/mclogd");
-  assert(cfg.mcast.groupAddr == Dwm::Ipv4Address("239.240.241.242"));
-  assert(cfg.mcast.intfAddr == Dwm::Ipv4Address("192.168.168.57"));
+  assert(cfg.mcast.groupAddr == Dwm::Ipv4Address("239.108.111.103"));
+  assert(cfg.mcast.intfAddr == Dwm::Ipv4Address("192.168.168.42"));
   assert(cfg.mcast.dstPort == 3456);
   
   return 0;
