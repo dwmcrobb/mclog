@@ -52,6 +52,11 @@ namespace Dwm {
     class MulticastConfig
     {
     public:
+      MulticastConfig() = default;
+      MulticastConfig(const MulticastConfig &) = default;
+      MulticastConfig & operator = (const MulticastConfig &) = default;
+      void Clear();
+      
       Ipv4Address  groupAddr;
       Ipv4Address  intfAddr;
       uint16_t     dstPort;
@@ -63,6 +68,11 @@ namespace Dwm {
     class ServiceConfig
     {
     public:
+      ServiceConfig() = default;
+      ServiceConfig(const ServiceConfig &) = default;
+      ServiceConfig & operator = (const ServiceConfig &) = default;
+      void Clear();
+      
       std::string  keyDirectory;
     };
     
@@ -72,6 +82,13 @@ namespace Dwm {
     class Config
     {
     public:
+      Config() = default;
+      Config(const Config &) = default;
+      Config & operator = (const Config &) = default;
+      
+      bool Parse(const std::string & path);
+      void Clear();
+      
       MulticastConfig  mcast;
       ServiceConfig    service;
     };
