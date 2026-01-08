@@ -1,0 +1,10 @@
+At the moment I think I want these distinct sockets:
+
+  - The local UDP input socket (bound to IPV4 loopback, unicast).  This is
+    where the local sources will connect.  This is unencrypted.
+  - The multicast output socket.  This will receive log messages from remote
+    sources (encrypted with XChaCha20-Poly1305 with 192 bit nonce).
+  - A unicast UDP socket to handle requests for the multicast encryption
+    key we're using.  Note these keys are unique to each multicaster.
+    This socket is bidirectional and encrypted with XChaCha20-Poly1305
+    with 192 bit nonce.

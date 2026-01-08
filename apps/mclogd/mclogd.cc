@@ -53,22 +53,19 @@ int main(int argc, char *argv[])
   Dwm::Thread::Queue<Dwm::Mclog::Message>  msgQueue;
 
   Dwm::Mclog::Config  config;
-  config.mcast.groupAddr = Dwm::Ipv4Address("224.225.226.227");
-  config.mcast.intfAddr = Dwm::Ipv4Address("192.168.168.57");
-  config.mcast.dstPort = 3456;
-  config.service.keyDirectory = "/usr/local/etc/mclogd";
-  
-  mcaster.Open(config);
-  
-  localReceiver.Start(&msgQueue);
-  for (;;) {
-    if (msgQueue.TimedWaitForNotEmpty(std::chrono::milliseconds(300))) {
-      Dwm::Mclog::Message  msg;
-      while (msgQueue.PopFront(msg)) {
-        mcaster.Send(msg);
+  if (config.Parse("/usr/local/etc/mclogd.cfg")) {
+    mcaster.Open(config);
+    localReceiver.Start(&msgQueue);
+    for (;;) {
+      if (msgQueue.TimedWaitForNotEmpty(std::chrono::milliseconds(300))) {
+        Dwm::Mclog::Message  msg;
+        while (msgQueue.PopFront(msg)) {
+          mcaster.Send(msg);
+        }
       }
     }
+    localReceiver.Stop();
+    mcaster.Close();
   }
-  localReceiver.Stop();
   return 0;
 }
