@@ -72,7 +72,7 @@ namespace Dwm {
           sockAddr.sin_addr.s_addr = _servAddr.Raw();
           socklen_t  addrLen = sizeof(sockAddr);
           char  buf[1500] = {0};
-          std::spanstream  ss{buf,sizeof(buf)};
+          std::spanstream  ss{std::span{buf,sizeof(buf)}};
           _state.KX().PublicKey().Write(ss);
           sockAddr.sin_port = htons(_port);
           ssize_t  sendrc = sendto(_fd, buf, ss.tellp(), 0,
