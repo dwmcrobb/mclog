@@ -41,7 +41,6 @@ extern "C" {
   #include <sys/socket.h>
 }
 
-#include <spanstream>
 #include <sstream>
 
 #include "DwmCredenceKXKeyPair.hh"

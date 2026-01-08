@@ -67,6 +67,12 @@ AC_SUBST(DWMLIBS)
 AC_SUBST(DWMDIR)
 
 DWM_CHECK_PKG(dwmwhat,[exit 1])
+DWM_CHECK_STD_FORMAT
+if [[ ${DWM_HAVE_STD_FORMAT} -eq 0 ]]; then
+  DWM_CHECK_PKG(fmt)
+  DWM_CHECK_LIBFMT
+fi
+
 AC_SUBST(PC_REQ_PKGS)
 PKG_EXTINCS=`pkg-config --cflags-only-I ${PC_PKGS}`
 PKG_EXTLIBS=`pkg-config --libs ${PC_PKGS}`

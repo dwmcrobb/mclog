@@ -38,7 +38,6 @@
 //---------------------------------------------------------------------------
 
 #include <vector>
-#include "spanstream"
 
 #include "DwmIpv4Address.hh"
 #include "DwmCredenceKnownKeys.hh"

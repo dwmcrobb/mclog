@@ -43,6 +43,18 @@
 #include <memory>
 #include <source_location>
 
+#if __has_include(<format>)
+#  include <format>
+#  define DWM_HAVE_STD_FORMAT 1
+#endif
+
+#ifndef DWM_HAVE_STD_FORMAT
+#  if __has_include(<fmt/format.h>)
+#    include <fmt/format.h>
+#    define DWM_HAVE_LIBFMT
+#  endif
+#endif
+
 #include "DwmIpv4Address.hh"
 #include "DwmMclogMessage.hh"
 

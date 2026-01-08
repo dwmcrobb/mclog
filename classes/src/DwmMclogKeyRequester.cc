@@ -46,11 +46,11 @@ extern "C" {
 }
 
 #include <iostream>
-#include "spanstream"
 
 #include "DwmCredenceKeyStash.hh"
 #include "DwmCredenceKXKeyPair.hh"
 #include "DwmMclogKeyRequester.hh"
+#include "DwmMclogMessagePacket.hh"
 
 namespace Dwm {
 

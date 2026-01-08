@@ -43,7 +43,6 @@ extern "C" {
 
 #include <cassert>
 #include <chrono>
-#include <format>
 #include <iostream>
 
 #include "DwmMclogLogger.hh"

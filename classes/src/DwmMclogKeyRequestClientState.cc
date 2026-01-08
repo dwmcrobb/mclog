@@ -41,7 +41,6 @@
 #include <iostream>
 #include <map>
 
-#include "spanstream"
 #include "DwmIpv4Address.hh"
 #include "DwmCredenceXChaCha20Poly1305Istream.hh"
 #include "DwmCredenceXChaCha20Poly1305Ostream.hh"

@@ -38,7 +38,6 @@
 //---------------------------------------------------------------------------
 
 #include <algorithm>
-#include <spanstream>
 
 #include "DwmSysLogger.hh"
 #include "DwmCredenceXChaCha20Poly1305.hh"

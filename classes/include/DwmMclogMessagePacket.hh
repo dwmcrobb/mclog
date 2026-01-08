@@ -46,7 +46,20 @@ extern "C" {
 }
 
 #include <span>
-#include <spanstream>
+#include <version>
+
+#if defined(__cpp_lib_spanstream)
+#  if (__cpp_lib_spanstream >= 202106L)
+#    if __has_include(<spanstream>)
+#      include <spanstream>
+#      define DWM_HAVE_STD_SPANSTREAM 1
+#    endif
+#  endif
+#endif
+
+#ifndef DWM_HAVE_STD_SPANSTREAM
+#  include "spanstream.hh"
+#endif
 
 #include "DwmStreamIO.hh"
 

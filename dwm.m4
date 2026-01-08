@@ -1053,3 +1053,64 @@ define(DWM_CHECK_PKG,[
   fi
 ])
 
+dnl --------------------------------------------------------------------------
+define(DWM_CHECK_STD_FORMAT,[
+  AC_MSG_CHECKING([for working std::format])
+  AC_LANG_PUSH(C++)
+  AC_LINK_IFELSE(
+    [AC_LANG_SOURCE([[
+      #include <format>
+      template <typename ...Args>
+      static std::string FmtTest(std::format_string<Args...> fmt,
+                                 Args&&... args)
+      { return std::format(fmt,std::forward<Args>(args)...); }
+      int main(int argc, char *argv[])
+      {
+        if (FmtTest("{} {}", 1, "hey") == "1 hey") { return 0; }
+        else { return 1; }
+      }
+    ]])],
+    [AC_MSG_RESULT([yes])
+     DWM_HAVE_STD_FORMAT=1
+     AC_DEFINE(DWM_HAVE_STD_FORMAT)],
+    [AC_MSG_RESULT([no])
+     DWM_HAVE_STD_FORMAT=0]
+  )
+  AC_LANG_POP()
+])
+
+dnl --------------------------------------------------------------------------
+define(DWM_CHECK_LIBFMT,[
+  if [[ ${DWM_HAVE_fmt_PKG} -eq 1 ]]; then
+    AC_MSG_CHECKING([for working fmt::format])
+    AC_LANG_PUSH(C++)
+    prev_LIBS="${LIBS}"
+    LIBS=`pkg-config --libs fmt`
+    prev_CXXFLAGS="${CXXFLAGS}"
+    CXXFLAGS=`pkg-config --cflags fmt`
+    AC_LINK_IFELSE(
+      [AC_LANG_SOURCE([[
+        #include <fmt/format.h>
+        template <typename ...Args>
+        static std::string FmtTest(fmt::format_string<Args...> f,
+                                   Args&&... args)
+        { return fmt::format(f,std::forward<Args>(args)...); }
+        int main(int argc, char *argv[])
+        {
+          if (FmtTest("{} {}", 1, "hey") == "1 hey") { return 0; }
+          else { return 1; }
+        }
+      ]])],
+      [AC_MSG_RESULT([yes])
+       DWM_HAVE_LIBFMT=1
+       AC_DEFINE(DWM_HAVE_LIBFMT)],
+      [AC_MSG_RESULT([no])
+       DWM_HAVE_LIBFMT=0]
+    )
+    LIBS="${prev_LIBS}"
+    CXXFLAGS="${prev_CXXFLAGS}"
+    AC_LANG_POP()
+  else
+       DWM_HAVE_LIBFMT=0
+  fi
+])
