@@ -44,7 +44,6 @@ extern "C" {
 }
 
 #include <fstream>
-#include <spanstream>
 
 #include "DwmIpv4Address.hh"
 #include "DwmStreamIO.hh"

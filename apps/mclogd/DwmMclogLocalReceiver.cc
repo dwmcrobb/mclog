@@ -42,11 +42,10 @@ extern "C" {
   #include <unistd.h>
 }
 
-#include <spanstream>
-
 #include "DwmIpv4Address.hh"
 #include "DwmMclogLocalReceiver.hh"
 #include "DwmMclogMessage.hh"
+#include "DwmMclogMessagePacket.hh"
 
 namespace Dwm {
 
