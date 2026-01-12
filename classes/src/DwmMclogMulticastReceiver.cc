@@ -51,8 +51,8 @@ namespace Dwm {
 
     //------------------------------------------------------------------------
     MulticastReceiver::MulticastReceiver()
-        : _fd(-1), _groupAddr(), _intfAddr(), _port(0), _queuesMutex(),
-          _queues(), _thread(), _run(false)
+        : _fd(-1), _groupAddr(), _intfAddr(), _port(0), _acceptLocal(true),
+          _queuesMutex(), _queues(), _thread(), _run(false)
     { }
 
     //------------------------------------------------------------------------
@@ -101,12 +101,13 @@ namespace Dwm {
     //------------------------------------------------------------------------
     bool MulticastReceiver::Open(const Ipv4Address & groupAddr,
                                  const Ipv4Address & intfAddr,
-                                 uint16_t port)
+                                 uint16_t port, bool acceptLocal)
     {
       bool  rc = false;
       _groupAddr = groupAddr;
       _intfAddr = intfAddr;
       _port = port;
+      _acceptLocal = acceptLocal;
       
       if (0 > _fd) {
         _fd = socket(PF_INET, SOCK_DGRAM, 0);
@@ -207,7 +208,8 @@ namespace Dwm {
               ssize_t  recvrc = recvfrom(_fd, buf, sizeof(buf), 0,
                                          (sockaddr *)&fromAddr,              
                                          &fromAddrLen);
-              if (recvrc > 0) {
+              if ((recvrc > 0)
+                  && (_acceptLocal || (Ipv4Address(fromAddr.sin_addr.s_addr) != _intfAddr))) {
                 std::string  senderKey = SenderKey(fromAddr);
                 if (! senderKey.empty()) {
                   MessagePacket  pkt(buf, sizeof(buf));
