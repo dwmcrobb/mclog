@@ -44,28 +44,41 @@ extern "C" {
 #include "DwmSysLogger.hh"
 #include "DwmMclogLocalReceiver.hh"
 #include "DwmMclogMulticaster.hh"
+#include "DwmMclogMulticastReceiver.hh"
+#include "DwmMclogLogFiles.hh"
 
+//----------------------------------------------------------------------------
+//!  
+//----------------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
   Dwm::SysLogger::Open("mclogd", LOG_PERROR, LOG_USER);                                              
   Dwm::Mclog::LocalReceiver  localReceiver;
   Dwm::Mclog::Multicaster    mcaster;
+  Dwm::Mclog::MulticastReceiver  mcastReceiver;
+  
   Dwm::Thread::Queue<Dwm::Mclog::Message>  msgQueue;
 
   Dwm::Mclog::Config  config;
   if (config.Parse("/usr/local/etc/mclogd.cfg")) {
     mcaster.Open(config);
     localReceiver.Start(&msgQueue);
+    mcastReceiver.Open(config.mcast.groupAddr, config.mcast.intfAddr,
+                       config.mcast.dstPort, false);
+    mcastReceiver.AddInputQueue(&msgQueue);
+    Dwm::Mclog::LogFiles  logFiles("./logs");
     for (;;) {
       if (msgQueue.TimedWaitForNotEmpty(std::chrono::milliseconds(300))) {
         Dwm::Mclog::Message  msg;
         while (msgQueue.PopFront(msg)) {
           mcaster.Send(msg);
+          logFiles.Log(msg);
         }
       }
     }
     localReceiver.Stop();
     mcaster.Close();
+    mcastReceiver.Close();
   }
   return 0;
 }
