@@ -137,11 +137,6 @@ namespace Dwm {
       { return _payload; }
       
     private:
-#if 0
-      static const size_t  _nonceLen = crypto_secretbox_NONCEBYTES;
-      static const size_t  _macLen = crypto_aead_xchacha20poly1305_ietf_ABYTES;
-      static const size_t  _minPacketLen = _nonceLen + _macLen;
-#endif    
       char             *_buf;
       size_t            _buflen;
       std::spanstream   _payload;

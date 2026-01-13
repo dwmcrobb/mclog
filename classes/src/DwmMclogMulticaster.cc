@@ -114,6 +114,7 @@ namespace Dwm {
       _keyRequestListener.Stop();
       
       _run = false;
+      _outQueue.ConditionSignal();
       if (_thread.joinable()) {
         _thread.join();
       }
@@ -146,19 +147,17 @@ namespace Dwm {
       MessagePacket  pkt(buf, sizeof(buf));
       Message  msg;
       while (_run) {
-        if (_outQueue.TimedWaitForNotEmpty(std::chrono::milliseconds(500))) {
-          auto  now = Clock::now();
-          while (_outQueue.PopFront(msg)) {
-            if (! pkt.Add(msg)) {
-              if (! SendPacket(pkt)) {
-                std::cerr << "SendPacket() failed\n";
-              }
-              _nextSendTime = now + std::chrono::milliseconds(1000);
-              pkt.Add(msg);
+        _outQueue.ConditionWait();
+        auto  now = Clock::now();
+        while (_outQueue.PopFront(msg)) {
+          if (! pkt.Add(msg)) {
+            if (! SendPacket(pkt)) {
+              std::cerr << "SendPacket() failed\n";
             }
+            _nextSendTime = now + std::chrono::milliseconds(1000);
+            pkt.Add(msg);
           }
         }
-        auto  now = Clock::now();
         if (pkt.HasPayload() && (now > _nextSendTime)) {
           if (! SendPacket(pkt)) {
             std::cerr << "SendPacket() failed\n";

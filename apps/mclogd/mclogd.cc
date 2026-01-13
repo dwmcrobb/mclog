@@ -68,12 +68,11 @@ int main(int argc, char *argv[])
     mcastReceiver.AddInputQueue(&msgQueue);
     Dwm::Mclog::LogFiles  logFiles("./logs");
     for (;;) {
-      if (msgQueue.TimedWaitForNotEmpty(std::chrono::milliseconds(300))) {
-        Dwm::Mclog::Message  msg;
-        while (msgQueue.PopFront(msg)) {
-          mcaster.Send(msg);
-          logFiles.Log(msg);
-        }
+      msgQueue.ConditionWait();
+      Dwm::Mclog::Message  msg;
+      while (msgQueue.PopFront(msg)) {
+        mcaster.Send(msg);
+        logFiles.Log(msg);
       }
     }
     localReceiver.Stop();

@@ -156,9 +156,11 @@ namespace Dwm {
         _port = port;
         _keyDir = keyDir;
         _mcastKey = mcastKey;
-        _run = true;
-        _thread = std::thread(&KeyRequestListener::Run, this);
-        return true;
+        if (0 == pipe(_stopfds)) {
+          _run = true;
+          _thread = std::thread(&KeyRequestListener::Run, this);
+          return true;
+        }
       }
       return false;
     }
@@ -170,9 +172,13 @@ namespace Dwm {
     {
       if (_run) {
         _run = false;
+        char  stop = 's';
+        ::write(_stopfds[1], &stop, sizeof(stop));
         if (_thread.joinable()) {
           _thread.join();
         }
+        ::close(_stopfds[1]);  _stopfds[1] = -1;
+        ::close(_stopfds[0]);  _stopfds[0] = -1;
         return true;
       }
       return false;
@@ -185,7 +191,44 @@ namespace Dwm {
     {
       if (Listen()) {
         while (_run) {
-          ProcessPackets();
+          fd_set  fds;
+          FD_ZERO(&fds);
+          FD_SET(_fd, &fds);
+          FD_SET(_stopfds[0], &fds);
+          struct timeval  timeout = { 10, 0 };
+          int  selectrc = select(std::max(_fd, _stopfds[0]) + 1, &fds,
+                                 nullptr, nullptr, &timeout);
+          if (selectrc > 0) {
+            if (FD_ISSET(_stopfds[0], &fds)) {
+              break;
+            }
+            struct sockaddr_in  clientAddr;
+            socklen_t           clientAddrLen = sizeof(clientAddr);
+            if (FD_ISSET(_fd, &fds)) {
+              char  buf[1500];
+              ssize_t  recvrc = recvfrom(_fd, buf, sizeof(buf), 0,
+                                         (struct sockaddr *)&clientAddr,
+                                         &clientAddrLen);
+              if (recvrc) {
+                std::string  s(buf, recvrc);
+                KeyRequestClientAddr
+                  krcAddr(Ipv4Address(clientAddr.sin_addr.s_addr),
+                          ntohs(clientAddr.sin_port));
+                auto [clientit, dontCare] =
+                  _clients.insert({krcAddr,KeyRequestClientState(_keyDir, _mcastKey)});
+                if (clientit->second.ProcessPacket(_fd, clientAddr, buf, recvrc)) {
+                  if (clientit->second.Success()) {
+                    _clientsDone.push_back(*clientit);
+                    _clients.erase(clientit);
+                    std::cerr << "_clientsDone.size(): " << _clientsDone.size()
+                              << '\n';
+                  }
+                }
+              }
+            }
+          }
+          ClearExpired();
+          //          ProcessPackets();
         }
         ::close(_fd);
         _fd = -1;

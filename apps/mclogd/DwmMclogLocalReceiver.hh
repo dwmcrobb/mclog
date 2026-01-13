@@ -63,6 +63,7 @@ namespace Dwm {
       
     private:
       int                      _ifd;
+      int                      _stopfds[2];
       std::atomic<bool>        _run;
       std::thread              _thread;
       Thread::Queue<Message>  *_msgQueue;

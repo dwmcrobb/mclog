@@ -62,6 +62,8 @@ namespace Dwm {
           : _port(0), _keyDir(nullptr), _mcastKey(nullptr), _fd(-1),
             _thread(), _run(false), _clients(), _clientsDone()
       {
+        _stopfds[0] = -1;
+        _stopfds[1] = -1;
       }
 
       ~KeyRequestListener();
@@ -76,6 +78,7 @@ namespace Dwm {
       const std::string  *_keyDir;
       const std::string  *_mcastKey;
       int                 _fd;
+      int                 _stopfds[2];
       std::thread         _thread;
       std::atomic<bool>   _run;
       

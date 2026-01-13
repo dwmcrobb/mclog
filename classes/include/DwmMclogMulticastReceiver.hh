@@ -75,6 +75,7 @@ namespace Dwm {
       std::mutex                             _queuesMutex;
       std::vector<Thread::Queue<Message> *>  _queues;
       std::thread                            _thread;
+      int                                    _stopfds[2];
       std::atomic<bool>                      _run;
       std::map<MulticastSource,std::string>  _senderKeys;
       

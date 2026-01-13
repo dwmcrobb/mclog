@@ -53,7 +53,10 @@ namespace Dwm {
     MulticastReceiver::MulticastReceiver()
         : _fd(-1), _groupAddr(), _intfAddr(), _port(0), _acceptLocal(true),
           _queuesMutex(), _queues(), _thread(), _run(false)
-    { }
+    {
+      _stopfds[0] = -1;
+      _stopfds[1] = -1;
+    }
 
     //------------------------------------------------------------------------
     MulticastReceiver::~MulticastReceiver()
@@ -114,9 +117,14 @@ namespace Dwm {
         if (0 <= _fd) {
           if (BindSocket()) {
             if (JoinGroup()) {
-              _run = true;
-              _thread = std::thread(&MulticastReceiver::Run, this);
-              rc = true;
+              if (0 == pipe(_stopfds)) {
+                _run = true;
+                _thread = std::thread(&MulticastReceiver::Run, this);
+                rc = true;
+              }
+              else {
+                Close();
+              }
             }
             else {
               Close();
@@ -134,6 +142,8 @@ namespace Dwm {
     void MulticastReceiver::Close()
     {
       _run = false;
+      char  stop;
+      write(_stopfds[1], &stop, sizeof(stop));
       if (_thread.joinable()) {
         _thread.join();
       }
@@ -141,6 +151,8 @@ namespace Dwm {
         ::close(_fd);
         _fd = -1;
       }
+      ::close(_stopfds[1]);  _stopfds[1] = -1;
+      ::close(_stopfds[0]);  _stopfds[0] = -1;
       return;
     }
     
@@ -195,27 +207,32 @@ namespace Dwm {
         sockaddr_in  fromAddr;
         timeval      tv;
         auto  reset_tv  = [&] () -> void
-        { tv.tv_sec = 0; tv.tv_usec = 500000; };
+        { tv.tv_sec = 10; tv.tv_usec = 0; };
         auto  reset_fds = [&] () -> void
-        { FD_ZERO(&fds); FD_SET(_fd, &fds); };
+        { FD_ZERO(&fds); FD_SET(_fd, &fds); FD_SET(_stopfds[0], &fds); };
         while (_run) {
           reset_tv();
           reset_fds();
-          if (select(_fd + 1, &fds, nullptr, nullptr, &tv) > 0) {
+          if (select(std::max(_fd,_stopfds[0]) + 1, &fds, nullptr, nullptr, &tv) > 0) {
+            if (FD_ISSET(_stopfds[0], &fds)) {
+              break;
+            }
             if (FD_ISSET(_fd, &fds)) {
               char  buf[1500];
               socklen_t  fromAddrLen = sizeof(fromAddr);
               ssize_t  recvrc = recvfrom(_fd, buf, sizeof(buf), 0,
                                          (sockaddr *)&fromAddr,              
                                          &fromAddrLen);
-              if ((recvrc > 0)
-                  && (_acceptLocal || (Ipv4Address(fromAddr.sin_addr.s_addr) != _intfAddr))) {
+              Ipv4Address  fromIP(fromAddr.sin_addr.s_addr);
+              if ((recvrc > 0) && (_acceptLocal || (fromIP != _intfAddr))) {
                 std::string  senderKey = SenderKey(fromAddr);
                 if (! senderKey.empty()) {
                   MessagePacket  pkt(buf, sizeof(buf));
                   ssize_t  decrc = pkt.Decrypt(recvrc, senderKey);
                   if (decrc > 0) {
-                    std::cerr << "Received " << recvrc << " bytes\n";
+                    Syslog(LOG_DEBUG, "Received %lld bytes from %s:%hu",
+                           recvrc, ((std::string)fromIP).c_str(),
+                           ntohs(fromAddr.sin_port));
                     Dwm::Mclog::Message  msg;
                     while (msg.Read(pkt.Payload())) {
                       for (auto q : _queues) {

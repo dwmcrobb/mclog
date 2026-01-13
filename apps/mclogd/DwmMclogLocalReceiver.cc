@@ -58,8 +58,11 @@ namespace Dwm {
     {
       _run = true;
       _msgQueue = msgQueue;
-      _thread = std::thread(&LocalReceiver::Run, this);
-      return true;
+      if (0 == pipe(_stopfds)) {
+        _thread = std::thread(&LocalReceiver::Run, this);
+        return true;
+      }
+      return false;
     }
     
     //------------------------------------------------------------------------
@@ -68,8 +71,12 @@ namespace Dwm {
     void LocalReceiver::Stop()
     {
       _run = false;
+      char  stop = 's';
+      ::write(_stopfds[1], &stop, sizeof(stop));
       if (_thread.joinable()) {
         _thread.join();
+        ::close(_stopfds[1]);  _stopfds[1] = -1;
+        ::close(_stopfds[0]);  _stopfds[0] = -1;
       }
       return;
     }
@@ -91,13 +98,14 @@ namespace Dwm {
           fd_set   fds;
           sockaddr_in  fromAddr;
           auto  reset_tv  = [&] () -> void
-          { tv.tv_sec = 0; tv.tv_usec = 100000; };
+          { tv.tv_sec = 10; tv.tv_usec = 0; };
           auto  reset_fds = [&] () -> void
-          { FD_ZERO(&fds); FD_SET(_ifd, &fds); };
+          { FD_ZERO(&fds); FD_SET(_ifd, &fds); FD_SET(_stopfds[0], &fds); };
           while (_run) {
             reset_tv();
             reset_fds();
-            int selectrc = select(_ifd+1, &fds, nullptr, nullptr, &tv);
+            int selectrc = select(std::max(_ifd, _stopfds[0]) + 1, &fds,
+                                  nullptr, nullptr, &tv);
             if (selectrc > 0) {
               char  buf[1500];
               socklen_t    fromAddrLen = sizeof(fromAddr);
