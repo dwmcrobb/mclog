@@ -49,7 +49,6 @@ extern "C" {
 }
 
 #include "DwmCredenceKXKeyPair.hh"
-#include "DwmCredenceKeyStash.hh"
 
 namespace Dwm {
 
@@ -67,7 +66,7 @@ namespace Dwm {
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
-      KeyRequesterState(uint16_t port);
+      KeyRequesterState(uint16_t port, const std::string & keyDir);
       
       //----------------------------------------------------------------------
       //!  
@@ -120,9 +119,9 @@ namespace Dwm {
       //----------------------------------------------------------------------
       const std::string & McastKey() const
       { return _mcastKey; }
-        
+      
     private:
-      static Credence::KeyStash  _keyStash;
+      std::string                _keyDir;
       uint16_t                   _port;
       State                      _currentState;
       time_t                     _lastStateChangeTime;

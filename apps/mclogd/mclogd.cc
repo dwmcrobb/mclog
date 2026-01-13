@@ -64,7 +64,8 @@ int main(int argc, char *argv[])
     mcaster.Open(config);
     localReceiver.Start(&msgQueue);
     mcastReceiver.Open(config.mcast.groupAddr, config.mcast.intfAddr,
-                       config.mcast.dstPort, false);
+                       config.mcast.dstPort, config.service.keyDirectory,
+                       false);
     mcastReceiver.AddInputQueue(&msgQueue);
     Dwm::Mclog::LogFiles  logFiles("./logs");
     for (;;) {

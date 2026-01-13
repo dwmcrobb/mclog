@@ -57,19 +57,24 @@ namespace Dwm {
     class KeyRequester
     {
     public:
-      KeyRequester(const Dwm::Ipv4Address & servAddr, uint16_t port)
-          : _servAddr(servAddr), _port(port), _fd(-1), _state(port)
+      KeyRequester(const Dwm::Ipv4Address & servAddr, uint16_t port,
+                   const std::string & keyDir)
+          : _servAddr(servAddr), _port(port), _keyDir(keyDir), _fd(-1),
+            _state(port, keyDir)
       {}
       
-      KeyRequester(Dwm::Ipv4Address && servAddr, uint16_t port)
-          : _servAddr(servAddr), _port(port), _fd(-1), _state(_port)
+      KeyRequester(Dwm::Ipv4Address && servAddr, uint16_t port,
+                   const std::string & keyDir)
+          : _servAddr(servAddr), _port(port), _keyDir(keyDir),  _fd(-1),
+            _state(_port, keyDir)
       {}
       
       std::string GetKey();
       
     private:
-      uint16_t            _port;
       Ipv4Address         _servAddr;
+      uint16_t            _port;
+      std::string         _keyDir;
       int                 _fd;
       KeyRequesterState   _state;
     };

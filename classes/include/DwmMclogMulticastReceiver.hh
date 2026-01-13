@@ -62,7 +62,8 @@ namespace Dwm {
       MulticastReceiver();
       ~MulticastReceiver();
       bool Open(const Ipv4Address & groupAddr, const Ipv4Address & intfAddr,
-                uint16_t port, bool acceptLocal = true);
+                uint16_t port, const std::string & keyDir,
+                bool acceptLocal = true);
       void Close();
       bool AddInputQueue(Thread::Queue<Message> *queue);
       
@@ -71,6 +72,7 @@ namespace Dwm {
       Ipv4Address                            _groupAddr;
       Ipv4Address                            _intfAddr;
       uint16_t                               _port;
+      std::string                            _keyDir;
       bool                                   _acceptLocal;
       std::mutex                             _queuesMutex;
       std::vector<Thread::Queue<Message> *>  _queues;

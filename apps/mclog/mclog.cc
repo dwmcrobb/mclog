@@ -60,9 +60,11 @@ int main(int argc, char *argv[])
 {
   Dwm::SysLogger::Open("mclog", LOG_PERROR, LOG_USER);
 
+  std::string  keyDir("~/.credence");
   Dwm::Mclog::MulticastReceiver  mcastRecv;
   if (mcastRecv.Open(Dwm::Ipv4Address("239.108.111.103"),
-                     Dwm::Ipv4Address("192.168.168.57"), 3456)) {
+                     Dwm::Ipv4Address("192.168.168.57"), 3456,
+                     keyDir)) {
     Dwm::Thread::Queue<Dwm::Mclog::Message> msgQueue;
     mcastRecv.AddInputQueue(&msgQueue);
 

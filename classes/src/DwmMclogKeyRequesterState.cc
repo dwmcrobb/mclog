@@ -40,6 +40,7 @@
 #include <vector>
 
 #include "DwmIpv4Address.hh"
+#include "DwmCredenceKeyStash.hh"
 #include "DwmCredenceKnownKeys.hh"
 #include "DwmCredenceXChaCha20Poly1305Istream.hh"
 #include "DwmCredenceXChaCha20Poly1305Ostream.hh"
@@ -52,11 +53,11 @@ namespace Dwm {
 
   namespace Mclog {
 
-    Credence::KeyStash  KeyRequesterState::_keyStash;
-
     //------------------------------------------------------------------------
-    KeyRequesterState::KeyRequesterState(uint16_t port)
-        : _port(port), _currentState(&KeyRequesterState::Initial),
+    KeyRequesterState::KeyRequesterState(uint16_t port,
+                                         const std::string & keyDir)
+        : _port(port), _keyDir(keyDir),
+          _currentState(&KeyRequesterState::Initial),
           _lastStateChangeTime(time((time_t *)0)), _kxKeyPair(), _sharedKey()
     {}
     
@@ -70,7 +71,8 @@ namespace Dwm {
     {
       bool  rc = false;
       Credence::Ed25519KeyPair  myKeys;
-      if (_keyStash.Get(myKeys)) {
+      Credence::KeyStash  keyStash(_keyDir);
+      if (keyStash.Get(myKeys)) {
         char  sendbuf[1500];
         MessagePacket  pkt(sendbuf, sizeof(sendbuf));
         pkt.Add(myKeys.PublicKey().Id());
@@ -123,7 +125,7 @@ namespace Dwm {
                                         const std::string & signedMsg)
     {
       bool  rc = false;
-      Credence::KnownKeys  knownKeys;
+      Credence::KnownKeys  knownKeys(_keyDir);
       std::string  key = knownKeys.Find(id);
       if (! key.empty()) {
         std::string  origMsg;

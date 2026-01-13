@@ -51,8 +51,9 @@ namespace Dwm {
 
     //------------------------------------------------------------------------
     MulticastReceiver::MulticastReceiver()
-        : _fd(-1), _groupAddr(), _intfAddr(), _port(0), _acceptLocal(true),
-          _queuesMutex(), _queues(), _thread(), _run(false)
+        : _fd(-1), _groupAddr(), _intfAddr(), _port(0), _keyDir(),
+          _acceptLocal(true), _queuesMutex(), _queues(), _thread(),
+          _run(false)
     {
       _stopfds[0] = -1;
       _stopfds[1] = -1;
@@ -104,12 +105,14 @@ namespace Dwm {
     //------------------------------------------------------------------------
     bool MulticastReceiver::Open(const Ipv4Address & groupAddr,
                                  const Ipv4Address & intfAddr,
-                                 uint16_t port, bool acceptLocal)
+                                 uint16_t port, const std::string & keyDir,
+                                 bool acceptLocal)
     {
       bool  rc = false;
       _groupAddr = groupAddr;
       _intfAddr = intfAddr;
       _port = port;
+      _keyDir = keyDir;
       _acceptLocal = acceptLocal;
       
       if (0 > _fd) {
@@ -184,7 +187,7 @@ namespace Dwm {
         return it->second;
       }
       else {
-        KeyRequester  keyRequester(src.Addr(), _port + 1);
+        KeyRequester  keyRequester(src.Addr(), _port + 1, _keyDir);
         std::string   key = keyRequester.GetKey();
         if (! key.empty()) {
           _senderKeys[src] = key;
