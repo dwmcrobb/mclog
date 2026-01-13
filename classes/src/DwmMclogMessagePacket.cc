@@ -65,12 +65,11 @@ namespace Dwm {
                         (const uint8_t *)secretKey.data()) == 0) {
         rc = sendto(fd, _buf, k_nonceLen + cbuflen, 0, dst, dstlen);
         if (rc != k_nonceLen + cbuflen) {
-          std::cerr << "sendto() failed: " << strerror(errno) << " ("
-                    << errno << ")\n";
+          Syslog(LOG_ERR, "sendto() failed: %s (%d)", strerror(errno), errno);
         }
       }
       else {
-        std::cerr << "Encryption failed!!!\n";
+        Syslog(LOG_ERR, "Encryption failed!!!");
       }
       _payload.seekp(0);
       _payloadLength = 0;

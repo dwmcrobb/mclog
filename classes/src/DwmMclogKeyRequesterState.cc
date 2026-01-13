@@ -234,9 +234,10 @@ namespace Dwm {
     //------------------------------------------------------------------------
     void KeyRequesterState::ChangeState(State state)
     {
-      std::cerr << "State change from " << StateName();
+      std::string  prevState = StateName();
       _currentState = state;
-      std::cerr << " to " << StateName() << '\n';
+      Syslog(LOG_INFO, "KeyRequester state change %s -> %s",
+             prevState.c_str(), StateName().c_str());
     }
     
   }  // namespace Mclog

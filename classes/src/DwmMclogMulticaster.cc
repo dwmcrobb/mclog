@@ -152,7 +152,7 @@ namespace Dwm {
         while (_outQueue.PopFront(msg)) {
           if (! pkt.Add(msg)) {
             if (! SendPacket(pkt)) {
-              std::cerr << "SendPacket() failed\n";
+              Syslog(LOG_ERR, "SendPacket() failed");
             }
             _nextSendTime = now + std::chrono::milliseconds(1000);
             pkt.Add(msg);
@@ -160,7 +160,7 @@ namespace Dwm {
         }
         if (pkt.HasPayload() && (now > _nextSendTime)) {
           if (! SendPacket(pkt)) {
-            std::cerr << "SendPacket() failed\n";
+            Syslog(LOG_ERR, "SendPacket() failed");
           }
           _nextSendTime = now + std::chrono::milliseconds(1000);
         }

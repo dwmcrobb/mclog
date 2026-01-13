@@ -88,7 +88,6 @@ namespace Dwm {
       void ClearExpired();
       void Run();
       bool Listen();
-      void ProcessPackets();
     };
 
   }  // namespace Mclog

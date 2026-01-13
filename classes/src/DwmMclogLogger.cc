@@ -152,8 +152,10 @@ namespace Dwm {
             rc = true;
           }
           else {
-            std::cerr << "send(" << _ofd << ") failed\n";
-            
+            Ipv4Address  dst(_dstAddr.sin_addr.s_addr);
+            Syslog(LOG_ERR, "sendto(%d,%s:%hu) failed: %s",
+                   _ofd, ((std::string)dst).c_str(), ntohs(_dstAddr.sin_port),
+                   strerror(errno));
           }
         }
       }

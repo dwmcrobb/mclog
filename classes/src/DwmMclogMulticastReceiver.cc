@@ -184,7 +184,6 @@ namespace Dwm {
         return it->second;
       }
       else {
-        std::cerr << "src.Port(): " << src.Port() << '\n';
         KeyRequester  keyRequester(src.Addr(), _port + 1);
         std::string   key = keyRequester.GetKey();
         if (! key.empty()) {

@@ -101,46 +101,6 @@ namespace Dwm {
     }
     
     //------------------------------------------------------------------------
-    void KeyRequestListener::ProcessPackets()
-    {
-      fd_set  fds;
-      FD_ZERO(&fds);
-      FD_SET(_fd, &fds);
-      struct timeval  timeout = { 0, 100000 };
-      int  selectrc = select(_fd + 1, &fds,
-                             nullptr, nullptr, &timeout);
-      if (selectrc > 0) {
-        struct sockaddr_in  clientAddr;
-        socklen_t           clientAddrLen = sizeof(clientAddr);
-        if (FD_ISSET(_fd, &fds)) {
-          char  buf[1500];
-          ssize_t  recvrc = recvfrom(_fd, buf, sizeof(buf), 0,
-                                     (struct sockaddr *)&clientAddr,
-                                     &clientAddrLen);
-          if (recvrc) {
-            std::string  s(buf, recvrc);
-            KeyRequestClientAddr
-              krcAddr(Ipv4Address(clientAddr.sin_addr.s_addr),
-                      ntohs(clientAddr.sin_port));
-            auto [clientit, dontCare] =
-              _clients.insert({krcAddr,KeyRequestClientState(_keyDir, _mcastKey)});
-            if (clientit->second.ProcessPacket(_fd, clientAddr, buf, recvrc)) {
-              if (clientit->second.Success()) {
-                _clientsDone.push_back(*clientit);
-                _clients.erase(clientit);
-                std::cerr << "_clientsDone.size(): " << _clientsDone.size()
-                          << '\n';
-              }
-            }
-          }
-        }
-      }
-      ClearExpired();
-      
-      return;
-    }
-
-    //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
     bool KeyRequestListener::Start(const Ipv4Address & addr, uint16_t port,
@@ -220,15 +180,13 @@ namespace Dwm {
                   if (clientit->second.Success()) {
                     _clientsDone.push_back(*clientit);
                     _clients.erase(clientit);
-                    std::cerr << "_clientsDone.size(): " << _clientsDone.size()
-                              << '\n';
+                    Syslog(LOG_DEBUG, "_clientsDone.size(): %llu", _clientsDone.size());
                   }
                 }
               }
             }
           }
           ClearExpired();
-          //          ProcessPackets();
         }
         ::close(_fd);
         _fd = -1;
