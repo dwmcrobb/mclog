@@ -47,37 +47,61 @@ extern "C" {
 #include "DwmMclogMulticastReceiver.hh"
 #include "DwmMclogLogFiles.hh"
 
+std::atomic<bool>                        g_logMcastMessages{false};
+Dwm::Thread::Queue<Dwm::Mclog::Message>  g_mcastMsgQueue;
+
+//----------------------------------------------------------------------------
+//!  
+//----------------------------------------------------------------------------
+void LogMcastMessages(Dwm::Mclog::MulticastReceiver & mcastReceiver,
+                      Dwm::Mclog::LogFiles & logFiles)
+{
+  mcastReceiver.AddInputQueue(&g_mcastMsgQueue);
+  while (g_logMcastMessages) {
+    g_mcastMsgQueue.ConditionWait();
+    Dwm::Mclog::Message  msg;
+    while (g_mcastMsgQueue.PopFront(msg)) {
+      logFiles.Log(msg);
+    }
+  }
+  return;
+}
+
 //----------------------------------------------------------------------------
 //!  
 //----------------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
   Dwm::SysLogger::Open("mclogd", LOG_PERROR, LOG_USER);                                              
-  Dwm::Mclog::LocalReceiver  localReceiver;
-  Dwm::Mclog::Multicaster    mcaster;
+  Dwm::Mclog::LocalReceiver      localReceiver;
+  Dwm::Mclog::Multicaster        mcaster;
   Dwm::Mclog::MulticastReceiver  mcastReceiver;
   
-  Dwm::Thread::Queue<Dwm::Mclog::Message>  msgQueue;
+  Dwm::Thread::Queue<Dwm::Mclog::Message>  localMsgQueue;
 
   Dwm::Mclog::Config  config;
   if (config.Parse("/usr/local/etc/mclogd.cfg")) {
     mcaster.Open(config);
-    localReceiver.Start(&msgQueue);
+    localReceiver.Start(&localMsgQueue);
     mcastReceiver.Open(config.mcast.groupAddr, config.mcast.intfAddr,
                        config.mcast.dstPort, config.service.keyDirectory,
                        false);
-    mcastReceiver.AddInputQueue(&msgQueue);
     Dwm::Mclog::LogFiles  logFiles("./logs");
+    std::thread  mcastReceiveThread(LogMcastMessages, std::ref(mcastReceiver),
+                                    std::ref(logFiles));
     for (;;) {
-      msgQueue.ConditionWait();
+      localMsgQueue.ConditionWait();
       Dwm::Mclog::Message  msg;
-      while (msgQueue.PopFront(msg)) {
+      while (localMsgQueue.PopFront(msg)) {
         mcaster.Send(msg);
         logFiles.Log(msg);
       }
     }
     localReceiver.Stop();
     mcaster.Close();
+    g_logMcastMessages = false;
+    g_mcastMsgQueue.ConditionSignal();
+    mcastReceiveThread.join();
     mcastReceiver.Close();
   }
   return 0;
