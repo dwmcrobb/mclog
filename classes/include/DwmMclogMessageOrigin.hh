@@ -42,6 +42,7 @@
 
 #include <cstdint>
 #include <iostream>
+#include <mutex>
 
 #include "DwmCredenceShortString.hh"
 
@@ -56,18 +57,31 @@ namespace Dwm {
     {
     public:
       MessageOrigin() = default;
-      
+
+      MessageOrigin(const MessageOrigin & origin);
+
+      MessageOrigin & operator = (const MessageOrigin & origin);
+
       MessageOrigin(const char *hostname, const char *appname, pid_t pid);
 
       const std::string & hostname() const
-      { return _hostname.Value(); }
-      
-      const std::string & appname() const
-      { return _appname.Value(); }
+      { std::lock_guard lck(_mtx); return _hostname.Value(); }
+
+      const std::string & hostname(const char *hostname)
+      { std::lock_guard lck(_mtx); _hostname = hostname; return _hostname.Value(); }
         
-      uint32_t processid() const
-      { return _procid; }
-      
+      const std::string & appname() const
+      { std::lock_guard lck(_mtx); return _appname.Value(); }
+
+      const std::string & appname(const char *appname)
+      { std::lock_guard lck(_mtx); _appname = appname; return _appname.Value(); }
+
+      const uint32_t processid() const
+      { std::lock_guard lck(_mtx); return _procid; }
+
+      const uint32_t processid(uint32_t procid)
+      { std::lock_guard lck(_mtx); _procid = procid; return _procid; }
+
       std::istream & Read(std::istream & is);
       std::ostream & Write(std::ostream & os) const;
       uint64_t StreamedLength() const;
@@ -76,6 +90,7 @@ namespace Dwm {
                                          const MessageOrigin & origin);
       
     private:
+      mutable std::mutex          _mtx;
       Credence::ShortString<255>  _hostname;
       Credence::ShortString<255>  _appname;
       uint32_t                    _procid;

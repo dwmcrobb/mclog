@@ -1,6 +1,4 @@
 //===========================================================================
-// @(#) $DwmPath$
-//===========================================================================
 //  Copyright (c) Daniel W. McRobb 2025
 //  All rights reserved.
 //
@@ -71,19 +69,15 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  
+    sockaddr_in    Logger::_dstAddr;
+    
     //------------------------------------------------------------------------
-    Logger::Logger()
-        : _origin(nullptr), _facility(Facility::user), _options(0), _ofd(-1)
-    {
-      memset(&_dstAddr, 0, sizeof(_dstAddr));
-      _dstAddr.sin_family = PF_INET;
-      _dstAddr.sin_addr.s_addr = Ipv4Address("127.0.0.1").Raw();
-      _dstAddr.sin_port = htons(3455);
-    }
-
-    //------------------------------------------------------------------------
-    //!  
+    MessageOrigin  Logger::_origin("","",0);
+    Facility       Logger::_facility = Facility::user;
+    int            Logger::_options = 0;
+    int            Logger::_ofd = -1;
+    std::mutex     Logger::_ofdmtx;
+    
     //------------------------------------------------------------------------
     bool Logger::OpenSocket()
     {
@@ -92,32 +86,33 @@ namespace Dwm {
         _ofd = socket(PF_INET, SOCK_DGRAM, 0);
         if (0 <= _ofd) {
           rc = true;
-#if 0
-          if (connect(_ofd, (struct sockaddr *)&addr, sizeof(addr)) == 0) {
-            rc = true;
-          }
-          else {
-            ::close(_ofd);
-            _ofd = -1;
-          }
-#endif
         }
       }
       return rc;
     }
     
     //------------------------------------------------------------------------
-    //!  
-    //------------------------------------------------------------------------
     bool Logger::Open(const char *ident, int logopt, Facility facility)
     {
       bool  rc = false;
+
+      memset(&_dstAddr, 0, sizeof(_dstAddr));
+      _dstAddr.sin_family = PF_INET;
+      _dstAddr.sin_addr.s_addr = Ipv4Address("127.0.0.1").Raw();
+      _dstAddr.sin_port = htons(3455);
+#ifndef __linux__
+      _dstAddr.sin_len = sizeof(_dstAddr);
+#endif
+
       char  hn[255];
       memset(hn, 0, sizeof(hn));
       gethostname(hn, sizeof(hn));
 
-      _origin = std::make_unique<MessageOrigin>(hn, ident, getpid());
-      assert(nullptr != _origin);
+      _origin.hostname(hn);
+      _origin.appname(ident);
+      _origin.processid(getpid());
+
+      std::lock_guard  lck(_ofdmtx);
       _options = logopt;
 
       return OpenSocket();
@@ -128,10 +123,15 @@ namespace Dwm {
     //------------------------------------------------------------------------
     bool Logger::Close()
     {
-      _origin = nullptr;
+      _origin.hostname("");
+      _origin.appname("");
+      _origin.processid(0);
+
+      std::lock_guard  lck(_ofdmtx);
       if (0 <= _ofd) {
         ::close(_ofd);
         _ofd = -1;
+        return true;
       }
       return false;
     }
@@ -169,8 +169,8 @@ namespace Dwm {
       namespace fs = std::filesystem;
       bool  rc = false;
       
-      if (nullptr != _origin) {
-        MessageHeader  hdr(_facility, severity, *_origin);
+      if (_origin.processid()) {
+        MessageHeader  hdr(_facility, severity, _origin);
         fs::path  locFile(loc.file_name());
         Message  logmsg(hdr, std::string(msg.data(), msg.size()) + " {"
                         + locFile.filename().string() + ':'
@@ -178,6 +178,7 @@ namespace Dwm {
         if (_options & logStderr) {
           std::cerr << logmsg;
         }
+        std::lock_guard  lck(_ofdmtx);
         rc = SendMessage(logmsg);
       }
       return rc;

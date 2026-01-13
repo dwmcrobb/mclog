@@ -165,7 +165,7 @@ namespace Dwm {
         if (Credence::Signer::Open(signedMsg, key, origMsg)) {
           if (origMsg == _keyPair.PublicKey()) {
             rc = true;
-            Syslog(LOG_INFO, "%s authenticated", id.c_str());
+            Syslog(LOG_INFO, "KeyRequestClient %s authenticated", id.c_str());
           }
           else {
             Syslog(LOG_ERR, "Signed message content mismatch from id '%s'",
@@ -178,7 +178,7 @@ namespace Dwm {
         }
       }
       else {
-        Syslog(LOG_ERR, "Unknown id '%s'", id.c_str());
+        Syslog(LOG_WARNING, "Unknown KeyRequestClient id '%s'", id.c_str());
       }
       return rc;
     }

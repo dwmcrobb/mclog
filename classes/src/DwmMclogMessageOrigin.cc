@@ -46,16 +46,33 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  
-    //------------------------------------------------------------------------
     MessageOrigin::MessageOrigin(const char *hostname, const char *appname,
                                  pid_t pid)
         : _hostname(hostname), _appname(appname), _procid(pid)
     {}
-    
+
+    //------------------------------------------------------------------------
+    MessageOrigin::MessageOrigin(const MessageOrigin & origin)
+        : _mtx(), _hostname(origin.hostname()), _appname(origin.appname()),
+          _procid(origin.processid())
+    {}
+
+    //------------------------------------------------------------------------
+    MessageOrigin & MessageOrigin::operator = (const MessageOrigin & origin)
+    {
+      if (&origin != this) {
+        std::lock_guard  lck(_mtx);
+        _hostname = origin.hostname();
+        _appname = origin.appname();
+        _procid = origin.processid();
+      }
+      return *this;
+    }
+
     //------------------------------------------------------------------------
     std::istream & MessageOrigin::Read(std::istream & is)
     {
+      std::lock_guard  lck(_mtx);
       if (StreamIO::Read(is, _hostname)) {
         if (StreamIO::Read(is, _appname)) {
           StreamIO::Read(is, _procid);
@@ -67,6 +84,7 @@ namespace Dwm {
     //------------------------------------------------------------------------
     std::ostream & MessageOrigin::Write(std::ostream & os) const
     {
+      std::lock_guard  lck(_mtx);
       if (StreamIO::Write(os, _hostname)) {
         if (StreamIO::Write(os, _appname)) {
           StreamIO::Write(os, _procid);
@@ -80,6 +98,7 @@ namespace Dwm {
     //------------------------------------------------------------------------
     uint64_t MessageOrigin::StreamedLength() const
     {
+      std::lock_guard  lck(_mtx);
       return (IOUtils::StreamedLength(_hostname)
               + IOUtils::StreamedLength(_appname)
               + IOUtils::StreamedLength(_procid));
@@ -91,6 +110,7 @@ namespace Dwm {
     std::ostream & operator << (std::ostream & os,
                                 const MessageOrigin & origin)
     {
+      std::lock_guard  lck(origin._mtx);
       os << origin._hostname << ' ' << origin._appname << '['
          << origin._procid << ']';
       return os;

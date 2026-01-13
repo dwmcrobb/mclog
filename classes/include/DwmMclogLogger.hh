@@ -41,6 +41,7 @@
 #define _DWMMCLOGLOGGER_HH_
 
 #include <memory>
+#include <mutex>
 #include <source_location>
 
 #if __has_include(<format>)
@@ -69,24 +70,24 @@ namespace Dwm {
     {
     public:
       static const int  logStderr = 0x20;
-      
-      Logger();
 
-      bool Open(const char *ident, int logopt, Facility facility);
-      bool Close();
+      static bool Open(const char *ident, int logopt, Facility facility);
+      static bool Close();
       
-      bool Log(Severity severity, std::string_view msg,
-               std::source_location loc = std::source_location::current());
+      static bool
+      Log(Severity severity, std::string_view msg,
+          std::source_location loc = std::source_location::current());
 
     private:
-      std::unique_ptr<MessageOrigin>  _origin;
-      Facility                        _facility;
-      int                             _options;
-      int                             _ofd;
-      sockaddr_in                     _dstAddr;
+      static MessageOrigin  _origin;
+      static Facility       _facility;
+      static int            _options;
+      static int            _ofd;
+      static sockaddr_in    _dstAddr;
+      static std::mutex     _ofdmtx;
       
-      bool OpenSocket();
-      bool SendMessage(const Message & msg);
+      static bool OpenSocket();
+      static bool SendMessage(const Message & msg);
     };
     
   }  // namespace Mclog

@@ -165,6 +165,25 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
+    MessageHeader::MessageHeader(const MessageHeader & hdr)
+        : _timestamp(hdr._timestamp), _facility(hdr._facility),
+          _severity(hdr._severity), _origin(hdr._origin), _msgid(hdr._msgid)
+    {}
+
+    //------------------------------------------------------------------------
+    MessageHeader & MessageHeader::operator = (const MessageHeader & hdr)
+    {
+      if (&hdr != this) {
+        _timestamp = hdr._timestamp;
+        _facility = hdr._facility;
+        _severity = hdr._severity;
+        _origin = hdr._origin;
+        _msgid = hdr._msgid;
+      }
+      return *this;
+    }
+    
+    //------------------------------------------------------------------------
     std::istream & MessageHeader::Read(std::istream & is)
     {
       if (_timestamp.Read(is)) {

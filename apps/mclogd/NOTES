@@ -8,3 +8,8 @@ At the moment I think I want these distinct sockets:
     key we're using.  Note these keys are unique to each multicaster.
     This socket is bidirectional and encrypted with XChaCha20-Poly1305
     with 192 bit nonce.
+  - What do I want to do about multicast input?
+
+Message selection:
+
+  - hostname, appname, facility, severity

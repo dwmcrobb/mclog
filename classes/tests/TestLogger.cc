@@ -49,15 +49,13 @@ extern "C" {
 
 int main(int argc, char *argv[])
 {
-  //  std::chrono::zoned_time<std::chrono::seconds>  zt{"Europe/Moscow",
-  //    std::chrono::local_days{18d/std::chrono::January/2022} + 15h + 15min};
-  
-  Dwm::Mclog::Logger  logger;
-  assert(logger.Open("TestLogger", Dwm::Mclog::Logger::logStderr,
-                     Dwm::Mclog::Facility::user));
+  using Dwm::Mclog::Logger;
+
+  assert(Logger::Open("TestLogger", Dwm::Mclog::Logger::logStderr,
+                      Dwm::Mclog::Facility::user));
   uint64_t  i = 0;
   for (;;) {
-    logger.Log(Dwm::Mclog::Severity::info, std::to_string(i) + " hello there.");
+    Logger::Log(Dwm::Mclog::Severity::info, std::to_string(i) + " hello there.");
     ++i;
     usleep(50000);
   }
