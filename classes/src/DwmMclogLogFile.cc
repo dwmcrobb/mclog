@@ -185,7 +185,7 @@ namespace Dwm {
       std::string  s(f.string() + "\\.([0-9]+)\\.bz2");
       std::regex   rgx(s, std::regex::ECMAScript|std::regex::optimize);
       std::smatch  sm;
-      for (auto const & dirEntry : fs::directory_iterator(dir)) {
+      for (auto const & dirEntry : fs::directory_iterator{dir}) {
         if (dirEntry.is_regular_file()) {
           std::string  fname = dirEntry.path().filename().string();
           if (regex_match(fname, sm, rgx)) {
@@ -199,6 +199,7 @@ namespace Dwm {
       if (! archives.empty()) {
         sort(archives.begin(), archives.end(), std::greater<LogFile::Archive>());
       }
+      return archives.size();
     }
 
     //------------------------------------------------------------------------
