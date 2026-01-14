@@ -82,6 +82,7 @@ namespace Dwm {
         for (const auto & msg : msgs) {
           _logFiles.Log(msg);
         }
+        msgs.clear();
       }
       
       return;
