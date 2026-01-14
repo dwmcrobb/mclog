@@ -75,6 +75,20 @@ namespace Dwm {
       
       std::string  keyDirectory;
     };
+
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    class FilesConfig
+    {
+    public:
+      FilesConfig() = default;
+      FilesConfig(const FilesConfig &) = default;
+      FilesConfig & operator = (const FilesConfig &) = default;
+      void Clear();
+      
+      std::string  logDirectory;
+    };
     
     //------------------------------------------------------------------------
     //!  
@@ -91,6 +105,7 @@ namespace Dwm {
       
       MulticastConfig  mcast;
       ServiceConfig    service;
+      FilesConfig      files;
     };
     
   }  // namespace Mclog

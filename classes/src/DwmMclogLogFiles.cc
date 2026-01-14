@@ -46,9 +46,31 @@ namespace Dwm {
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    bool LogFiles::Log(Message & msg)
+    const std::string & LogFiles::LogDirectory() const
+    {
+      std::lock_guard  lck(_mtx);
+      return _logDir;
+    }
+    
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    const std::string & LogFiles::LogDirectory(const std::string & logDir)
+    {
+      std::lock_guard  lck(_mtx);
+      for (auto & logFile : _logFiles) {
+        logFile.second.Close();
+      }
+      _logFiles.clear();
+      return _logDir = logDir;
+    }
+    
+    //------------------------------------------------------------------------
+    bool LogFiles::Log(const Message & msg)
     {
       bool  rc = false;
+      std::lock_guard  lck(_mtx);
+      
       std::string  key(_logDir
                        + '/' + msg.Header().origin().hostname()
                        + '/' + msg.Header().origin().appname());

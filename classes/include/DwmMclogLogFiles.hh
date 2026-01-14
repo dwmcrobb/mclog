@@ -41,6 +41,7 @@
 #define _DWMMCLOGLOGFILES_HH_
 
 #include <map>
+#include <mutex>
 
 #include "DwmMclogLogFile.hh"
 
@@ -54,15 +55,20 @@ namespace Dwm {
     class LogFiles
     {
     public:
-      LogFiles(const std::string & logDir)
-          : _logDir(logDir)
+      LogFiles()
+          : _logDir(), _logFiles(), _mtx()
       {}
+
+      const std::string & LogDirectory() const;
+      
+      const std::string & LogDirectory(const std::string & logDir);
         
-      bool Log(Message & msg);
+      bool Log(const Message & msg);
       
     private:
       std::string                    _logDir;
       std::map<std::string,LogFile>  _logFiles;
+      mutable std::mutex             _mtx;
     };
     
   }  // namespace Mclog

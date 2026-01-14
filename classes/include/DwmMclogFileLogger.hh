@@ -1,5 +1,5 @@
 //===========================================================================
-//  Copyright (c) Daniel W. McRobb 2025
+//  Copyright (c) Daniel W. McRobb 2026
 //  All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
@@ -32,23 +32,19 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file DwmMclogMulticastReceiver.hh
+//!  @file DwmMclogFileLogger.hh
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-#ifndef _DWMMCLOGMULTICASTRECEIVER_HH_
-#define _DWMMCLOGMULTICASTRECEIVER_HH_
+#ifndef _DWMMCLOGFILELOGGER_HH_
+#define _DWMMCLOGFILELOGGER_HH_
 
-#include <mutex>
 #include <thread>
-#include <vector>
 
-#include "DwmIpv4Address.hh"
 #include "DwmThreadQueue.hh"
 #include "DwmMclogConfig.hh"
-#include "DwmMclogMessage.hh"
-#include "DwmMclogMulticastSource.hh"
+#include "DwmMclogLogFiles.hh"
 
 namespace Dwm {
 
@@ -57,29 +53,21 @@ namespace Dwm {
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    class MulticastReceiver
+    class FileLogger
     {
     public:
-      MulticastReceiver();
-      ~MulticastReceiver();
-      bool Open(const Config & cfg, bool acceptLocal = true);
-      void Close();
-      bool AddSink(Thread::Queue<Message> *sink);
-      
+      FileLogger();
+      bool Start(const FilesConfig & filesConfig);
+      bool Stop();
+      Thread::Queue<Message> *InputQueue()
+      { return &_inQueue; }
+        
     private:
-      Config                                 _config;
-      int                                    _fd;
-      bool                                   _acceptLocal;
-      std::mutex                             _sinksMutex;
-      std::vector<Thread::Queue<Message> *>  _sinks;
-      std::thread                            _thread;
-      int                                    _stopfds[2];
-      std::atomic<bool>                      _run;
-      std::map<MulticastSource,std::string>  _senderKeys;
+      std::thread             _thread;
+      Thread::Queue<Message>  _inQueue;
+      std::atomic<bool>       _run;
+      LogFiles                _logFiles;
       
-      bool BindSocket();
-      bool JoinGroup();
-      std::string SenderKey(const sockaddr_in & sockAddr);
       void Run();
     };
     
@@ -87,4 +75,4 @@ namespace Dwm {
 
 }  // namespace Dwm
 
-#endif  // _DWMMCLOGMULTICASTRECEIVER_HH_
+#endif  // _DWMMCLOGFILELOGGER_HH_

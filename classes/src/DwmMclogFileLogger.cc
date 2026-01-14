@@ -1,5 +1,5 @@
 //===========================================================================
-//  Copyright (c) Daniel W. McRobb 2025
+//  Copyright (c) Daniel W. McRobb 2026
 //  All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
@@ -32,59 +32,62 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file DwmMclogMulticastReceiver.hh
+//!  @file DwmMclogFileLogger.cc
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-#ifndef _DWMMCLOGMULTICASTRECEIVER_HH_
-#define _DWMMCLOGMULTICASTRECEIVER_HH_
-
-#include <mutex>
-#include <thread>
-#include <vector>
-
-#include "DwmIpv4Address.hh"
-#include "DwmThreadQueue.hh"
-#include "DwmMclogConfig.hh"
-#include "DwmMclogMessage.hh"
-#include "DwmMclogMulticastSource.hh"
+#include "DwmMclogFileLogger.hh"
 
 namespace Dwm {
 
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  
+    FileLogger::FileLogger()
+        : _thread(), _inQueue(), _run(false), _logFiles()
+    {}
+    
     //------------------------------------------------------------------------
-    class MulticastReceiver
+    bool FileLogger::Start(const FilesConfig & filesConfig)
     {
-    public:
-      MulticastReceiver();
-      ~MulticastReceiver();
-      bool Open(const Config & cfg, bool acceptLocal = true);
-      void Close();
-      bool AddSink(Thread::Queue<Message> *sink);
+      bool  rc = false;
+      _run = true;
+      _logFiles.LogDirectory(filesConfig.logDirectory);
+      _thread = std::thread(&FileLogger::Run, this);
+      rc = true;
+      return rc;
+    }
+    
+    //------------------------------------------------------------------------
+    bool FileLogger::Stop()
+    {
+      bool  rc = false;
+      _run = false;
+      _inQueue.ConditionSignal();
+      if (_thread.joinable()) {
+        _thread.join();
+        rc = true;
+      }
+      return rc;
+    }
+
+    //------------------------------------------------------------------------
+    void FileLogger::Run()
+    {
+      std::deque<Message>  msgs;
+      while (_run) {
+        _inQueue.ConditionWait();
+        _inQueue.Swap(msgs);
+        for (const auto & msg : msgs) {
+          _logFiles.Log(msg);
+        }
+      }
       
-    private:
-      Config                                 _config;
-      int                                    _fd;
-      bool                                   _acceptLocal;
-      std::mutex                             _sinksMutex;
-      std::vector<Thread::Queue<Message> *>  _sinks;
-      std::thread                            _thread;
-      int                                    _stopfds[2];
-      std::atomic<bool>                      _run;
-      std::map<MulticastSource,std::string>  _senderKeys;
-      
-      bool BindSocket();
-      bool JoinGroup();
-      std::string SenderKey(const sockaddr_in & sockAddr);
-      void Run();
-    };
+      return;
+    }
+    
     
   }  // namespace Mclog
 
 }  // namespace Dwm
-
-#endif  // _DWMMCLOGMULTICASTRECEIVER_HH_

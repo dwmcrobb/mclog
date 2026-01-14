@@ -69,9 +69,11 @@
   //!  
   //--------------------------------------------------------------------------
   static const std::map<std::string,int>  g_configKeywords = {
+    { "files",              FILES          },
     { "groupAddr",          GROUPADDR      },
     { "intfAddr",           INTFADDR       },
     { "keyDirectory",       KEYDIRECTORY   },
+    { "logDirectory",       LOGDIRECTORY   },
     { "multicast",          MULTICAST      },
     { "port",               PORT           },
     { "service",            SERVICE        }

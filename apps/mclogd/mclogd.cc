@@ -45,27 +45,7 @@ extern "C" {
 #include "DwmMclogLocalReceiver.hh"
 #include "DwmMclogMulticaster.hh"
 #include "DwmMclogMulticastReceiver.hh"
-#include "DwmMclogLogFiles.hh"
-
-std::atomic<bool>                        g_logMcastMessages{false};
-Dwm::Thread::Queue<Dwm::Mclog::Message>  g_mcastMsgQueue;
-
-//----------------------------------------------------------------------------
-//!  
-//----------------------------------------------------------------------------
-void LogMcastMessages(Dwm::Mclog::MulticastReceiver & mcastReceiver,
-                      Dwm::Mclog::LogFiles & logFiles)
-{
-  mcastReceiver.AddInputQueue(&g_mcastMsgQueue);
-  while (g_logMcastMessages) {
-    g_mcastMsgQueue.ConditionWait();
-    Dwm::Mclog::Message  msg;
-    while (g_mcastMsgQueue.PopFront(msg)) {
-      logFiles.Log(msg);
-    }
-  }
-  return;
-}
+#include "DwmMclogFileLogger.hh"
 
 //----------------------------------------------------------------------------
 //!  
@@ -76,6 +56,7 @@ int main(int argc, char *argv[])
   Dwm::Mclog::LocalReceiver      localReceiver;
   Dwm::Mclog::Multicaster        mcaster;
   Dwm::Mclog::MulticastReceiver  mcastReceiver;
+  Dwm::Mclog::FileLogger         fileLogger;
   
   Dwm::Thread::Queue<Dwm::Mclog::Message>  localMsgQueue;
 
@@ -83,25 +64,20 @@ int main(int argc, char *argv[])
   if (config.Parse("/usr/local/etc/mclogd.cfg")) {
     mcaster.Open(config);
     localReceiver.Start(&localMsgQueue);
-    mcastReceiver.Open(config.mcast.groupAddr, config.mcast.intfAddr,
-                       config.mcast.dstPort, config.service.keyDirectory,
-                       false);
-    Dwm::Mclog::LogFiles  logFiles("./logs");
-    std::thread  mcastReceiveThread(LogMcastMessages, std::ref(mcastReceiver),
-                                    std::ref(logFiles));
+    fileLogger.Start(config.files);
+    mcastReceiver.AddSink(fileLogger.InputQueue());
+    mcastReceiver.Open(config, false);
     for (;;) {
       localMsgQueue.ConditionWait();
       Dwm::Mclog::Message  msg;
       while (localMsgQueue.PopFront(msg)) {
         mcaster.Send(msg);
-        logFiles.Log(msg);
+        fileLogger.InputQueue()->PushBack(msg);
       }
     }
     localReceiver.Stop();
     mcaster.Close();
-    g_logMcastMessages = false;
-    g_mcastMsgQueue.ConditionSignal();
-    mcastReceiveThread.join();
+    fileLogger.Stop();
     mcastReceiver.Close();
   }
   return 0;

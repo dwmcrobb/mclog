@@ -38,6 +38,7 @@
   Ipv4Address                  *ipv4AddrVal;
   Dwm::Mclog::ServiceConfig    *serviceConfigVal;
   Dwm::Mclog::MulticastConfig  *mcastConfigVal;
+  Dwm::Mclog::FilesConfig      *filesConfigVal;
 }
 
 %code provides
@@ -50,14 +51,16 @@
   YY_DECL;
 }
 
-%token GROUPADDR INTFADDR KEYDIRECTORY MULTICAST PORT SERVICE
+%token FILES GROUPADDR INTFADDR KEYDIRECTORY LOGDIRECTORY MULTICAST
+%token PORT SERVICE
 
 %token<stringVal>  STRING
 %token<intVal>     INTEGER
 
 %type<uint16Val>          UDP4Port Port
-%type<stringVal>          KeyDirectory
+%type<stringVal>          KeyDirectory LogDirectory
 %type<serviceConfigVal>   ServiceSettings
+%type<filesConfigVal>     FilesSettings
 %type<mcastConfigVal>     Multicast MulticastSettings
 %type<ipv4AddrVal>        GroupAddr IntfAddr
 
@@ -65,7 +68,7 @@
 
 Config: TopStanza | Config TopStanza;
 
-TopStanza: Service | Multicast;
+TopStanza: Service | Multicast | Files;
 
 Service: SERVICE '{' ServiceSettings '}' ';'
 {
@@ -85,6 +88,26 @@ ServiceSettings: KeyDirectory
 KeyDirectory : KEYDIRECTORY '=' STRING ';'
 {
   $$ = $3;
+};
+
+Files: FILES '{' FilesSettings '}' ';'
+{
+    if (g_config) {
+        g_config->files = *($3);
+    }
+    delete $3;
+};
+
+FilesSettings: LogDirectory
+{
+    $$ = new Dwm::Mclog::FilesConfig();
+    $$->logDirectory = *($1);
+    delete $1;
+};
+
+LogDirectory: LOGDIRECTORY '=' STRING ';'
+{
+    $$ = $3;
 };
 
 Multicast: MULTICAST '{' MulticastSettings '}' ';'

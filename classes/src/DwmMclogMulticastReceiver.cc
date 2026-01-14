@@ -51,9 +51,8 @@ namespace Dwm {
 
     //------------------------------------------------------------------------
     MulticastReceiver::MulticastReceiver()
-        : _fd(-1), _groupAddr(), _intfAddr(), _port(0), _keyDir(),
-          _acceptLocal(true), _queuesMutex(), _queues(), _thread(),
-          _run(false)
+        : _config(), _fd(-1), _acceptLocal(true), _sinksMutex(), _sinks(),
+          _thread(), _run(false)
     {
       _stopfds[0] = -1;
       _stopfds[1] = -1;
@@ -64,7 +63,7 @@ namespace Dwm {
     {
       Close();
     }
-    
+
     //------------------------------------------------------------------------
     bool MulticastReceiver::BindSocket()
     {
@@ -75,8 +74,8 @@ namespace Dwm {
           sockaddr_in  locAddr;
           memset(&locAddr, 0, sizeof(locAddr));
           locAddr.sin_family = PF_INET;
-          locAddr.sin_port = htons(_port);
-          locAddr.sin_addr.s_addr = _groupAddr.Raw();
+          locAddr.sin_port = htons(_config.mcast.dstPort);
+          locAddr.sin_addr.s_addr = _config.mcast.groupAddr.Raw();
 #ifndef __linux__
           locAddr.sin_len = sizeof(locAddr);
 #endif
@@ -87,32 +86,23 @@ namespace Dwm {
       }
       return rc;
     }
-
-    //------------------------------------------------------------------------
-    //!  
+    
     //------------------------------------------------------------------------
     bool MulticastReceiver::JoinGroup()
     {
       struct ip_mreq group;
-      group.imr_multiaddr.s_addr = _groupAddr.Raw();
-      group.imr_interface.s_addr = _intfAddr.Raw();
+      group.imr_multiaddr.s_addr = _config.mcast.groupAddr.Raw();
+      group.imr_interface.s_addr = _config.mcast.intfAddr.Raw();
       return (setsockopt(_fd, IPPROTO_IP, IP_ADD_MEMBERSHIP,
                          (char *)&group, sizeof(group)) == 0);
     }
-    
+
     //------------------------------------------------------------------------
-    //!  
-    //------------------------------------------------------------------------
-    bool MulticastReceiver::Open(const Ipv4Address & groupAddr,
-                                 const Ipv4Address & intfAddr,
-                                 uint16_t port, const std::string & keyDir,
-                                 bool acceptLocal)
+    bool MulticastReceiver::Open(const Config & cfg, bool acceptLocal)
     {
       bool  rc = false;
-      _groupAddr = groupAddr;
-      _intfAddr = intfAddr;
-      _port = port;
-      _keyDir = keyDir;
+      
+      _config = cfg;
       _acceptLocal = acceptLocal;
       
       if (0 > _fd) {
@@ -125,15 +115,9 @@ namespace Dwm {
                 _thread = std::thread(&MulticastReceiver::Run, this);
                 rc = true;
               }
-              else {
-                Close();
-              }
-            }
-            else {
-              Close();
             }
           }
-          else {
+          if (! rc) {
             Close();
           }
         }
@@ -145,8 +129,10 @@ namespace Dwm {
     void MulticastReceiver::Close()
     {
       _run = false;
-      char  stop;
-      write(_stopfds[1], &stop, sizeof(stop));
+      if (_stopfds[1] >= 0) {
+        char  stop;
+        write(_stopfds[1], &stop, sizeof(stop));
+      }
       if (_thread.joinable()) {
         _thread.join();
       }
@@ -154,23 +140,29 @@ namespace Dwm {
         ::close(_fd);
         _fd = -1;
       }
-      ::close(_stopfds[1]);  _stopfds[1] = -1;
-      ::close(_stopfds[0]);  _stopfds[0] = -1;
+
+      //  Close the stop command pipe descriptors
+      if (_stopfds[1] >= 0) {
+        ::close(_stopfds[1]);  _stopfds[1] = -1;
+      }
+      if (_stopfds[0] >= 0) {
+        ::close(_stopfds[0]);  _stopfds[0] = -1;
+      }
       return;
     }
     
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    bool MulticastReceiver::AddInputQueue(Thread::Queue<Message> *queue)
+    bool MulticastReceiver::AddSink(Thread::Queue<Message> *sink)
     {
       bool  rc = false;
-      std::lock_guard  lck(_queuesMutex);
-      auto  it = std::find_if(_queues.cbegin(), _queues.cend(),
-                              [queue] (const auto & q)
-                              { return (queue != q); });
-      if (it == _queues.cend()) {
-        _queues.push_back(queue);
+      std::lock_guard  lck(_sinksMutex);
+      auto  it = std::find_if(_sinks.cbegin(), _sinks.cend(),
+                              [sink] (const auto & q)
+                              { return (sink != q); });
+      if (it == _sinks.cend()) {
+        _sinks.push_back(sink);
         rc = true;
       }
       return rc;
@@ -187,7 +179,8 @@ namespace Dwm {
         return it->second;
       }
       else {
-        KeyRequester  keyRequester(src.Addr(), _port + 1, _keyDir);
+        KeyRequester  keyRequester(src.Addr(), _config.mcast.dstPort + 1,
+                                   _config.service.keyDirectory);
         std::string   key = keyRequester.GetKey();
         if (! key.empty()) {
           _senderKeys[src] = key;
@@ -226,7 +219,7 @@ namespace Dwm {
                                          (sockaddr *)&fromAddr,              
                                          &fromAddrLen);
               Ipv4Address  fromIP(fromAddr.sin_addr.s_addr);
-              if ((recvrc > 0) && (_acceptLocal || (fromIP != _intfAddr))) {
+              if ((recvrc > 0) && (_acceptLocal || (fromIP != _config.mcast.intfAddr))) {
                 std::string  senderKey = SenderKey(fromAddr);
                 if (! senderKey.empty()) {
                   MessagePacket  pkt(buf, sizeof(buf));
@@ -237,8 +230,8 @@ namespace Dwm {
                            ntohs(fromAddr.sin_port));
                     Dwm::Mclog::Message  msg;
                     while (msg.Read(pkt.Payload())) {
-                      for (auto q : _queues) {
-                        q->PushBack(msg);
+                      for (auto sink : _sinks) {
+                        sink->PushBack(msg);
                       }
                     }
                   }
