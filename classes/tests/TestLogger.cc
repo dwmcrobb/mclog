@@ -57,6 +57,6 @@ int main(int argc, char *argv[])
   for (;;) {
     Logger::Log(Dwm::Mclog::Severity::info, std::to_string(i) + " hello there.");
     ++i;
-    usleep(50000);
+    usleep(100000);
   }
 }
