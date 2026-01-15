@@ -188,10 +188,20 @@ namespace Dwm {
     {
       if (_timestamp.Read(is)) {
         if (StreamIO::Read(is, _facility)) {
-          if (StreamIO::Read(is, _severity)) {
-            if (_origin.Read(is)) {
-              StreamIO::Read(is, _msgid);
+          if (_facility <= Facility::local7) {
+            if (StreamIO::Read(is, _severity)) {
+              if (_severity <= Severity::debug) {
+                if (_origin.Read(is)) {
+                  StreamIO::Read(is, _msgid);
+                }
+              }
+              else {
+                is.setstate(std::ios_base::failbit);
+              }
             }
+          }
+          else {
+            is.setstate(std::ios_base::failbit);
           }
         }
       }
@@ -275,9 +285,7 @@ namespace Dwm {
     std::istream & Message::Read(std::istream & is)
     {
       if (_header.Read(is)) {
-        //        if (_route.Read(is)) {
-          StreamIO::Read(is, _message);
-          //        }
+        StreamIO::Read(is, _message);
       }
       return is;
     }

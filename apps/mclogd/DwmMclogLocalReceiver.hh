@@ -58,15 +58,18 @@ namespace Dwm {
     class LocalReceiver
     {
     public:
-      bool Start(Thread::Queue<Message> *msgQueue);
+      bool Start();
+      bool Restart();
       void Stop();
+      bool AddSink(Thread::Queue<Message> *msgQueue);
       
     private:
-      int                      _ifd;
-      int                      _stopfds[2];
-      std::atomic<bool>        _run;
-      std::thread              _thread;
-      Thread::Queue<Message>  *_msgQueue;
+      int                                    _ifd;        // receive socket
+      int                                    _stopfds[2]; // stop cmd pipe
+      std::atomic<bool>                      _run;
+      std::thread                            _thread;
+      std::mutex                             _sinksMutex;
+      std::vector<Thread::Queue<Message> *>  _sinks;
       
       void Run();
     };

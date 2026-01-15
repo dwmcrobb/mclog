@@ -149,15 +149,15 @@ namespace Dwm {
     //------------------------------------------------------------------------
     void KeyRequestListener::Run()
     {
+      Syslog(LOG_INFO, "KeyRequestListener thread started");
       if (Listen()) {
         while (_run) {
           fd_set  fds;
           FD_ZERO(&fds);
           FD_SET(_fd, &fds);
           FD_SET(_stopfds[0], &fds);
-          struct timeval  timeout = { 10, 0 };
           int  selectrc = select(std::max(_fd, _stopfds[0]) + 1, &fds,
-                                 nullptr, nullptr, &timeout);
+                                 nullptr, nullptr, nullptr);
           if (selectrc > 0) {
             if (FD_ISSET(_stopfds[0], &fds)) {
               break;
@@ -191,6 +191,7 @@ namespace Dwm {
         ::close(_fd);
         _fd = -1;
       }
+      Syslog(LOG_INFO, "KeyRequestListener thread done");
       return;
     }
     

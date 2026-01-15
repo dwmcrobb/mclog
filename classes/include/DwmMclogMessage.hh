@@ -300,9 +300,9 @@ namespace Dwm {
       operator << (std::ostream & os, const Message & msg);
       
     private:
-      MessageHeader  _header;
-      MessageRoute   _route;
-      std::string    _message;
+      MessageHeader                _header;
+      MessageRoute                 _route;
+      Credence::ShortString<1500>  _message;
     };
     
   }  // namespace Mclog

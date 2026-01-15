@@ -58,7 +58,15 @@ namespace Dwm {
       rc = true;
       return rc;
     }
-    
+
+    //------------------------------------------------------------------------
+    bool FileLogger::Restart(const FilesConfig & filesConfig)
+    {
+      bool  rc = false;
+      Stop();
+      return Start(filesConfig);
+    }
+
     //------------------------------------------------------------------------
     bool FileLogger::Stop()
     {
@@ -75,6 +83,7 @@ namespace Dwm {
     //------------------------------------------------------------------------
     void FileLogger::Run()
     {
+      Syslog(LOG_INFO, "FileLogger thread started");
       std::deque<Message>  msgs;
       while (_run) {
         _inQueue.ConditionWait();
@@ -84,7 +93,7 @@ namespace Dwm {
         }
         msgs.clear();
       }
-      
+      Syslog(LOG_INFO, "FileLogger thread done");
       return;
     }
     

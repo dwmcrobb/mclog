@@ -58,6 +58,7 @@ namespace Dwm {
     public:
       FileLogger();
       bool Start(const FilesConfig & filesConfig);
+      bool Restart(const FilesConfig & filesConfig);
       bool Stop();
       Thread::Queue<Message> *InputQueue()
       { return &_inQueue; }

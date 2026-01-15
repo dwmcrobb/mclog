@@ -63,8 +63,11 @@ namespace Dwm {
       MulticastReceiver();
       ~MulticastReceiver();
       bool Open(const Config & cfg, bool acceptLocal = true);
+      bool Restart(const Config & cfg);
       void Close();
       bool AddSink(Thread::Queue<Message> *sink);
+      bool RemoveSink(Thread::Queue<Message> *sink);
+      void ClearSinks();
       
     private:
       Config                                 _config;

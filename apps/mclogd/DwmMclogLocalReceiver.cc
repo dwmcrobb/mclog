@@ -54,15 +54,27 @@ namespace Dwm {
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    bool LocalReceiver::Start(Thread::Queue<Message> *msgQueue)
+    bool LocalReceiver::Start()
     {
       _run = true;
-      _msgQueue = msgQueue;
       if (0 == pipe(_stopfds)) {
         _thread = std::thread(&LocalReceiver::Run, this);
+        Syslog(LOG_INFO, "LocalReceiver started");
         return true;
       }
+      else {
+        Syslog(LOG_ERR, "LocalReceiver not started: pipe() failed (%m)");
+      }
       return false;
+    }
+
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    bool LocalReceiver::Restart()
+    {
+      Stop();
+      return Start();
     }
     
     //------------------------------------------------------------------------
@@ -77,15 +89,34 @@ namespace Dwm {
         _thread.join();
         ::close(_stopfds[1]);  _stopfds[1] = -1;
         ::close(_stopfds[0]);  _stopfds[0] = -1;
+        Syslog(LOG_INFO, "LocalReceiver stopped");
       }
       return;
     }
-    
+
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    bool LocalReceiver::AddSink(Thread::Queue<Message> *sink)
+    {
+      bool  rc = false;
+      std::lock_guard  lck(_sinksMutex);
+      auto  it = std::find_if(_sinks.cbegin(), _sinks.cend(),
+                              [sink] (const auto & q)
+                              { return (sink == q); });
+      if (it == _sinks.cend()) {
+        _sinks.push_back(sink);
+        rc = true;
+      }
+      return rc;
+    }
+
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
     void LocalReceiver::Run()
     {
+      Syslog(LOG_INFO, "LocalReceiver thread started");
       _ifd = socket(PF_INET, SOCK_DGRAM, 0);
       if (0 <= _ifd) {
         struct sockaddr_in  sockAddr;
@@ -94,31 +125,33 @@ namespace Dwm {
         sockAddr.sin_addr.s_addr = Ipv4Address("127.0.0.1").Raw();
         sockAddr.sin_port = htons(3455);
         if (bind(_ifd, (struct sockaddr *)&sockAddr, sizeof(sockAddr)) == 0) {
-          timeval  tv = { 0, 100000 };
           fd_set   fds;
           sockaddr_in  fromAddr;
-          auto  reset_tv  = [&] () -> void
-          { tv.tv_sec = 10; tv.tv_usec = 0; };
           auto  reset_fds = [&] () -> void
           { FD_ZERO(&fds); FD_SET(_ifd, &fds); FD_SET(_stopfds[0], &fds); };
           while (_run) {
-            reset_tv();
             reset_fds();
             int selectrc = select(std::max(_ifd, _stopfds[0]) + 1, &fds,
-                                  nullptr, nullptr, &tv);
+                                  nullptr, nullptr, nullptr);
             if (selectrc > 0) {
-              char  buf[1500];
-              socklen_t    fromAddrLen = sizeof(fromAddr);
-              ssize_t  recvrc = recvfrom(_ifd, buf, sizeof(buf), 0,
-                                         (struct sockaddr *)&fromAddr,
-                                         &fromAddrLen);
-              if (recvrc > 0) {
-                std::spanstream  sps{std::span{buf, (size_t)recvrc}};
-                Message  msg;
-                while (msg.Read(sps)) {
-                  // std::cerr << msg;
-                  _msgQueue->PushBack(msg);
+              if (FD_ISSET(_ifd, &fds)) {
+                char  buf[1500];
+                socklen_t    fromAddrLen = sizeof(fromAddr);
+                ssize_t  recvrc = recvfrom(_ifd, buf, sizeof(buf), 0,
+                                           (struct sockaddr *)&fromAddr,
+                                           &fromAddrLen);
+                if (recvrc > 0) {
+                  std::spanstream  sps{std::span{buf, (size_t)recvrc}};
+                  Message  msg;
+                  while (msg.Read(sps)) {
+                    for (auto sink : _sinks) {
+                      sink->PushBack(msg);
+                    }
+                  }
                 }
+              }
+              else if (FD_ISSET(_stopfds[0], &fds)) {
+                break;
               }
             }
           }
@@ -127,6 +160,7 @@ namespace Dwm {
         _ifd = -1;
       }
       _run = false;
+      Syslog(LOG_INFO, "LocalReceiver thread done");
       return;
     }
     

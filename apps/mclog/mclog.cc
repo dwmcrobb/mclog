@@ -49,6 +49,7 @@ extern "C" {
 #include "DwmStreamIO.hh"
 #include "DwmSysLogger.hh"
 #include "DwmCredenceXChaCha20Poly1305.hh"
+#include "DwmMclogConfig.hh"
 #include "DwmMclogMessage.hh"
 #include "DwmMclogKeyRequester.hh"
 #include "DwmMclogMulticastReceiver.hh"
@@ -62,21 +63,23 @@ int main(int argc, char *argv[])
 
   std::string  keyDir("~/.credence");
   Dwm::Mclog::MulticastReceiver  mcastRecv;
-  if (mcastRecv.Open(Dwm::Ipv4Address("239.108.111.103"),
-                     Dwm::Ipv4Address("192.168.168.57"), 3456,
-                     keyDir)) {
-    Dwm::Thread::Queue<Dwm::Mclog::Message> msgQueue;
-    mcastRecv.AddInputQueue(&msgQueue);
-
-    for (;;) {
-      msgQueue.WaitForNotEmpty();
-      while (! msgQueue.Empty()) {
-        Dwm::Mclog::Message  msg;
-        msgQueue.PopFront(msg);
-        std::cout << msg;
+  Dwm::Mclog::Config  config;
+  if (config.Parse("/usr/local/etc/mclogd.cfg")) {
+    config.service.keyDirectory = keyDir;
+    if (mcastRecv.Open(config)) {
+      Dwm::Thread::Queue<Dwm::Mclog::Message> msgQueue;
+      mcastRecv.AddSink(&msgQueue);
+      for (;;) {
+        msgQueue.WaitForNotEmpty();
+        while (! msgQueue.Empty()) {
+          Dwm::Mclog::Message  msg;
+          msgQueue.PopFront(msg);
+          std::cout << msg;
+        }
       }
     }
   }
+  
   
   return 0;
 }

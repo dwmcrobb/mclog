@@ -124,6 +124,15 @@ namespace Dwm {
       }
       return rc;
     }
+
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    bool MulticastReceiver::Restart(const Config & cfg)
+    {
+      Close();
+      return Open(cfg, _acceptLocal);
+    }
     
     //------------------------------------------------------------------------
     void MulticastReceiver::Close()
@@ -152,15 +161,13 @@ namespace Dwm {
     }
     
     //------------------------------------------------------------------------
-    //!  
-    //------------------------------------------------------------------------
     bool MulticastReceiver::AddSink(Thread::Queue<Message> *sink)
     {
       bool  rc = false;
       std::lock_guard  lck(_sinksMutex);
       auto  it = std::find_if(_sinks.cbegin(), _sinks.cend(),
                               [sink] (const auto & q)
-                              { return (sink != q); });
+                              { return (q == sink); });
       if (it == _sinks.cend()) {
         _sinks.push_back(sink);
         rc = true;
@@ -169,7 +176,28 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
-    //!  
+    bool MulticastReceiver::RemoveSink(Thread::Queue<Message> *sink)
+    {
+      bool  rc = false;
+      std::lock_guard  lck(_sinksMutex);
+      auto  it = std::find_if(_sinks.cbegin(), _sinks.cend(),
+                              [sink] (const auto & q)
+                              { return (q == sink); });
+      if (it != _sinks.cend()) {
+        _sinks.erase(it);
+        rc = true;
+      }
+      return rc;
+    }
+    
+    //------------------------------------------------------------------------
+    void MulticastReceiver::ClearSinks()
+    {
+      std::lock_guard  lck(_sinksMutex);
+      _sinks.clear();
+      return;
+    }
+
     //------------------------------------------------------------------------
     std::string MulticastReceiver::SenderKey(const sockaddr_in & sockAddr)
     {
@@ -195,20 +223,16 @@ namespace Dwm {
     //------------------------------------------------------------------------
     void MulticastReceiver::Run()
     {
-      Syslog(LOG_INFO, "MulticastReceiver started");
+      Syslog(LOG_INFO, "MulticastReceiver thread started");
 
       if (0 <= _fd) {
         fd_set       fds;
         sockaddr_in  fromAddr;
-        timeval      tv;
-        auto  reset_tv  = [&] () -> void
-        { tv.tv_sec = 10; tv.tv_usec = 0; };
         auto  reset_fds = [&] () -> void
         { FD_ZERO(&fds); FD_SET(_fd, &fds); FD_SET(_stopfds[0], &fds); };
         while (_run) {
-          reset_tv();
           reset_fds();
-          if (select(std::max(_fd,_stopfds[0]) + 1, &fds, nullptr, nullptr, &tv) > 0) {
+          if (select(std::max(_fd,_stopfds[0]) + 1, &fds, nullptr, nullptr, nullptr) > 0) {
             if (FD_ISSET(_stopfds[0], &fds)) {
               break;
             }
@@ -242,6 +266,7 @@ namespace Dwm {
         }
       }
       _run = false;
+      Syslog(LOG_INFO, "MulticastReceiver thread done");
       return;
     }
     

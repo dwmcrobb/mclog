@@ -70,12 +70,47 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
+    static bool IsValidHostname(const std::string & hn)
+    {
+      size_t  i = 0;
+      for ( ; i < hn.size(); ++i) {
+        if (std::isalnum(hn[i])) { continue; }
+        else if (('-' == hn[i]) || ('.' == hn[i])) { continue; }
+        else { break; }
+      }
+      return ((hn.size() == i) && (! hn.empty()));
+    }
+
+    //------------------------------------------------------------------------
+    static bool IsValidAppName(const std::string & an)
+    {
+      size_t  i = 0;
+      for ( ; i < an.size(); ++i) {
+        if (std::isalnum(an[i])) { continue; }
+        else if (('_' == an[i]) || ('.' == an[i])
+                 || ('-' == an[i])) { continue; }
+        else { break; }
+      }
+      return ((an.size() == i) && (! an.empty()));
+    }
+    
+    //------------------------------------------------------------------------
     std::istream & MessageOrigin::Read(std::istream & is)
     {
       std::lock_guard  lck(_mtx);
       if (StreamIO::Read(is, _hostname)) {
-        if (StreamIO::Read(is, _appname)) {
-          StreamIO::Read(is, _procid);
+        if (IsValidHostname(_hostname.Value())) {
+          if (StreamIO::Read(is, _appname)) {
+            if (IsValidAppName(_appname.Value())) {
+              StreamIO::Read(is, _procid);
+            }
+            else {
+              is.setstate(std::ios_base::failbit);
+            }
+          }
+        }
+        else {
+          is.setstate(std::ios_base::failbit);
         }
       }
       return is;

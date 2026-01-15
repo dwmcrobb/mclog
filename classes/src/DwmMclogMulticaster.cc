@@ -54,8 +54,8 @@ namespace Dwm {
 
     //------------------------------------------------------------------------
     Multicaster::Multicaster()
-        : _fd(-1), _run(false), _thread(), _outQueue(), _groupAddr(), _port(0),
-          _key(), _keyRequestListener()
+        : _fd(-1), _run(false), _thread(), _outQueue(), _config(), _key(),
+          _keyRequestListener()
     {
       Credence::KXKeyPair  key1;
       Credence::KXKeyPair  key2;
@@ -73,14 +73,12 @@ namespace Dwm {
     bool Multicaster::Open(const Config & config)
     {
       bool  rc = false;
+      _config = config;
       if (0 > _fd) {
-        _groupAddr = config.mcast.groupAddr;
-        _port = config.mcast.dstPort;
-
         _fd = socket(PF_INET, SOCK_DGRAM, 0);
         if (0 <= _fd) {
           in_addr  inAddr;
-          inAddr.s_addr = config.mcast.intfAddr.Raw();
+          inAddr.s_addr = _config.mcast.intfAddr.Raw();
           if (setsockopt(_fd, IPPROTO_IP, IP_MULTICAST_IF,
                          &inAddr, sizeof(inAddr)) == 0) {
             sockaddr_in  bindAddr;
@@ -89,8 +87,9 @@ namespace Dwm {
             bindAddr.sin_addr.s_addr = inAddr.s_addr;
             bindAddr.sin_port = 0;
             bind(_fd, (struct sockaddr *)&bindAddr, sizeof(bindAddr));
-            if (_keyRequestListener.Start(config.mcast.intfAddr, _port + 1,
-                                          &config.service.keyDirectory,
+            if (_keyRequestListener.Start(_config.mcast.intfAddr,
+                                          _config.mcast.dstPort + 1,
+                                          &_config.service.keyDirectory,
                                           &_key)) {
               _run = true;
               _thread = std::thread(&Multicaster::Run, this);
@@ -103,11 +102,14 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
-    bool Multicaster::Send(const Message & msg)
+    //!  
+    //------------------------------------------------------------------------
+    bool Multicaster::Restart(const Config & config)
     {
-      return _outQueue.PushBack(msg);
+      Close();
+      return Open(config);
     }
-
+    
     //------------------------------------------------------------------------
     void Multicaster::Close()
     {
@@ -131,8 +133,8 @@ namespace Dwm {
       sockaddr_in  dst;
       memset(&dst, 0, sizeof(dst));
       dst.sin_family = PF_INET;
-      dst.sin_addr.s_addr = _groupAddr.Raw();
-      dst.sin_port = htons(_port);
+      dst.sin_addr.s_addr = _config.mcast.groupAddr.Raw();
+      dst.sin_port = htons(_config.mcast.dstPort);
 #ifndef __linux__
       dst.sin_len = sizeof(dst);
 #endif
@@ -143,6 +145,7 @@ namespace Dwm {
     //------------------------------------------------------------------------
     void Multicaster::Run()
     {
+      Syslog(LOG_INFO, "Multicaster thread started");
       char  buf[1400];
       MessagePacket  pkt(buf, sizeof(buf));
       Message  msg;
@@ -165,6 +168,7 @@ namespace Dwm {
           _nextSendTime = now + std::chrono::milliseconds(1000);
         }
       }
+      Syslog(LOG_INFO, "Multicaster thread done");
       return;
     }
     

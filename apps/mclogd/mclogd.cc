@@ -38,6 +38,7 @@
 //---------------------------------------------------------------------------
 
 extern "C" {
+  #include <signal.h>
   #include <unistd.h>
 }
 
@@ -47,38 +48,92 @@ extern "C" {
 #include "DwmMclogMulticastReceiver.hh"
 #include "DwmMclogFileLogger.hh"
 
+static Dwm::Mclog::LocalReceiver      g_localReceiver;
+static Dwm::Mclog::Multicaster        g_mcaster;
+static Dwm::Mclog::MulticastReceiver  g_mcastReceiver;
+static Dwm::Mclog::FileLogger         g_fileLogger;
+
+//----------------------------------------------------------------------------
+//!  
+//----------------------------------------------------------------------------
+static bool Restart(const std::string & configPath)
+{
+  bool  rc = false;
+  g_localReceiver.Stop();
+  
+  Dwm::Mclog::Config  config;
+  if (config.Parse("/usr/local/etc/mclogd.cfg")) {
+    if (g_fileLogger.Restart(config.files)) {
+      if (g_mcaster.Restart(config)) {
+        if (g_mcastReceiver.Restart(config)) {
+          if (g_localReceiver.Restart()) {
+            rc = true;
+          }
+        }
+      }
+    }
+  }
+  return rc;
+}
+
+//----------------------------------------------------------------------------
+//!  
+//----------------------------------------------------------------------------
+static void BlockSigHupAndTerm()
+{
+  sigset_t  blockSet;
+  sigemptyset(&blockSet);
+  sigaddset(&blockSet, SIGHUP);
+  sigaddset(&blockSet, SIGTERM);
+  sigprocmask(SIG_BLOCK,&blockSet,NULL);
+  return;
+}
+
+//----------------------------------------------------------------------------
+//!  
+//----------------------------------------------------------------------------
+static int WaitSigHupOrTerm()
+{
+  sigset_t  sigSet;
+  sigemptyset(&sigSet);
+  sigaddset(&sigSet, SIGHUP);
+  sigaddset(&sigSet, SIGTERM);
+  int  signum;
+  sigwait(&sigSet, &signum);
+  std::cerr << "Got signal " << signum << '\n';
+  
+  return signum;
+}
+
 //----------------------------------------------------------------------------
 //!  
 //----------------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
   Dwm::SysLogger::Open("mclogd", LOG_PERROR, LOG_USER);                                              
-  Dwm::Mclog::LocalReceiver      localReceiver;
-  Dwm::Mclog::Multicaster        mcaster;
-  Dwm::Mclog::MulticastReceiver  mcastReceiver;
-  Dwm::Mclog::FileLogger         fileLogger;
-  
-  Dwm::Thread::Queue<Dwm::Mclog::Message>  localMsgQueue;
-
   Dwm::Mclog::Config  config;
   if (config.Parse("/usr/local/etc/mclogd.cfg")) {
-    mcaster.Open(config);
-    localReceiver.Start(&localMsgQueue);
-    fileLogger.Start(config.files);
-    mcastReceiver.AddSink(fileLogger.InputQueue());
-    mcastReceiver.Open(config, false);
+    g_mcaster.Open(config);
+    g_fileLogger.Start(config.files);
+    g_localReceiver.AddSink(g_mcaster.OutputQueue());
+    g_localReceiver.AddSink(g_fileLogger.InputQueue());
+    g_localReceiver.Start();
+    g_mcastReceiver.AddSink(g_fileLogger.InputQueue());
+    g_mcastReceiver.Open(config, false);
     for (;;) {
-      localMsgQueue.ConditionWait();
-      Dwm::Mclog::Message  msg;
-      while (localMsgQueue.PopFront(msg)) {
-        mcaster.Send(msg);
-        fileLogger.InputQueue()->PushBack(msg);
+      BlockSigHupAndTerm();
+      int  sig = WaitSigHupOrTerm();
+      if (SIGHUP == sig) {
+        Restart("/usr/local/etc/mclogd.cfg");
+      }
+      else if (SIGTERM == sig) {
+        g_localReceiver.Stop();
+        g_mcaster.Close();
+        g_fileLogger.Stop();
+        g_mcastReceiver.Close();
+        exit(0);
       }
     }
-    localReceiver.Stop();
-    mcaster.Close();
-    fileLogger.Stop();
-    mcastReceiver.Close();
   }
   return 0;
 }
