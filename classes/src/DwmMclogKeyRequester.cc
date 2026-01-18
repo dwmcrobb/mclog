@@ -60,23 +60,24 @@ namespace Dwm {
     std::string KeyRequester::GetKey()
     {
       std::string  rc;
+      
       if (_port != 0) {
         _fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
         if (0 <= _fd) {
-          struct sockaddr_in  sockAddr;
-          memset(&sockAddr, 0, sizeof(sockAddr));
+          struct sockaddr_in  dstAddr;
+          memset(&dstAddr, 0, sizeof(dstAddr));
+          dstAddr.sin_family = AF_INET;
+          dstAddr.sin_addr.s_addr = _servAddr.Raw();
+          dstAddr.sin_port = htons(_port);
 #ifndef __linux__
-          sockAddr.sin_len = sizeof(sockAddr);
+          dstAddr.sin_len = sizeof(dstAddr);
 #endif
-          sockAddr.sin_family = AF_INET;
-          sockAddr.sin_addr.s_addr = _servAddr.Raw();
-          socklen_t  addrLen = sizeof(sockAddr);
+          socklen_t  addrLen = sizeof(dstAddr);
           char  buf[1500] = {0};
           std::spanstream  ss{std::span{buf,sizeof(buf)}};
           _state.KX().PublicKey().Write(ss);
-          sockAddr.sin_port = htons(_port);
           ssize_t  sendrc = sendto(_fd, buf, ss.tellp(), 0,
-                                   (const struct sockaddr *)&sockAddr,
+                                   (const struct sockaddr *)&dstAddr,
                                    addrLen);
           if (sendrc == ss.tellp()) {
             _state.ChangeState(&KeyRequesterState::KXKeySent);
@@ -85,7 +86,7 @@ namespace Dwm {
               fd_set  fds;
               FD_ZERO(&fds);
               FD_SET(_fd, &fds);
-              timeval  timeout = { 5, 0 };
+              timeval  timeout = { 1, 0 };
               if (select(_fd+1, &fds, nullptr, nullptr, &timeout) > 0) {
                 struct sockaddr_in  srcAddr;
                 socklen_t           srcAddrLen = sizeof(srcAddr);
@@ -106,9 +107,15 @@ namespace Dwm {
               rc = _state.McastKey();
             }
           }
+          else {
+            Syslog(LOG_ERR, "sendto() failed");
+          }
           
           close(_fd);
           _fd = -1;
+        }
+        else {
+          Syslog(LOG_ERR, "Failed to open socket");
         }
       }
       return rc;

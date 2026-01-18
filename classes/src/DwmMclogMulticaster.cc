@@ -86,16 +86,33 @@ namespace Dwm {
             bindAddr.sin_family = PF_INET;
             bindAddr.sin_addr.s_addr = inAddr.s_addr;
             bindAddr.sin_port = 0;
-            bind(_fd, (struct sockaddr *)&bindAddr, sizeof(bindAddr));
-            if (_keyRequestListener.Start(_config.mcast.intfAddr,
-                                          _config.mcast.dstPort + 1,
-                                          &_config.service.keyDirectory,
-                                          &_key)) {
-              _run = true;
-              _thread = std::thread(&Multicaster::Run, this);
-              rc = true;
+            if (0 == bind(_fd, (struct sockaddr *)&bindAddr, sizeof(bindAddr))) {
+              if (_keyRequestListener.Start(_fd, &_config.service.keyDirectory,
+                                            &_key)) {
+                _run = true;
+                _thread = std::thread(&Multicaster::Run, this);
+                rc = true;
+              }
+              else {
+                Syslog(LOG_ERR, "Failed to start KeyRequestListener");
+                ::close(_fd);  _fd = -1;
+              }
+            }
+            else {
+              Syslog(LOG_ERR, "bind(%d,%s:0) failed: %m",
+                     _fd, ((std::string)_config.mcast.intfAddr).c_str());
+              ::close(_fd);  _fd = -1;
             }
           }
+          else {
+            Syslog(LOG_ERR,
+                   "setsockopt(%d,IPPROTO_IP,IP_MULTICAST_IF,%s) failed: %m",
+                   _fd, ((std::string)_config.mcast.intfAddr).c_str());
+            ::close(_fd);  _fd = -1;
+          }
+        }
+        else {
+          Syslog(LOG_ERR, "socket(PF_INET, SOCK_DGRAM, 0) failed: %m");
         }
       }
       return rc;
@@ -150,22 +167,26 @@ namespace Dwm {
       MessagePacket  pkt(buf, sizeof(buf));
       Message  msg;
       while (_run) {
-        _outQueue.ConditionWait();
-        auto  now = Clock::now();
-        while (_outQueue.PopFront(msg)) {
-          if (! pkt.Add(msg)) {
+        if (_outQueue.ConditionTimedWait(std::chrono::seconds(1))) {
+          auto  now = Clock::now();
+          while (_outQueue.PopFront(msg)) {
+            if (! pkt.Add(msg)) {
+              if (! SendPacket(pkt)) {
+                Syslog(LOG_ERR, "SendPacket() failed");
+              }
+              _nextSendTime = now + std::chrono::milliseconds(1000);
+              pkt.Add(msg);
+            }
+          }
+        }
+        else {
+          auto  now = Clock::now();
+          if (pkt.HasPayload()) {
             if (! SendPacket(pkt)) {
               Syslog(LOG_ERR, "SendPacket() failed");
             }
             _nextSendTime = now + std::chrono::milliseconds(1000);
-            pkt.Add(msg);
           }
-        }
-        if (pkt.HasPayload() && (now > _nextSendTime)) {
-          if (! SendPacket(pkt)) {
-            Syslog(LOG_ERR, "SendPacket() failed");
-          }
-          _nextSendTime = now + std::chrono::milliseconds(1000);
         }
       }
       Syslog(LOG_INFO, "Multicaster thread done");

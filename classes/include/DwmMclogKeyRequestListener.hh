@@ -46,7 +46,7 @@
 #include <thread>
 
 #include "DwmMclogKeyRequestClientState.hh"
-#include "DwmMclogKeyRequestClientAddr.hh"
+#include "DwmMclogUdp4Endpoint.hh"
 
 namespace Dwm {
 
@@ -59,7 +59,7 @@ namespace Dwm {
     {
     public:
       KeyRequestListener()
-          : _port(0), _keyDir(nullptr), _mcastKey(nullptr), _fd(-1),
+          : _keyDir(nullptr), _mcastKey(nullptr), _fd(-1),
             _thread(), _run(false), _clients(), _clientsDone()
       {
         _stopfds[0] = -1;
@@ -68,13 +68,11 @@ namespace Dwm {
 
       ~KeyRequestListener();
 
-      bool Start(const Ipv4Address & addr, uint16_t port,
-                 const std::string *keyDir, const std::string *mcastKey);
+      bool Start(int fd, const std::string *keyDir,
+                 const std::string *mcastKey);
       bool Stop();
       
     private:
-      Ipv4Address         _addr;
-      uint16_t            _port;
       const std::string  *_keyDir;
       const std::string  *_mcastKey;
       int                 _fd;
@@ -82,8 +80,8 @@ namespace Dwm {
       std::thread         _thread;
       std::atomic<bool>   _run;
       
-      std::map<KeyRequestClientAddr,KeyRequestClientState>               _clients;
-      std::deque<std::pair<KeyRequestClientAddr,KeyRequestClientState>>  _clientsDone;
+      std::map<Udp4Endpoint,KeyRequestClientState>               _clients;
+      std::deque<std::pair<Udp4Endpoint,KeyRequestClientState>>  _clientsDone;
       
       void ClearExpired();
       void Run();

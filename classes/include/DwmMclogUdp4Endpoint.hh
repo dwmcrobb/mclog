@@ -32,18 +32,15 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file DwmMclogMulticastSource.hh
+//!  @file DwmMclogUdp4Endpoint.hh
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-#ifndef _DWMMCLOGMULTICASTSOURCE_HH_
-#define _DWMMCLOGMULTICASTSOURCE_HH_
+#ifndef _DWMMCLOGUDP4ENDPOINT_HH_
+#define _DWMMCLOGUDP4ENDPOINT_HH_
 
-#include <chrono>
-#include <span>
-
-#include "DwmThreadQueue.hh"
+#include "DwmIpv4Address.hh"
 
 namespace Dwm {
 
@@ -52,38 +49,67 @@ namespace Dwm {
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    class MulticastSource
+    class Udp4Endpoint
     {
     public:
-
-    private:
+      Udp4Endpoint() = default;
+      Udp4Endpoint(const Udp4Endpoint &) = default;
+      Udp4Endpoint & operator = (const Udp4Endpoint &) = default;
+      
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
-      class BacklogEntry
+      Udp4Endpoint(const Ipv4Address & addr, uint16_t port)
+          : _addr(addr), _port(port)
+      {}
+
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      Udp4Endpoint(const sockaddr_in & sockAddr)
+          : _addr(sockAddr.sin_addr.s_addr), _port(ntohs(sockAddr.sin_port))
+      {}
+
+      operator sockaddr_in () const;
+        
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      const Ipv4Address & Addr() const
+      { return _addr; }
+
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      uint16_t Port() const
+      { return _port; }
+      
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      bool operator < (const Udp4Endpoint & ep) const
       {
-      public:
-        BacklogEntry();
-        BacklogEntry(const char *data, size_t datalen);
-        BacklogEntry(const BacklogEntry & ble);
-        BacklogEntry(BacklogEntry && ble);
-        BacklogEntry & operator = (BacklogEntry && ble);
+        if (_addr < ep._addr) {
+          return true;
+        }
+        else if (_addr == ep._addr) {
+          return (_port < ep._port);
+        }
+        return false;
+      }
+      
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      bool operator == (const Udp4Endpoint &) const = default;
         
-        ~BacklogEntry();
-        std::chrono::system_clock::time_point ReceiveTime() const;
-        
-      private:
-        std::chrono::system_clock::time_point   _receiveTime;
-        const char                             *_data;
-        size_t                                  _datalen;
-      };
-
-      Thread::Queue<BacklogEntry>  _backlog;
+    private:
+      Ipv4Address  _addr;
+      uint16_t     _port;
     };
-
     
   }  // namespace Mclog
 
 }  // namespace Dwm
 
-#endif  // _DWMMCLOGMULTICASTSOURCE_HH_
+#endif  // _DWMMCLOGUDP4ENDPOINT_HH_

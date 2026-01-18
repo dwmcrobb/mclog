@@ -201,21 +201,10 @@ namespace Dwm {
     //------------------------------------------------------------------------
     std::string MulticastReceiver::SenderKey(const sockaddr_in & sockAddr)
     {
-      MulticastSource  src(sockAddr);
-      auto  it = _senderKeys.find(src);
-      if (it != _senderKeys.end()) {
-        return it->second;
-      }
-      else {
-        KeyRequester  keyRequester(src.Addr(), _config.mcast.dstPort + 1,
-                                   _config.service.keyDirectory);
-        std::string   key = keyRequester.GetKey();
-        if (! key.empty()) {
-          _senderKeys[src] = key;
-          return key;
-        }
-      }
-      return std::string();
+      Udp4Endpoint  src(sockAddr);
+      std::string  result =
+        _mcastKeyCache.McastKey(src, _config.service.keyDirectory);
+      return result;
     }
     
     //------------------------------------------------------------------------

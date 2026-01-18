@@ -123,7 +123,7 @@ namespace Dwm {
         memset(&sockAddr, 0, sizeof(sockAddr));
         sockAddr.sin_family = PF_INET;
         sockAddr.sin_addr.s_addr = Ipv4Address("127.0.0.1").Raw();
-        sockAddr.sin_port = htons(3455);
+        sockAddr.sin_port = htons(3456);
         if (bind(_ifd, (struct sockaddr *)&sockAddr, sizeof(sockAddr)) == 0) {
           fd_set   fds;
           sockaddr_in  fromAddr;

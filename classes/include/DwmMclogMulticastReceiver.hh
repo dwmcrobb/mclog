@@ -48,7 +48,7 @@
 #include "DwmThreadQueue.hh"
 #include "DwmMclogConfig.hh"
 #include "DwmMclogMessage.hh"
-#include "DwmMclogMulticastSource.hh"
+#include "DwmMclogMulticastKeyCache.hh"
 
 namespace Dwm {
 
@@ -78,7 +78,7 @@ namespace Dwm {
       std::thread                            _thread;
       int                                    _stopfds[2];
       std::atomic<bool>                      _run;
-      std::map<MulticastSource,std::string>  _senderKeys;
+      MulticastKeyCache                      _mcastKeyCache;
       
       bool BindSocket();
       bool JoinGroup();

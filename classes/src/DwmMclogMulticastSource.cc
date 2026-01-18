@@ -44,11 +44,86 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  
-    //------------------------------------------------------------------------
-    MulticastSource::MulticastSource(const sockaddr_in & sockAddr)
-        : _addr(sockAddr.sin_addr.s_addr), _port(ntohs(sockAddr.sin_port))
+    MulticastSource::BacklogEntry::BacklogEntry()
+        : _data(nullptr), _datalen(0)
     {}
+    
+    //------------------------------------------------------------------------
+    MulticastSource::BacklogEntry::BacklogEntry(const char *data,
+                                                size_t datalen)
+    {
+      if ((nullptr != _data) && (0 < _datalen)) {
+        free((void *)_data); _data = nullptr; _datalen = 0;
+      }
+      if ((nullptr != data) && (0 < datalen)) {
+        _data = (char *)malloc(datalen);
+        if (nullptr != _data) {
+          _datalen = datalen;
+          memcpy((void *)_data, data, _datalen);
+        }
+        else {
+          _datalen = 0;
+        }
+      }
+    }
+    
+    //------------------------------------------------------------------------
+    MulticastSource::BacklogEntry::BacklogEntry(const MulticastSource::BacklogEntry & ble)
+    {
+      if (0 < ble._datalen) {
+        _data = (char *)malloc(ble._datalen);
+        if (nullptr != _data) {
+          _datalen = ble._datalen;
+          memcpy((void *)_data, ble._data, _datalen);
+        }
+        else {
+          _datalen = 0;
+        }
+      }
+      else {
+        _data = nullptr;
+        _datalen = 0;
+      }
+    }
+      
+    //------------------------------------------------------------------------
+    MulticastSource::BacklogEntry::BacklogEntry(MulticastSource::BacklogEntry && ble)
+    {
+      _data = ble._data;
+      _datalen = ble._datalen;
+      ble._data = nullptr;
+      ble._datalen = 0;
+    }
+    
+    MulticastSource::BacklogEntry &
+    MulticastSource::BacklogEntry::operator = (MulticastSource::BacklogEntry && ble)
+    {
+      if (this != &ble) {
+        if ((nullptr != _data) && (0 < _datalen)) {
+          free((void *)_data); _data = nullptr; _datalen = 0;
+        }
+        _data = ble._data;
+        _datalen = ble._datalen;
+        ble._data = nullptr;
+        ble._datalen = 0;
+      }
+      return *this;
+    }
+    
+    //------------------------------------------------------------------------
+    MulticastSource::BacklogEntry::~BacklogEntry()
+    {
+      if ((nullptr != _data) && (0 < _datalen)) {
+        free((void *)_data); _data = nullptr; _datalen = 0;
+      }
+    }
+    
+    //------------------------------------------------------------------------
+    std::chrono::system_clock::time_point
+    MulticastSource::BacklogEntry::ReceiveTime() const
+    {
+      return _receiveTime;
+    }
     
   }  // namespace Mclog
 

@@ -58,35 +58,13 @@ namespace Dwm {
     {
       Stop();
     }
-    
+
     //------------------------------------------------------------------------
     bool KeyRequestListener::Listen()
     {
-      bool  rc = false;
-      
-      int  fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
-      if (fd >= 0) {
-        sockaddr_in  sockAddr;
-        memset(&sockAddr, 0, sizeof(sockAddr));
-#ifndef __linux__
-        sockAddr.sin_len = sizeof(sockAddr);
-#endif
-        sockAddr.sin_family = AF_INET;
-        sockAddr.sin_addr.s_addr = _addr.Raw();
-        sockAddr.sin_port = htons(_port);
-        socklen_t  addrLen = sizeof(sockAddr);
-        if (::bind(fd, (const struct sockaddr *)&sockAddr, addrLen) == 0) {
-          _fd = fd;
-          int  ttl = 1;
-          setsockopt(_fd, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl));
-          rc = true;
-          Syslog(LOG_INFO, "KeyRequestListener bound to %s:%hu",
-                 inet_ntoa(sockAddr.sin_addr), _port);
-        }
-      }
-      return rc;
+      return (0 <= _fd);
     }
-    
+
     //------------------------------------------------------------------------
     void KeyRequestListener::ClearExpired()
     {
@@ -99,24 +77,19 @@ namespace Dwm {
       
       return;
     }
-    
+
     //------------------------------------------------------------------------
-    //!  
-    //------------------------------------------------------------------------
-    bool KeyRequestListener::Start(const Ipv4Address & addr, uint16_t port,
-                                   const std::string *keyDir,
+    bool KeyRequestListener::Start(int fd, const std::string *keyDir,
                                    const std::string *mcastKey)
     {
-      assert(nullptr != mcastKey);
-      assert(mcastKey->size()
-             == crypto_aead_xchacha20poly1305_ietf_KEYBYTES);
-
+      assert(0 <= fd);
+      assert(mcastKey->size() == crypto_aead_xchacha20poly1305_ietf_KEYBYTES);
+      
       if (! _run) {
-        _addr = addr;
-        _port = port;
         _keyDir = keyDir;
         _mcastKey = mcastKey;
         if (0 == pipe(_stopfds)) {
+          _fd = fd;
           _run = true;
           _thread = std::thread(&KeyRequestListener::Run, this);
           return true;
@@ -124,9 +97,7 @@ namespace Dwm {
       }
       return false;
     }
-
-    //------------------------------------------------------------------------
-    //!  
+    
     //------------------------------------------------------------------------
     bool KeyRequestListener::Stop()
     {
@@ -144,8 +115,6 @@ namespace Dwm {
       return false;
     }
     
-    //------------------------------------------------------------------------
-    //!  
     //------------------------------------------------------------------------
     void KeyRequestListener::Run()
     {
@@ -171,9 +140,8 @@ namespace Dwm {
                                          &clientAddrLen);
               if (recvrc) {
                 std::string  s(buf, recvrc);
-                KeyRequestClientAddr
-                  krcAddr(Ipv4Address(clientAddr.sin_addr.s_addr),
-                          ntohs(clientAddr.sin_port));
+                Udp4Endpoint krcAddr(Ipv4Address(clientAddr.sin_addr.s_addr),
+                                     ntohs(clientAddr.sin_port));
                 auto [clientit, dontCare] =
                   _clients.insert({krcAddr,KeyRequestClientState(_keyDir, _mcastKey)});
                 if (clientit->second.ProcessPacket(_fd, clientAddr, buf, recvrc)) {
@@ -188,8 +156,6 @@ namespace Dwm {
           }
           ClearExpired();
         }
-        ::close(_fd);
-        _fd = -1;
       }
       Syslog(LOG_INFO, "KeyRequestListener thread done");
       return;

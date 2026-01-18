@@ -116,6 +116,12 @@ namespace Dwm {
           rc = true;
           ChangeState(&KeyRequesterState::IDSent);
         }
+        else {
+          ChangeState(&KeyRequesterState::Failure);
+        }
+      }
+      else {
+        ChangeState(&KeyRequesterState::Failure);
       }
       return rc;
     }

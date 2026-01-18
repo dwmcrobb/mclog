@@ -32,18 +32,19 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file DwmMclogMulticastSource.hh
+//!  @file DwmMclogMulticastKeyCache.hh
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-#ifndef _DWMMCLOGMULTICASTSOURCE_HH_
-#define _DWMMCLOGMULTICASTSOURCE_HH_
+#ifndef _DWMMCLOGMULTICASTKEYCACHE_HH_
+#define _DWMMCLOGMULTICASTKEYCACHE_HH_
 
-#include <chrono>
-#include <span>
+#include <map>
+#include <string>
+#include <thread>
 
-#include "DwmThreadQueue.hh"
+#include "DwmMclogUdp4Endpoint.hh"
 
 namespace Dwm {
 
@@ -52,38 +53,80 @@ namespace Dwm {
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    class MulticastSource
+    class MulticastKeyCache
     {
     public:
-
-    private:
+      using CacheKey = Udp4Endpoint;
+      
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
-      class BacklogEntry
+      class CacheValue
       {
       public:
-        BacklogEntry();
-        BacklogEntry(const char *data, size_t datalen);
-        BacklogEntry(const BacklogEntry & ble);
-        BacklogEntry(BacklogEntry && ble);
-        BacklogEntry & operator = (BacklogEntry && ble);
+        using Clock = std::chrono::system_clock;
+
+        CacheValue(std::string mcastKey);
+        CacheValue(const CacheValue & cacheValue);
+        CacheValue & operator = (const CacheValue & cacheValue);
         
-        ~BacklogEntry();
-        std::chrono::system_clock::time_point ReceiveTime() const;
+        std::string McastKey() const;
+        void McastKey(const std::string & mcastKey);
+        Clock::time_point LastRequested() const;
+        void LastRequested(Clock::time_point lastRequested);
+        Clock::time_point LastQueried() const;
+        void LastQueried(Clock::time_point lastQueried);
+        Clock::time_point LastUpdated() const;
+        void LastUpdated(Clock::time_point lastUpdated);
         
       private:
-        std::chrono::system_clock::time_point   _receiveTime;
-        const char                             *_data;
-        size_t                                  _datalen;
+        mutable std::mutex  _mtx;
+        std::string         _mcastKey;
+        Clock::time_point   _lastRequested;
+        Clock::time_point   _lastQueried;
+        Clock::time_point   _lastUpdated;
+      };
+      
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      class QueryThread
+      {
+      public:
+        QueryThread(const Udp4Endpoint & src, const std::string & keyDir);
+        bool Running() const;
+        bool Done() const;
+        std::string Result() const;
+        
+      private:
+        std::atomic<bool>   _running;
+        std::atomic<bool>   _done;
+        std::jthread        _jthread;
+        Udp4Endpoint        _mcastSource;
+        std::string         _keyDir;
+        mutable std::mutex  _resultMtx;
+        std::string         _result;
+        
+        void Result(std::string result);
+        void Run();
       };
 
-      Thread::Queue<BacklogEntry>  _backlog;
-    };
+      MulticastKeyCache();
 
+      std::string McastKey(const CacheKey & cacheKey,
+                           const std::string & keyDir);
+      
+    private:
+      mutable std::mutex                        _cacheMtx;
+      mutable std::map<CacheKey,CacheValue>     _cache;
+      mutable std::mutex                        _queryThreadsMtx;
+      mutable std::map<CacheKey,QueryThread *>  _queryThreads;
+
+      void ClearEmptyDone();
+    };
     
   }  // namespace Mclog
 
 }  // namespace Dwm
 
-#endif  // _DWMMCLOGMULTICASTSOURCE_HH_
+#endif  // _DWMMCLOGMULTICASTKEYCACHE_HH_

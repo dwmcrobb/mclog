@@ -1,5 +1,5 @@
 //===========================================================================
-//  Copyright (c) Daniel W. McRobb 2025
+//  Copyright (c) Daniel W. McRobb 2026
 //  All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
@@ -32,16 +32,12 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file DwmMcLogKeyRequestClientAddr.hh
+//!  @file DwmMclogUdp4Endpoint.cc
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-#ifndef _DWMMCLOGKEYREQUESTCLIENTADDR_HH_
-#define _DWMMCLOGKEYREQUESTCLIENTADDR_HH_
-
-
-#include "DwmIpv4Address.hh"
+#include "DwmMclogUdp4Endpoint.hh"
 
 namespace Dwm {
 
@@ -50,43 +46,19 @@ namespace Dwm {
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    class KeyRequestClientAddr
+    Udp4Endpoint::operator sockaddr_in () const
     {
-    public:
-      KeyRequestClientAddr(const Ipv4Address & addr, uint16_t port)
-          : _addr(addr), _port(port)
-      {}
-      
-      KeyRequestClientAddr(const KeyRequestClientAddr &) = default;
-      
-      KeyRequestClientAddr & operator = (const KeyRequestClientAddr &) = default;
-      
-      bool operator < (const KeyRequestClientAddr & pkcAddr) const
-      {
-        if (_addr < pkcAddr._addr) {
-          return true;
-        }
-        else if (_addr == pkcAddr._addr) {
-          return (_port < pkcAddr._port);
-        }
-        return false;
-      }
-      
-      bool operator == (const KeyRequestClientAddr &) const = default;
-      
-      const Ipv4Address & Addr() const
-      { return _addr; }
-      
-      uint16_t Port() const
-      { return _port; }
-      
-    private:
-      Ipv4Address  _addr;
-      uint16_t     _port;
-    };
+      sockaddr_in  sockAddr;
+      memset(&sockAddr, 0, sizeof(sockAddr));
+      sockAddr.sin_family = PF_INET;
+      sockAddr.sin_addr.s_addr = _addr.Raw();
+      sockAddr.sin_port = htons(_port);
+#ifndef __linux__
+      sockAddr.sin_len = sizeof(sockAddr);
+#endif
+      return sockAddr;
+    }
 
   }  // namespace Mclog
-  
-}  // namespace Dwm
 
-#endif  // _DWMMCLOGKEYREQUESTCLIENTADDR_HH_
+}  // namespace Dwm

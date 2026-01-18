@@ -99,7 +99,7 @@ namespace Dwm {
       memset(&_dstAddr, 0, sizeof(_dstAddr));
       _dstAddr.sin_family = PF_INET;
       _dstAddr.sin_addr.s_addr = Ipv4Address("127.0.0.1").Raw();
-      _dstAddr.sin_port = htons(3455);
+      _dstAddr.sin_port = htons(3456);
 #ifndef __linux__
       _dstAddr.sin_len = sizeof(_dstAddr);
 #endif

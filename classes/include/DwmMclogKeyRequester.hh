@@ -40,6 +40,7 @@
 #ifndef _DWMMCLOGKEYREQUESTER_HH_
 #define _DWMMCLOGKEYREQUESTER_HH_
 
+#include <cassert>
 #include <cstdint>
 #include <map>
 #include <vector>
@@ -61,13 +62,17 @@ namespace Dwm {
                    const std::string & keyDir)
           : _servAddr(servAddr), _port(port), _keyDir(keyDir), _fd(-1),
             _state(port, keyDir)
-      {}
-      
+      {
+        assert(port != 0);
+      }
+
+#if 0
       KeyRequester(Dwm::Ipv4Address && servAddr, uint16_t port,
                    const std::string & keyDir)
           : _servAddr(servAddr), _port(port), _keyDir(keyDir),  _fd(-1),
             _state(_port, keyDir)
       {}
+#endif
       
       std::string GetKey();
       
