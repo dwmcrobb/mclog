@@ -42,20 +42,52 @@
 
 #include <chrono>
 #include <span>
+#include <thread>
 
 #include "DwmThreadQueue.hh"
+#include "DwmMclogMessage.hh"
+#include "DwmMclogMulticastSourceKey.hh"
+#include "DwmMclogUdp4Endpoint.hh"
 
 namespace Dwm {
 
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  
+    //!  When I process a packet...
+    //!  - If I don't yet have a muticast decryption key, put packet on
+    //!    backlog and start query thread if one is not running.
+    //!  - If I fail to decrypt with existing key... put packet on backlog,
+    //!    start fetch of new decryption key.
+    //!  - Process backlog.  For each entry...
+    //!    - If I have a decryption key that is newer than backlog entry,
+    //!      try decrypting with new key.  If this fails, do nothing
+    //!      (we've already popped it from the queue to process it).
+    //!    - If my last decryption key query is more than 5 seconds newer
+    //!      than my last decryption key update, do nothing (we've already
+    //!      popped it from the queue to process it).
+    //!      .....
     //------------------------------------------------------------------------
     class MulticastSource
     {
     public:
-
+      using Clock = std::chrono::system_clock;
+      
+      MulticastSource();
+      ~MulticastSource();
+      MulticastSource(const Udp4Endpoint & srcEndpoint,
+                      const std::string *keyDir,
+                      std::vector<Thread::Queue<Message> *> *sinks);
+      MulticastSource(const MulticastSource & src);
+      MulticastSource(MulticastSource && src);
+      MulticastSource & operator = (const MulticastSource & src);
+      MulticastSource & operator = (MulticastSource && src);
+      
+      MulticastSourceKey Key() const;
+      void Key(const MulticastSourceKey & key);
+      bool ProcessPacket(char *data, size_t datalen);
+      Clock::time_point LastReceiveTime() const;
+      
     private:
       //----------------------------------------------------------------------
       //!  
@@ -67,18 +99,33 @@ namespace Dwm {
         BacklogEntry(const char *data, size_t datalen);
         BacklogEntry(const BacklogEntry & ble);
         BacklogEntry(BacklogEntry && ble);
+        BacklogEntry & operator = (const BacklogEntry & ble);
         BacklogEntry & operator = (BacklogEntry && ble);
-        
         ~BacklogEntry();
         std::chrono::system_clock::time_point ReceiveTime() const;
+        char *Data() const        { return _data; }
+        size_t Datalen() const    { return _datalen; }
         
       private:
         std::chrono::system_clock::time_point   _receiveTime;
-        const char                             *_data;
+        char                                   *_data;
         size_t                                  _datalen;
       };
 
-      Thread::Queue<BacklogEntry>  _backlog;
+      Udp4Endpoint                            _endpoint;
+      MulticastSourceKey                      _key;
+      Thread::Queue<BacklogEntry>             _backlog;
+      const std::string                      *_keyDir;
+      std::vector<Thread::Queue<Message> *>  *_sinks;
+      std::atomic<bool>                       _queryDone;
+      std::jthread                            _queryThread;
+      Clock::time_point                       _lastReceiveTime;
+      
+      bool ProcessBacklog();
+      void ClearOldBacklog();
+      void StartQuery();
+      void QueryForKey();
+      
     };
 
     

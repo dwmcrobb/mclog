@@ -57,67 +57,60 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    std::string KeyRequester::GetKey()
+    MulticastSourceKey KeyRequester::GetKey()
     {
-      std::string  rc;
-      
-      if (_port != 0) {
-        _fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
-        if (0 <= _fd) {
-          struct sockaddr_in  dstAddr;
-          memset(&dstAddr, 0, sizeof(dstAddr));
-          dstAddr.sin_family = AF_INET;
-          dstAddr.sin_addr.s_addr = _servAddr.Raw();
-          dstAddr.sin_port = htons(_port);
-#ifndef __linux__
-          dstAddr.sin_len = sizeof(dstAddr);
-#endif
-          socklen_t  addrLen = sizeof(dstAddr);
-          char  buf[1500] = {0};
-          std::spanstream  ss{std::span{buf,sizeof(buf)}};
-          _state.KX().PublicKey().Write(ss);
-          ssize_t  sendrc = sendto(_fd, buf, ss.tellp(), 0,
-                                   (const struct sockaddr *)&dstAddr,
-                                   addrLen);
-          if (sendrc == ss.tellp()) {
-            _state.ChangeState(&KeyRequesterState::KXKeySent);
-            while ((_state.CurrentState() != &KeyRequesterState::Success)
-                   && (_state.CurrentState() != &KeyRequesterState::Failure)) {
-              fd_set  fds;
-              FD_ZERO(&fds);
-              FD_SET(_fd, &fds);
-              timeval  timeout = { 1, 0 };
-              if (select(_fd+1, &fds, nullptr, nullptr, &timeout) > 0) {
-                struct sockaddr_in  srcAddr;
-                socklen_t           srcAddrLen = sizeof(srcAddr);
-                ssize_t  recvrc = recvfrom(_fd, buf, sizeof(buf), 0,
-                                           (struct sockaddr *)&srcAddr,
-                                           &srcAddrLen);
-                if (recvrc > 0) {
-                  if (! _state.ProcessPacket(_fd, srcAddr, buf, recvrc)) {
-                    break;
-                  }
+      MulticastSourceKey  rc;
+      rc.LastRequested(std::chrono::system_clock::now());
+      _fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+      if (0 <= _fd) {
+        struct sockaddr_in  dstAddr = _servEndpoint;
+        socklen_t  addrLen = sizeof(dstAddr);
+        char  buf[1500] = {0};
+        std::spanstream  ss{std::span{buf,sizeof(buf)}};
+        _state.KX().PublicKey().Write(ss);
+        ssize_t  sendrc = sendto(_fd, buf, ss.tellp(), 0,
+                                 (const struct sockaddr *)&dstAddr,
+                                 addrLen);
+        if (sendrc == ss.tellp()) {
+          _state.ChangeState(&KeyRequesterState::KXKeySent);
+          while ((_state.CurrentState() != &KeyRequesterState::Success)
+                 && (_state.CurrentState() != &KeyRequesterState::Failure)) {
+            fd_set  fds;
+            FD_ZERO(&fds);
+            FD_SET(_fd, &fds);
+            timeval  timeout = { 1, 0 };
+            if (select(_fd+1, &fds, nullptr, nullptr, &timeout) > 0) {
+              struct sockaddr_in  srcAddr;
+              socklen_t           srcAddrLen = sizeof(srcAddr);
+              ssize_t  recvrc = recvfrom(_fd, buf, sizeof(buf), 0,
+                                         (struct sockaddr *)&srcAddr,
+                                         &srcAddrLen);
+              if (recvrc > 0) {
+                if (! _state.ProcessPacket(_fd, srcAddr, buf, recvrc)) {
+                  break;
                 }
               }
-              else {
-                break;
-              }
             }
-            if (_state.CurrentState() == &KeyRequesterState::Success) {
-              rc = _state.McastKey();
+            else {
+              break;
             }
           }
-          else {
-            Syslog(LOG_ERR, "sendto() failed");
+          if (_state.CurrentState() == &KeyRequesterState::Success) {
+            rc.LastUpdated(std::chrono::system_clock::now());
+            rc.Value(_state.McastKey());
           }
-          
-          close(_fd);
-          _fd = -1;
         }
         else {
-          Syslog(LOG_ERR, "Failed to open socket");
+          Syslog(LOG_ERR, "sendto() failed");
         }
+        
+        close(_fd);
+        _fd = -1;
       }
+      else {
+        Syslog(LOG_ERR, "Failed to open socket");
+      }
+      
       return rc;
     }
 

@@ -44,8 +44,6 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  
-    //------------------------------------------------------------------------
     Udp4Endpoint::operator sockaddr_in () const
     {
       sockaddr_in  sockAddr;
@@ -58,6 +56,22 @@ namespace Dwm {
 #endif
       return sockAddr;
     }
+
+    //------------------------------------------------------------------------
+    Udp4Endpoint::operator std::string () const
+    {
+      std::string  rc((std::string)_addr + ':' + std::to_string(_port));
+      return rc;
+    }
+
+    //------------------------------------------------------------------------
+    std::ostream & operator << (std::ostream & os,
+                                const Udp4Endpoint & endPoint)
+    {
+      os << (std::string)endPoint;
+      return os;
+    }
+    
 
   }  // namespace Mclog
 

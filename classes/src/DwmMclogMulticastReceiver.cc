@@ -52,7 +52,8 @@ namespace Dwm {
     //------------------------------------------------------------------------
     MulticastReceiver::MulticastReceiver()
         : _config(), _fd(-1), _acceptLocal(true), _sinksMutex(), _sinks(),
-          _thread(), _run(false)
+          _thread(), _run(false),
+          _sources(&_config.service.keyDirectory, &_sinks)
     {
       _stopfds[0] = -1;
       _stopfds[1] = -1;
@@ -199,15 +200,6 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
-    std::string MulticastReceiver::SenderKey(const sockaddr_in & sockAddr)
-    {
-      Udp4Endpoint  src(sockAddr);
-      std::string  result =
-        _mcastKeyCache.McastKey(src, _config.service.keyDirectory);
-      return result;
-    }
-    
-    //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
     void MulticastReceiver::Run()
@@ -233,22 +225,10 @@ namespace Dwm {
                                          &fromAddrLen);
               Ipv4Address  fromIP(fromAddr.sin_addr.s_addr);
               if ((recvrc > 0) && (_acceptLocal || (fromIP != _config.mcast.intfAddr))) {
-                std::string  senderKey = SenderKey(fromAddr);
-                if (! senderKey.empty()) {
-                  MessagePacket  pkt(buf, sizeof(buf));
-                  ssize_t  decrc = pkt.Decrypt(recvrc, senderKey);
-                  if (decrc > 0) {
-                    Syslog(LOG_DEBUG, "Received %lld bytes from %s:%hu",
-                           recvrc, ((std::string)fromIP).c_str(),
-                           ntohs(fromAddr.sin_port));
-                    Dwm::Mclog::Message  msg;
-                    while (msg.Read(pkt.Payload())) {
-                      for (auto sink : _sinks) {
-                        sink->PushBack(msg);
-                      }
-                    }
-                  }
-                }
+                Syslog(LOG_DEBUG, "Received %lld bytes from %s:%hu",
+                       recvrc, ((std::string)fromIP).c_str(),
+                       ntohs(fromAddr.sin_port));
+                _sources.ProcessPacket(fromAddr, buf, recvrc);
               }
             }
           }

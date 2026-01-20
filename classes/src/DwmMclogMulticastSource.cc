@@ -37,12 +37,16 @@
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
+#include "DwmMclogMessagePacket.hh"
 #include "DwmMclogMulticastSource.hh"
+#include "DwmMclogKeyRequester.hh"
 
 namespace Dwm {
 
   namespace Mclog {
 
+    using namespace std;
+    
     //------------------------------------------------------------------------
     MulticastSource::BacklogEntry::BacklogEntry()
         : _data(nullptr), _datalen(0)
@@ -51,10 +55,10 @@ namespace Dwm {
     //------------------------------------------------------------------------
     MulticastSource::BacklogEntry::BacklogEntry(const char *data,
                                                 size_t datalen)
+        : _data(nullptr), _datalen(0)
     {
-      if ((nullptr != _data) && (0 < _datalen)) {
-        free((void *)_data); _data = nullptr; _datalen = 0;
-      }
+      _receiveTime = chrono::system_clock::now();
+      
       if ((nullptr != data) && (0 < datalen)) {
         _data = (char *)malloc(datalen);
         if (nullptr != _data) {
@@ -84,6 +88,8 @@ namespace Dwm {
         _data = nullptr;
         _datalen = 0;
       }
+
+      _receiveTime = ble._receiveTime;
     }
       
     //------------------------------------------------------------------------
@@ -93,8 +99,11 @@ namespace Dwm {
       _datalen = ble._datalen;
       ble._data = nullptr;
       ble._datalen = 0;
+
+      _receiveTime = ble._receiveTime;
     }
     
+    //------------------------------------------------------------------------
     MulticastSource::BacklogEntry &
     MulticastSource::BacklogEntry::operator = (MulticastSource::BacklogEntry && ble)
     {
@@ -106,10 +115,36 @@ namespace Dwm {
         _datalen = ble._datalen;
         ble._data = nullptr;
         ble._datalen = 0;
+
+        _receiveTime = ble._receiveTime;
+      }
+      
+      return *this;
+    }
+
+    //------------------------------------------------------------------------
+    MulticastSource::BacklogEntry &
+    MulticastSource::BacklogEntry::operator = (const BacklogEntry & ble)
+    {
+      if (this != &ble) {
+        if ((nullptr != _data) && (0 < _datalen)) {
+          free((void *)_data); _data = nullptr; _datalen = 0;
+        }
+        if ((nullptr != ble._data) && (0 < ble._datalen)) {
+          _data = (char *)malloc(ble._datalen);
+          if (nullptr != _data) {
+            memcpy((void *)_data, ble._data, ble._datalen);
+            _datalen = ble._datalen;
+          }
+          else {
+            _datalen = 0;
+          }
+        }
+        _receiveTime = ble._receiveTime;
       }
       return *this;
     }
-    
+
     //------------------------------------------------------------------------
     MulticastSource::BacklogEntry::~BacklogEntry()
     {
@@ -119,12 +154,229 @@ namespace Dwm {
     }
     
     //------------------------------------------------------------------------
-    std::chrono::system_clock::time_point
+    chrono::system_clock::time_point
     MulticastSource::BacklogEntry::ReceiveTime() const
     {
       return _receiveTime;
     }
+
+    //========================================================================
+    //========================================================================
+
+    //------------------------------------------------------------------------
+    MulticastSource::MulticastSource()
+        : _endpoint(), _key(), _backlog(), _keyDir(nullptr), _sinks(nullptr),
+          _queryDone(true), _queryThread(), _lastReceiveTime()
+    {}
+
+    //------------------------------------------------------------------------
+    MulticastSource::~MulticastSource()
+    {
+      while (! _queryDone) {
+      }
+      if (_queryThread.joinable()) {
+        _queryThread.join();
+      }
+    }
     
+    //------------------------------------------------------------------------
+    MulticastSource::MulticastSource(const Udp4Endpoint & srcEndpoint,
+                                     const std::string *keyDir,
+                                     vector<Thread::Queue<Message> *> *sinks)
+        : _endpoint(srcEndpoint), _key(), _backlog(), _keyDir(keyDir),
+          _sinks(sinks), _queryDone(true), _queryThread(), _lastReceiveTime()
+    {}
+
+    //------------------------------------------------------------------------
+    MulticastSource::MulticastSource(const MulticastSource & src)
+        : _endpoint(src._endpoint), _key(src._key), _keyDir(src._keyDir),
+          _sinks(src._sinks), _queryDone(true), _queryThread(),
+          _lastReceiveTime(src._lastReceiveTime)
+    {
+      src._backlog.Copy(_backlog);
+    }
+    
+    //------------------------------------------------------------------------
+    MulticastSource::MulticastSource(MulticastSource && src)
+        : _endpoint(std::move(src._endpoint)), _key(src._key),
+          _keyDir(src._keyDir), _sinks(src._sinks),
+          _queryDone(true), _queryThread(),
+          _lastReceiveTime(src._lastReceiveTime)
+    {
+      _backlog.Swap(src._backlog);
+    }
+    
+    //------------------------------------------------------------------------
+    MulticastSource & MulticastSource::operator = (const MulticastSource & src)
+    {
+      if (this != &src) {
+        _endpoint = src._endpoint;
+        _key = src._key;
+        _keyDir = src._keyDir;
+        _sinks = src._sinks;
+        src._backlog.Copy(_backlog);
+        while (! _queryDone) {
+        }
+        _queryDone.store(true);  // Don't copy thread, and our thread is done
+        _lastReceiveTime = src._lastReceiveTime;
+      }
+      return *this;
+    }
+    
+    //------------------------------------------------------------------------
+    MulticastSource & MulticastSource::operator = (MulticastSource && src)
+    {
+      if (this != &src) {
+        while (! src._queryDone) {
+        }
+        while (! _queryDone) {
+        }
+        _queryDone.store(true);
+        _endpoint = std::move(src._endpoint);
+        _key = src._key;
+        _keyDir = src._keyDir;
+        _sinks = src._sinks;
+        _backlog.Clear();
+        src._backlog.Swap(_backlog);
+        _lastReceiveTime = src._lastReceiveTime;
+      }
+      return *this;
+    }
+    
+    //------------------------------------------------------------------------
+    MulticastSourceKey MulticastSource::Key() const
+    {
+      return _key;
+    }
+    
+    //------------------------------------------------------------------------
+    void MulticastSource::Key(const MulticastSourceKey & key)
+    {
+      _key = key;
+      return;
+    }
+
+    //------------------------------------------------------------------------
+    bool MulticastSource::ProcessBacklog()
+    {
+      string  mcastKey = Key().Value();
+      
+      if (! mcastKey.empty()) {
+        while (! _backlog.Empty()) {
+          BacklogEntry  ble;
+          if (_backlog.PopFront(ble)) {
+            MessagePacket  pkt(ble.Data(), ble.Datalen());
+            ssize_t  decrc = pkt.Decrypt(ble.Datalen(), mcastKey);
+            if (decrc > 0) {
+              Message  msg;
+              while (msg.Read(pkt.Payload())) {
+                if (nullptr != _sinks) {
+                  for (auto sink : *_sinks) {
+                    sink->PushBack(msg);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      return _backlog.Empty();
+    }
+
+    //------------------------------------------------------------------------
+    void MulticastSource::ClearOldBacklog()
+    {
+      auto  now = chrono::system_clock::now();
+      
+      BacklogEntry  ble;
+      while (_backlog.PopFront(ble)) {
+        if (now < ble.ReceiveTime() + chrono::seconds(5)) {
+          _backlog.PushFront(ble);
+          break;
+        }
+        else {
+          Syslog(LOG_DEBUG, "Dropped backlog entry of %llu bytes from %s",
+                 ble.Datalen(), ((std::string)_endpoint).c_str());
+        }
+      }
+      return;
+    }
+
+    //------------------------------------------------------------------------
+    bool MulticastSource::ProcessPacket(char *data, size_t datalen)
+    {
+      bool  rc = false;
+
+      _lastReceiveTime = std::chrono::system_clock::now();
+      
+      string  mcastKey = Key().Value();
+      if (! mcastKey.empty()) {
+        ProcessBacklog();
+
+        MessagePacket  pkt(data, datalen);
+        ssize_t  decrc = pkt.Decrypt(datalen, mcastKey);
+        if (decrc > 0) {
+          Message  msg;
+          while (msg.Read(pkt.Payload())) {
+            rc = true;
+            if (nullptr != _sinks) {
+              for (auto sink : *_sinks) {
+                sink->PushBack(msg);
+              }
+            }
+          }
+        }
+        else {
+          Key(MulticastSourceKey(""));
+          _backlog.PushBack(BacklogEntry(data, datalen));
+          auto  expireTime = (std::chrono::system_clock::now()
+                              - std::chrono::seconds(5));
+          if (Key().LastUpdated() < expireTime) {
+            StartQuery();
+          }
+        }
+      }
+      else {
+        _backlog.PushBack(BacklogEntry(data, datalen));
+        StartQuery();
+        //  xxx - what else?
+        rc = true;
+      }
+      ClearOldBacklog();
+      return rc;
+    }
+
+    //------------------------------------------------------------------------
+    MulticastSource::Clock::time_point
+    MulticastSource::LastReceiveTime() const
+    {
+      return _lastReceiveTime;
+    }
+    
+    //------------------------------------------------------------------------
+    void MulticastSource::StartQuery()
+    {
+      if (_queryDone.load()) {
+        _queryDone.store(false);
+        _queryThread = std::jthread(&MulticastSource::QueryForKey, this);
+      }
+    }
+    
+    //------------------------------------------------------------------------
+    void MulticastSource::QueryForKey()
+    {
+      Syslog(LOG_INFO, "MulticastSource::QueryForKey started");
+      
+      KeyRequester  keyRequester(_endpoint, *_keyDir);
+      auto  result = keyRequester.GetKey();
+      
+      Key(result);
+      _queryDone.store(true);
+      Syslog(LOG_INFO, "MulticastSource::QueryForKey done");
+      return;
+    }
+    
+
   }  // namespace Mclog
 
 }  // namespace Dwm

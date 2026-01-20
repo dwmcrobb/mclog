@@ -102,7 +102,12 @@ namespace Dwm {
       //!  
       //----------------------------------------------------------------------
       bool operator == (const Udp4Endpoint &) const = default;
-        
+
+      operator std::string() const;
+      
+      friend std::ostream &
+      operator << (std::ostream & os, const Udp4Endpoint & endPoint);
+      
     private:
       Ipv4Address  _addr;
       uint16_t     _port;

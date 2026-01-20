@@ -1,5 +1,5 @@
 //===========================================================================
-//  Copyright (c) Daniel W. McRobb 2025
+//  Copyright (c) Daniel W. McRobb 2026
 //  All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
@@ -32,22 +32,11 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file DwmMclogMulticastReceiver.hh
+//!  @file DwmMclogMulticastSources.cc
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-#ifndef _DWMMCLOGMULTICASTRECEIVER_HH_
-#define _DWMMCLOGMULTICASTRECEIVER_HH_
-
-#include <mutex>
-#include <thread>
-#include <vector>
-
-#include "DwmIpv4Address.hh"
-#include "DwmThreadQueue.hh"
-#include "DwmMclogConfig.hh"
-#include "DwmMclogMessage.hh"
 #include "DwmMclogMulticastSources.hh"
 
 namespace Dwm {
@@ -57,36 +46,58 @@ namespace Dwm {
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    class MulticastReceiver
+    MulticastSources::MulticastSources()
+        : _sources(), _sinks(nullptr)
+    {}
+    
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    MulticastSources::MulticastSources(const std::string *keyDir,
+                                       std::vector<Thread::Queue<Message> *> *sinks)
+        : _keyDir(keyDir), _sources(), _sinks(sinks)
+    {}
+
+    //------------------------------------------------------------------------
+    void MulticastSources::ProcessPacket(const Udp4Endpoint & srcEndpoint,
+                                         char *data, size_t datalen)
     {
-    public:
-      MulticastReceiver();
-      ~MulticastReceiver();
-      bool Open(const Config & cfg, bool acceptLocal = true);
-      bool Restart(const Config & cfg);
-      void Close();
-      bool AddSink(Thread::Queue<Message> *sink);
-      bool RemoveSink(Thread::Queue<Message> *sink);
-      void ClearSinks();
+      auto  it = _sources.find(srcEndpoint);
+      if (it != _sources.end()) {
+        Syslog(LOG_DEBUG, "Processing packet from %s",
+               ((std::string)(it->first)).c_str());
+        it->second.ProcessPacket(data, datalen);
+      }
+      else {
+        auto [nit, dontCare] =
+          _sources.insert({srcEndpoint,MulticastSource(srcEndpoint,_keyDir,_sinks)});
+        nit->second.ProcessPacket(data, datalen);
+        ClearOld();
+        Syslog(LOG_INFO, "%llu active multicast sources", _sources.size());
+      }
+      return;
+    }
+
+    //------------------------------------------------------------------------
+    void MulticastSources::ClearOld()
+    {
+      auto  expireTime = (std::chrono::system_clock::now()
+                          - std::chrono::seconds(20));
       
-    private:
-      Config                                 _config;
-      int                                    _fd;
-      bool                                   _acceptLocal;
-      std::mutex                             _sinksMutex;
-      std::vector<Thread::Queue<Message> *>  _sinks;
-      std::thread                            _thread;
-      int                                    _stopfds[2];
-      std::atomic<bool>                      _run;
-      MulticastSources                       _sources;
-      
-      bool BindSocket();
-      bool JoinGroup();
-      void Run();
-    };
+      std::erase_if(_sources,
+                    [&] (const auto & src)
+                    {
+                      if (src.second.LastReceiveTime() < expireTime) {
+                        Syslog(LOG_INFO, "MulticastSource %s expired",
+                               ((std::string)src.first).c_str());
+                        return true;
+                      }
+                      return false;
+                    });
+      return;
+    }
+    
     
   }  // namespace Mclog
 
 }  // namespace Dwm
-
-#endif  // _DWMMCLOGMULTICASTRECEIVER_HH_

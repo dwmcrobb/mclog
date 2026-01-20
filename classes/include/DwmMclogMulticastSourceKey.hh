@@ -1,5 +1,5 @@
 //===========================================================================
-//  Copyright (c) Daniel W. McRobb 2025
+//  Copyright (c) Daniel W. McRobb 2026
 //  All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
@@ -32,23 +32,17 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file DwmMclogMulticastReceiver.hh
+//!  @file DwmMclogMulticastSourceKey.hh
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-#ifndef _DWMMCLOGMULTICASTRECEIVER_HH_
-#define _DWMMCLOGMULTICASTRECEIVER_HH_
+#ifndef _DWMMCLOGMULTICASTSOURCEKEY_HH_
+#define _DWMMCLOGMULTICASTSOURCEKEY_HH_
 
+#include <chrono>
 #include <mutex>
-#include <thread>
-#include <vector>
-
-#include "DwmIpv4Address.hh"
-#include "DwmThreadQueue.hh"
-#include "DwmMclogConfig.hh"
-#include "DwmMclogMessage.hh"
-#include "DwmMclogMulticastSources.hh"
+#include <string>
 
 namespace Dwm {
 
@@ -57,36 +51,34 @@ namespace Dwm {
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    class MulticastReceiver
+    class MulticastSourceKey
     {
     public:
-      MulticastReceiver();
-      ~MulticastReceiver();
-      bool Open(const Config & cfg, bool acceptLocal = true);
-      bool Restart(const Config & cfg);
-      void Close();
-      bool AddSink(Thread::Queue<Message> *sink);
-      bool RemoveSink(Thread::Queue<Message> *sink);
-      void ClearSinks();
+      using Clock = std::chrono::system_clock;
+      MulticastSourceKey();
+      MulticastSourceKey(std::string mcastKey);
+      MulticastSourceKey(const MulticastSourceKey & key);
+      MulticastSourceKey & operator = (const MulticastSourceKey & key);
+      
+      std::string Value() const;
+      void Value(const std::string & value);
+      Clock::time_point LastRequested() const;
+      void LastRequested(Clock::time_point lastRequested);
+      Clock::time_point LastQueried() const;
+      void LastQueried(Clock::time_point lastQueried);
+      Clock::time_point LastUpdated() const;
+      void LastUpdated(Clock::time_point lastUpdated);
       
     private:
-      Config                                 _config;
-      int                                    _fd;
-      bool                                   _acceptLocal;
-      std::mutex                             _sinksMutex;
-      std::vector<Thread::Queue<Message> *>  _sinks;
-      std::thread                            _thread;
-      int                                    _stopfds[2];
-      std::atomic<bool>                      _run;
-      MulticastSources                       _sources;
-      
-      bool BindSocket();
-      bool JoinGroup();
-      void Run();
+      mutable std::mutex  _mtx;
+      std::string         _value;
+      Clock::time_point   _lastRequested;
+      Clock::time_point   _lastQueried;
+      Clock::time_point   _lastUpdated;
     };
-    
+
   }  // namespace Mclog
 
 }  // namespace Dwm
 
-#endif  // _DWMMCLOGMULTICASTRECEIVER_HH_
+#endif  // _DWMMCLOGMULTICASTSOURCEKEY_HH_

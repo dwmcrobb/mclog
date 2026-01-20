@@ -1,5 +1,5 @@
 //===========================================================================
-//  Copyright (c) Daniel W. McRobb 2025
+//  Copyright (c) Daniel W. McRobb 2026
 //  All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
@@ -32,23 +32,21 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file DwmMclogMulticastReceiver.hh
+//!  @file DwmMclogMulticastSources.hh
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-#ifndef _DWMMCLOGMULTICASTRECEIVER_HH_
-#define _DWMMCLOGMULTICASTRECEIVER_HH_
+#ifndef _DWMMCLOGMULTICASTSOURCES_HH_
+#define _DWMMCLOGMULTICASTSOURCES_HH_
 
-#include <mutex>
-#include <thread>
+#include <map>
 #include <vector>
 
-#include "DwmIpv4Address.hh"
 #include "DwmThreadQueue.hh"
-#include "DwmMclogConfig.hh"
 #include "DwmMclogMessage.hh"
-#include "DwmMclogMulticastSources.hh"
+#include "DwmMclogUdp4Endpoint.hh"
+#include "DwmMclogMulticastSource.hh"
 
 namespace Dwm {
 
@@ -57,36 +55,25 @@ namespace Dwm {
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    class MulticastReceiver
+    class MulticastSources
     {
     public:
-      MulticastReceiver();
-      ~MulticastReceiver();
-      bool Open(const Config & cfg, bool acceptLocal = true);
-      bool Restart(const Config & cfg);
-      void Close();
-      bool AddSink(Thread::Queue<Message> *sink);
-      bool RemoveSink(Thread::Queue<Message> *sink);
-      void ClearSinks();
+      MulticastSources();
+      MulticastSources(const std::string *keyDir,
+                       std::vector<Thread::Queue<Message> *> *sinks);
+      void ProcessPacket(const Udp4Endpoint & src, char *data,
+                         size_t datalen);
       
     private:
-      Config                                 _config;
-      int                                    _fd;
-      bool                                   _acceptLocal;
-      std::mutex                             _sinksMutex;
-      std::vector<Thread::Queue<Message> *>  _sinks;
-      std::thread                            _thread;
-      int                                    _stopfds[2];
-      std::atomic<bool>                      _run;
-      MulticastSources                       _sources;
-      
-      bool BindSocket();
-      bool JoinGroup();
-      void Run();
+      std::map<Udp4Endpoint,MulticastSource>   _sources;
+      std::vector<Thread::Queue<Message> *>   *_sinks;
+      const std::string                       *_keyDir;
+
+      void ClearOld();
     };
     
   }  // namespace Mclog
 
 }  // namespace Dwm
 
-#endif  // _DWMMCLOGMULTICASTRECEIVER_HH_
+#endif  // _DWMMCLOGMULTICASTSOURCES_HH_
