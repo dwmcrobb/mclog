@@ -272,6 +272,8 @@ namespace Dwm {
       //----------------------------------------------------------------------
       Message(const MessageHeader & header, std::string && message);
 
+      Message(const MessageHeader & header, const std::string & message);
+
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------

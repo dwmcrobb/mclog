@@ -70,6 +70,7 @@ namespace Dwm {
 
     //------------------------------------------------------------------------
     sockaddr_in    Logger::_dstAddr;
+    sockaddr_un    Logger::_dstUnixAddr;
     
     //------------------------------------------------------------------------
     MessageOrigin  Logger::_origin("","",0);
@@ -77,6 +78,11 @@ namespace Dwm {
     int            Logger::_options = 0;
     int            Logger::_ofd = -1;
     std::mutex     Logger::_ofdmtx;
+
+    Thread::Queue<Message>     Logger::_msgs;
+    std::thread                Logger::_thread;
+    std::atomic<bool>          Logger::_run{false};
+    Logger::Clock::time_point  Logger::_nextSendTime;
     
     //------------------------------------------------------------------------
     bool Logger::OpenSocket()
@@ -84,6 +90,19 @@ namespace Dwm {
       bool  rc = false;
       if (0 > _ofd) {
         _ofd = socket(PF_INET, SOCK_DGRAM, 0);
+        if (0 <= _ofd) {
+          rc = true;
+        }
+      }
+      return rc;
+    }
+
+    //------------------------------------------------------------------------
+    bool Logger::OpenUnixSocket()
+    {
+      bool  rc = false;
+      if (0 > _ofd) {
+        _ofd = socket(PF_UNIX, SOCK_DGRAM, 0);
         if (0 <= _ofd) {
           rc = true;
         }
@@ -115,14 +134,55 @@ namespace Dwm {
       std::lock_guard  lck(_ofdmtx);
       _options = logopt;
 
-      return OpenSocket();
+      if (_options & logSyslog) {
+        Dwm::SysLogger::Open(ident, logopt, (int)facility);
+      }
+      if (OpenSocket()) {
+        _run = true;
+        _thread = std::thread(&Logger::Run);
+        return true;
+      }
+      return false;
     }
 
     //------------------------------------------------------------------------
-    //!  
+    bool Logger::OpenUnix(const char *ident, int logopt, Facility facility)
+    {
+      bool  rc = false;
+
+      memset(&_dstUnixAddr, 0, sizeof(_dstUnixAddr));
+      _dstUnixAddr.sun_family = PF_UNIX;
+      strcpy(_dstUnixAddr.sun_path, "/usr/local/var/run/mclogd.sck");
+#ifndef __linux__
+      _dstUnixAddr.sun_len = SUN_LEN(&_dstUnixAddr);
+#endif
+
+      char  hn[255];
+      memset(hn, 0, sizeof(hn));
+      gethostname(hn, sizeof(hn));
+
+      _origin.hostname(hn);
+      _origin.appname(ident);
+      _origin.processid(getpid());
+
+      std::lock_guard  lck(_ofdmtx);
+      _options = logopt;
+
+      if (_options & logSyslog) {
+        Dwm::SysLogger::Open(ident, logopt, (int)facility);
+      }
+      return OpenUnixSocket();
+    }
+
     //------------------------------------------------------------------------
     bool Logger::Close()
     {
+      _run = false;
+      _msgs.ConditionSignal();
+      if (_thread.joinable()) {
+        _thread.join();
+      }
+      
       _origin.hostname("");
       _origin.appname("");
       _origin.processid(0);
@@ -131,13 +191,22 @@ namespace Dwm {
       if (0 <= _ofd) {
         ::close(_ofd);
         _ofd = -1;
+        if (_options & logSyslog) {
+          Dwm::SysLogger::Close();
+        }
         return true;
       }
       return false;
     }
 
     //------------------------------------------------------------------------
-    //!  
+    bool Logger::SendPacket(MessagePacket & pkt)
+    {
+      ssize_t  sendrc = pkt.SendTo(_ofd, (const sockaddr *)&_dstAddr,
+                                   sizeof(_dstAddr));
+      return (0 < sendrc);
+    }
+    
     //------------------------------------------------------------------------
     bool Logger::SendMessage(const Message & msg)
     {
@@ -161,29 +230,116 @@ namespace Dwm {
       }
       return rc;
     }
-    
+
     //------------------------------------------------------------------------
-    //!  
+    bool Logger::SendMessageUnix(const Message & msg)
+    {
+      bool  rc = false;
+      if (0 <= _ofd) {
+        char  buf[1500];
+        std::spanstream  sps{std::span{buf,sizeof(buf)}};
+        if (msg.Write(sps)) {
+          ssize_t  sendrc = ::sendto(_ofd, buf, sps.tellp(), 0,
+                                     (sockaddr *)&_dstUnixAddr,
+                                     SUN_LEN(&_dstUnixAddr));
+          if (sendrc == sps.tellp()) {
+            rc = true;
+          }
+          else {
+            Syslog(LOG_ERR, "sendto(%d,%s) failed: %s",
+                   _ofd, _dstUnixAddr.sun_path, strerror(errno));
+          }
+        }
+      }
+      return rc;
+    }
+
+#if 0
     //------------------------------------------------------------------------
     bool Logger::Log(Severity severity, std::string_view msg,
                      std::source_location loc)
     {
+      //  NOTE: the performance of this function is likely abysmal; we
+      //  have too many allocations.
       namespace fs = std::filesystem;
       bool  rc = false;
       
       if (_origin.processid()) {
         MessageHeader  hdr(_facility, severity, _origin);
         fs::path  locFile(loc.file_name());
-        Message  logmsg(hdr, std::string(msg.data(), msg.size()) + " {"
-                        + locFile.filename().string() + ':'
-                        + std::to_string(loc.line()) + '}');
+        std::string  msgstr(msg.data(), msg.size());
+        msgstr += " {" + locFile.filename().string() + ':'
+          + std::to_string(loc.line()) + '}';
+        Message  logmsg(hdr, msgstr);
         if (_options & logStderr) {
           std::cerr << logmsg;
         }
-        std::lock_guard  lck(_ofdmtx);
-        rc = SendMessage(logmsg);
+        if (_options & logSyslog) {
+          Syslog((int)(severity)|(int)(_facility), msgstr.c_str());
+        }
+        rc = _msgs.PushBack(std::move(logmsg));
       }
       return rc;
+    }
+#endif
+    
+    bool Logger::Log(Severity severity, std::string && msg,
+                     std::source_location loc)
+    {
+      //  NOTE: the performance of this function is likely abysmal; we
+      //  have too many allocations.
+      namespace fs = std::filesystem;
+      bool  rc = false;
+      
+      if (_origin.processid()) {
+        MessageHeader  hdr(_facility, severity, _origin);
+        fs::path  locFile(loc.file_name());
+        msg += " {" + locFile.filename().string() + ':'
+          + std::to_string(loc.line()) + '}';
+        Message  logmsg(hdr, msg);
+        if (_options & logStderr) {
+          std::cerr << logmsg;
+        }
+        if (_options & logSyslog) {
+          Syslog((int)(severity)|(int)(_facility), msg.c_str());
+        }
+        rc = _msgs.PushBack(std::move(logmsg));
+      }
+      return rc;
+    }
+    
+    //------------------------------------------------------------------------
+    void Logger::Run()
+    {
+      char           buf[1400];
+      MessagePacket  pkt(buf, sizeof(buf));
+      Message        msg;
+      
+      while (_run) {
+        if (_msgs.ConditionTimedWait(std::chrono::seconds(1))) {
+          auto  now = Clock::now();
+          while (_msgs.PopFront(msg)) {
+            if (! pkt.Add(msg)) {
+              if (! SendPacket(pkt)) {
+                Syslog(LOG_ERR, "SendPacket() failed");
+              }
+              _nextSendTime = now + std::chrono::milliseconds(1000);
+              pkt.Add(msg);
+            }
+          }
+        }
+        else {
+          auto  now = Clock::now();
+          if (pkt.HasPayload()) {
+            if (! SendPacket(pkt)) {
+              Syslog(LOG_ERR, "SendPacket() failed");
+            }
+            _nextSendTime = now + std::chrono::milliseconds(1000);
+          }
+        }
+      }
+      Syslog(LOG_INFO, "Logger thread done");
+      return;
     }
     
   }  // namespace Mclog

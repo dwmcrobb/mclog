@@ -280,7 +280,14 @@ namespace Dwm {
     Message::Message(const MessageHeader & header, std::string && message)
         : _header(header), _message(message)
     {}
-    
+
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    Message::Message(const MessageHeader & header, const std::string & message)
+        : _header(header), _message(message)
+    {}
+
     //------------------------------------------------------------------------
     std::istream & Message::Read(std::istream & is)
     {

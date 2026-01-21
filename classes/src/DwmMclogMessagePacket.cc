@@ -77,6 +77,26 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    ssize_t MessagePacket::SendTo(int fd, const sockaddr *dst,
+                                  socklen_t dstlen)
+    {
+      constexpr auto  xcc20p1305enc =
+        crypto_aead_xchacha20poly1305_ietf_encrypt;
+      ssize_t        rc = -1;
+      randombytes_buf(_buf, k_nonceLen);
+      unsigned long long  cbuflen = _payloadLength + k_macLen;
+      rc = sendto(fd, _buf, k_nonceLen + cbuflen, 0, dst, dstlen);
+      if (rc != k_nonceLen + cbuflen) {
+        Syslog(LOG_ERR, "sendto() failed: %s (%d)", strerror(errno), errno);
+      }
+      _payload.seekp(0);
+      _payloadLength = 0;
+      return rc;
+    }
+    
+    //------------------------------------------------------------------------
     ssize_t MessagePacket::Decrypt(size_t recvlen,
                                    const std::string & secretKey)
     {
@@ -120,6 +140,32 @@ namespace Dwm {
         rc = 0;
         if (recvrc > k_minPacketLen) {
           rc = Decrypt(recvrc, secretKey);
+        }
+        else {
+          _payload = std::spanstream{std::span{_buf,0}};
+        }
+      }
+      else {
+        _payload = std::spanstream{std::span{_buf,0}};
+      }
+      return rc;
+    }
+
+    //------------------------------------------------------------------------
+    ssize_t MessagePacket::RecvFrom(int fd, struct sockaddr *src,
+                                    socklen_t *srclen)
+    {
+      ssize_t  rc = -1;
+      _payloadLength = 0;
+      ssize_t  recvrc = recvfrom(fd, _buf, _buflen, 0, src, srclen);
+      if (recvrc > 0) {
+        rc = 0;
+        if (recvrc > k_minPacketLen) {
+          unsigned long long plainLen = recvrc - (k_nonceLen + k_macLen);
+          rc = recvrc;
+          _payloadLength = plainLen;
+          _payload = std::spanstream{std::span{_buf + k_nonceLen,              
+                                     _payloadLength}};
         }
         else {
           _payload = std::spanstream{std::span{_buf,0}};

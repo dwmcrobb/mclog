@@ -1,4 +1,6 @@
 //===========================================================================
+// @(#) $DwmPath$
+//===========================================================================
 //  Copyright (c) Daniel W. McRobb 2025
 //  All rights reserved.
 //
@@ -32,35 +34,48 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file TestLogger.cc
+//!  @file DwmMclogUnixReceiver.hh
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-extern "C" {
-  #include <unistd.h>
-}
+#ifndef _DWMMCLOGUNIXRECEIVER_HH_
+#define _DWMMCLOGUNIXRECEIVER_HH_
 
-#include <cassert>
-#include <chrono>
-#include <iostream>
+#include <atomic>
+#include <thread>
 
-#include "DwmMclogLogger.hh"
+#include "DwmThreadQueue.hh"
+#include "DwmMclogMessage.hh"
 
-int main(int argc, char *argv[])
-{
-  using Dwm::Mclog::Logger;
-#if 1
-  assert(Logger::Open("TestLogger", Dwm::Mclog::Logger::logStderr,
-                      Dwm::Mclog::Facility::user));
-#else
-  assert(Logger::OpenUnix("TestLogger", Dwm::Mclog::Logger::logStderr,
-                          Dwm::Mclog::Facility::user));
-#endif
-  uint64_t  i = 0;
-  for (;;) {
-    MCLOG(Dwm::Mclog::Severity::info, "{} hello there.", i);
-    ++i;
-    usleep(100000);
-  }
-}
+namespace Dwm {
+
+  namespace Mclog {
+
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    class UnixReceiver
+    {
+    public:
+      bool Start();
+      bool Restart();
+      void Stop();
+      bool AddSink(Thread::Queue<Message> *msgQueue);
+      
+    private:
+      int                                    _ifd;        // receive socket
+      int                                    _stopfds[2]; // stop cmd pipe
+      std::atomic<bool>                      _run;
+      std::thread                            _thread;
+      std::mutex                             _sinksMutex;
+      std::vector<Thread::Queue<Message> *>  _sinks;
+      
+      void Run();
+    };
+    
+  }  // namespace Mclog
+
+}  // namespace Dwm
+
+#endif  // _DWMMCLOGUNIXRECEIVER_HH_

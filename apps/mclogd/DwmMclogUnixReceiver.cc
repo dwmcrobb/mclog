@@ -32,18 +32,19 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file DwmMclogLocalReceiver.cc
+//!  @file DwmMclogUnixReceiver.cc
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
 extern "C" {
   #include <sys/socket.h>
+  #include <sys/un.h>
   #include <unistd.h>
 }
 
 #include "DwmIpv4Address.hh"
-#include "DwmMclogLocalReceiver.hh"
+#include "DwmMclogUnixReceiver.hh"
 #include "DwmMclogMessage.hh"
 #include "DwmMclogMessagePacket.hh"
 
@@ -54,16 +55,16 @@ namespace Dwm {
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    bool LocalReceiver::Start()
+    bool UnixReceiver::Start()
     {
       _run = true;
       if (0 == pipe(_stopfds)) {
-        _thread = std::thread(&LocalReceiver::Run, this);
-        Syslog(LOG_INFO, "LocalReceiver started");
+        _thread = std::thread(&UnixReceiver::Run, this);
+        Syslog(LOG_INFO, "UnixReceiver started");
         return true;
       }
       else {
-        Syslog(LOG_ERR, "LocalReceiver not started: pipe() failed (%m)");
+        Syslog(LOG_ERR, "UnixReceiver not started: pipe() failed (%m)");
       }
       return false;
     }
@@ -71,7 +72,7 @@ namespace Dwm {
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    bool LocalReceiver::Restart()
+    bool UnixReceiver::Restart()
     {
       Stop();
       return Start();
@@ -80,7 +81,7 @@ namespace Dwm {
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    void LocalReceiver::Stop()
+    void UnixReceiver::Stop()
     {
       _run = false;
       char  stop = 's';
@@ -89,7 +90,7 @@ namespace Dwm {
         _thread.join();
         ::close(_stopfds[1]);  _stopfds[1] = -1;
         ::close(_stopfds[0]);  _stopfds[0] = -1;
-        Syslog(LOG_INFO, "LocalReceiver stopped");
+        Syslog(LOG_INFO, "UnixReceiver stopped");
       }
       return;
     }
@@ -97,7 +98,7 @@ namespace Dwm {
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    bool LocalReceiver::AddSink(Thread::Queue<Message> *sink)
+    bool UnixReceiver::AddSink(Thread::Queue<Message> *sink)
     {
       bool  rc = false;
       std::lock_guard  lck(_sinksMutex);
@@ -114,22 +115,24 @@ namespace Dwm {
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    void LocalReceiver::Run()
+    void UnixReceiver::Run()
     {
-      Syslog(LOG_INFO, "LocalReceiver thread started");
-      _ifd = socket(PF_INET, SOCK_DGRAM, 0);
+      Syslog(LOG_INFO, "UnixReceiver thread started");
+      _ifd = socket(PF_UNIX, SOCK_DGRAM, 0);
       if (0 <= _ifd) {
-        struct sockaddr_in  sockAddr;
+        int  on = 1;
+        setsockopt(_ifd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+        struct sockaddr_un  sockAddr;
         memset(&sockAddr, 0, sizeof(sockAddr));
-        sockAddr.sin_family = PF_INET;
-        sockAddr.sin_addr.s_addr = Ipv4Address("127.0.0.1").Raw();
-        sockAddr.sin_port = htons(3456);
-        if (bind(_ifd, (struct sockaddr *)&sockAddr, sizeof(sockAddr)) == 0) {
+        sockAddr.sun_family = PF_UNIX;
+        strcpy(sockAddr.sun_path, "/usr/local/var/run/mclogd.sck");
+        sockAddr.sun_len = SUN_LEN(&sockAddr);
+        if (bind(_ifd, (struct sockaddr *)&sockAddr, SUN_LEN(&sockAddr)) == 0) {
           fd_set   fds;
-          sockaddr_in  fromAddr;
+          sockaddr_un  fromAddr;
           auto  reset_fds = [&] () -> void
           { FD_ZERO(&fds); FD_SET(_ifd, &fds); FD_SET(_stopfds[0], &fds); };
-          char     buf[1500];
+          char  buf[1500];
           Message  msg;
           while (_run) {
             reset_fds();
@@ -137,11 +140,23 @@ namespace Dwm {
                                   nullptr, nullptr, nullptr);
             if (selectrc > 0) {
               if (FD_ISSET(_ifd, &fds)) {
-                MessagePacket  pkt(buf, sizeof(buf));
-                socklen_t      fromAddrLen = sizeof(fromAddr);
-                if (pkt.RecvFrom(_ifd, (struct sockaddr *)&fromAddr,
-                                 &fromAddrLen) > 0) {
-                  while (msg.Read(pkt.Payload())) {
+#if 1
+                ssize_t  recvrc = recvfrom(_ifd, buf, sizeof(buf), 0,
+                                           nullptr, nullptr);
+#else
+                socklen_t    fromAddrLen = sizeof(fromAddr);
+                ssize_t  recvrc = recvfrom(_ifd, buf, sizeof(buf), 0,
+                                           (struct sockaddr *)&fromAddr,
+                                           &fromAddrLen);
+#endif
+                if (recvrc > 0) {
+                  std::spanstream  sps{std::span{buf, (size_t)recvrc}};
+                  // Message  msg;
+#if 1
+                  if (msg.Read(sps)) {
+#else
+                  while (msg.Read(sps)) {
+#endif
                     for (auto sink : _sinks) {
                       sink->PushBack(msg);
                     }
@@ -156,9 +171,10 @@ namespace Dwm {
         }
         close(_ifd);
         _ifd = -1;
+        std::remove("/usr/local/var/run/mclogd.sck");
       }
       _run = false;
-      Syslog(LOG_INFO, "LocalReceiver thread done");
+      Syslog(LOG_INFO, "UnixReceiver thread done");
       return;
     }
     

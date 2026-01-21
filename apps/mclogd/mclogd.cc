@@ -42,6 +42,7 @@ extern "C" {
   #include <unistd.h>
 }
 
+#include "DwmDaemonUtils.hh"
 #include "DwmSysLogger.hh"
 #include "DwmMclogLocalReceiver.hh"
 #include "DwmMclogMulticaster.hh"
@@ -66,9 +67,7 @@ static bool Restart(const std::string & configPath)
     if (g_fileLogger.Restart(config.files)) {
       if (g_mcaster.Restart(config)) {
         if (g_mcastReceiver.Restart(config)) {
-          if (g_localReceiver.Restart()) {
-            rc = true;
-          }
+          rc = g_localReceiver.Restart();
         }
       }
     }
@@ -85,6 +84,7 @@ static void BlockSigHupAndTerm()
   sigemptyset(&blockSet);
   sigaddset(&blockSet, SIGHUP);
   sigaddset(&blockSet, SIGTERM);
+  sigaddset(&blockSet, SIGINT);
   sigprocmask(SIG_BLOCK,&blockSet,NULL);
   return;
 }
@@ -98,9 +98,10 @@ static int WaitSigHupOrTerm()
   sigemptyset(&sigSet);
   sigaddset(&sigSet, SIGHUP);
   sigaddset(&sigSet, SIGTERM);
+  sigaddset(&sigSet, SIGINT);
   int  signum;
   sigwait(&sigSet, &signum);
-  std::cerr << "Got signal " << signum << '\n';
+  Syslog(LOG_INFO, "Got signal %d", signum);
   
   return signum;
 }
@@ -108,11 +109,88 @@ static int WaitSigHupOrTerm()
 //----------------------------------------------------------------------------
 //!  
 //----------------------------------------------------------------------------
+static std::string  g_pidFile;
+
+//----------------------------------------------------------------------------
+//!  
+//----------------------------------------------------------------------------
+static void SavePID(const std::string & pidFile)
+{
+#ifndef O_EXLOCK
+  #define O_EXLOCK 0
+#endif
+  g_pidFile = pidFile;
+  pid_t  pid = getpid();
+  std::string  &&pidstr = std::to_string(pid) + "\n";
+  int    fd = open(g_pidFile.c_str(), O_WRONLY|O_CREAT|O_TRUNC|O_EXLOCK, 0644);
+  if (fd >= 0) {
+    if (write(fd, pidstr.c_str(), pidstr.size()) != pidstr.size()) {
+      FSyslog(LOG_ERR, "Failed to save PID in {}", g_pidFile);
+    }
+    close(fd);
+  }
+  return;
+}
+
+//----------------------------------------------------------------------------
+//!  
+//----------------------------------------------------------------------------
+static void RemovePID()
+{
+  if (! g_pidFile.empty()) {
+    std::remove(g_pidFile.c_str());
+  }
+  return;
+}
+
+//----------------------------------------------------------------------------
+//!  
+//----------------------------------------------------------------------------
+static void Usage(const char *argv0)
+{
+  std::cerr << "usage: " << argv0 << " [-c configFile] [-d] [-p pidfile]\n";
+  return;
+}
+
+//----------------------------------------------------------------------------
+//!  
+//----------------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
-  Dwm::SysLogger::Open("mclogd", LOG_PERROR, LOG_USER);                                              
+  bool         daemonize = true;
+  int          syslogOpts = 0;
+  std::string  pidFile("/var/run/mclogd.pid");
+  std::string  configPath("/usr/local/etc/mclogd.cfg");
+  
+  int  optChar;
+  while ((optChar = getopt(argc, argv, "c:dp:")) != -1) {
+    switch (optChar) {
+      case 'c':
+        configPath = optarg;
+        break;
+      case 'd':
+        syslogOpts |= LOG_PERROR;
+        daemonize = false;
+        break;
+      case 'p':
+        pidFile = optarg;
+        break;
+      default:
+        Usage(argv[0]);
+        exit(1);
+        break;
+    }
+  }
+
+  if (daemonize) {
+    Dwm::DaemonUtils::Daemonize();
+  }
+  
+  Dwm::SysLogger::Open("mclogd", syslogOpts, LOG_USER);
+  
   Dwm::Mclog::Config  config;
-  if (config.Parse("/usr/local/etc/mclogd.cfg")) {
+  if (config.Parse(configPath)) {
+    SavePID(pidFile);
     g_mcaster.Open(config);
     g_fileLogger.Start(config.files);
     g_localReceiver.AddSink(g_mcaster.OutputQueue());
@@ -124,13 +202,15 @@ int main(int argc, char *argv[])
       BlockSigHupAndTerm();
       int  sig = WaitSigHupOrTerm();
       if (SIGHUP == sig) {
-        Restart("/usr/local/etc/mclogd.cfg");
+        Restart(configPath);
       }
-      else if (SIGTERM == sig) {
+      else if ((SIGTERM == sig) || (SIGINT == sig)) {
+        Syslog(LOG_INFO, "Received exit signal");
         g_localReceiver.Stop();
         g_mcaster.Close();
         g_fileLogger.Stop();
         g_mcastReceiver.Close();
+        RemovePID();
         exit(0);
       }
     }

@@ -113,11 +113,15 @@ namespace Dwm {
       ssize_t SendTo(int fd, const std::string & secretKey,
                      const sockaddr *dst, socklen_t dstlen);
 
+      ssize_t SendTo(int fd, const sockaddr *dst, socklen_t dstlen);
+      
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
       ssize_t RecvFrom(int fd, const std::string & secretKey,
                        struct sockaddr *src, socklen_t *srclen);
+
+      ssize_t RecvFrom(int fd, struct sockaddr *src, socklen_t *srclen);
 
       //----------------------------------------------------------------------
       //!  

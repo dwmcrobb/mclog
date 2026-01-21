@@ -116,9 +116,7 @@ namespace Dwm {
     std::chrono::system_clock::time_point LogFile::NextMidnight() const
     {
       time_t  now = time((time_t *)0);
-      return std::chrono::system_clock::from_time_t(now + 10);  // xxx - debug!!!!
-      
-      tm  tms;
+      tm      tms;
       localtime_r(&now, &tms);
       ++tms.tm_mday;
       tms.tm_sec = 0;

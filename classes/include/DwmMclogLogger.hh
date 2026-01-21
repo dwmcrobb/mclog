@@ -40,24 +40,30 @@
 #ifndef _DWMMCLOGLOGGER_HH_
 #define _DWMMCLOGLOGGER_HH_
 
+extern "C" {
+  #include <sys/un.h>
+}
+
 #include <memory>
 #include <mutex>
 #include <source_location>
 
 #if __has_include(<format>)
 #  include <format>
-#  define DWM_HAVE_STD_FORMAT 1
+#  define DWM_MCLOG_HAVE_STD_FORMAT 1
 #endif
 
-#ifndef DWM_HAVE_STD_FORMAT
+#ifndef DWM_MCLOG_HAVE_STD_FORMAT
 #  if __has_include(<fmt/format.h>)
 #    include <fmt/format.h>
-#    define DWM_HAVE_LIBFMT
+#    define DWM_MCLOG_HAVE_LIBFMT 1
 #  endif
 #endif
 
 #include "DwmIpv4Address.hh"
+#include "DwmThreadQueue.hh"
 #include "DwmMclogMessage.hh"
+#include "DwmMclogMessagePacket.hh"
 
 namespace Dwm {
 
@@ -70,28 +76,62 @@ namespace Dwm {
     {
     public:
       static const int  logStderr = 0x20;
+      static const int  logSyslog = 0x40;
 
-      static bool Open(const char *ident, int logopt, Facility facility);
-      static bool Close();
+      using Clock = std::chrono::system_clock;
       
+      static bool Open(const char *ident, int logopt, Facility facility);
+      static bool OpenUnix(const char *ident, int logopt, Facility facility);
+      
+      static bool Close();
+
+      template <typename ...Args>
+      static bool Log(std::source_location loc, Severity severity,
+                      std::format_string<Args...> fm, Args &&...args)
+      {
+        return Log(severity, Format(fm, std::forward<Args>(args)...), loc);
+      }
+#if 0      
       static bool
       Log(Severity severity, std::string_view msg,
           std::source_location loc = std::source_location::current());
-
+#endif
+      static bool
+      Log(Severity severity, std::string && msg,
+          std::source_location loc = std::source_location::current());
+      
     private:
       static MessageOrigin  _origin;
       static Facility       _facility;
       static int            _options;
       static int            _ofd;
       static sockaddr_in    _dstAddr;
+      static sockaddr_un    _dstUnixAddr;
       static std::mutex     _ofdmtx;
+      static Thread::Queue<Message>  _msgs;
+      static std::thread             _thread;
+      static std::atomic<bool>       _run;
+      static Clock::time_point       _nextSendTime;
       
       static bool OpenSocket();
       static bool SendMessage(const Message & msg);
+      static bool SendPacket(MessagePacket & pkt);
+      static bool OpenUnixSocket();
+      static bool SendMessageUnix(const Message & msg);
+      static void Run();
+      
+      template <typename ...Args>
+      static std::string Format(std::format_string<Args...> fm, Args &&...args)
+      {
+        return std::format(fm, std::forward<Args>(args)...);
+      }
     };
     
   }  // namespace Mclog
 
 }  // namespace Dwm
+
+#define MCLOG(...) \
+  Dwm::Mclog::Logger::Log(std::source_location::current(),__VA_ARGS__)
 
 #endif  // _DWMMCLOGLOGGER_HH_
