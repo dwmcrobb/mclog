@@ -126,7 +126,9 @@ namespace Dwm {
         memset(&sockAddr, 0, sizeof(sockAddr));
         sockAddr.sun_family = PF_UNIX;
         strcpy(sockAddr.sun_path, "/usr/local/var/run/mclogd.sck");
+#ifndef __linux__
         sockAddr.sun_len = SUN_LEN(&sockAddr);
+#endif
         if (bind(_ifd, (struct sockaddr *)&sockAddr, SUN_LEN(&sockAddr)) == 0) {
           fd_set   fds;
           sockaddr_un  fromAddr;
