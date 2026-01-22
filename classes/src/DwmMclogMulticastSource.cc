@@ -357,9 +357,13 @@ namespace Dwm {
     void MulticastSource::StartQuery()
     {
       if (_queryDone.load()) {
+        if (_queryThread.joinable()) {
+          _queryThread.join();
+        }
         _queryDone.store(false);
-        _queryThread = std::jthread(&MulticastSource::QueryForKey, this);
+        _queryThread = std::thread(&MulticastSource::QueryForKey, this);
       }
+      return;
     }
     
     //------------------------------------------------------------------------

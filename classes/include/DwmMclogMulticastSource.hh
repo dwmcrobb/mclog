@@ -118,7 +118,7 @@ namespace Dwm {
       const std::string                      *_keyDir;
       std::vector<Thread::Queue<Message> *>  *_sinks;
       std::atomic<bool>                       _queryDone;
-      std::jthread                            _queryThread;
+      std::thread                             _queryThread;
       Clock::time_point                       _lastReceiveTime;
       
       bool ProcessBacklog();
