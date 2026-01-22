@@ -41,6 +41,8 @@ extern "C" {
   #include <sodium.h>
 }
 
+#include <cstring>
+
 #include "DwmMclogMessagePacket.hh"
 
 namespace Dwm {
