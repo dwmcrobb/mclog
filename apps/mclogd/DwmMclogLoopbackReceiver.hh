@@ -34,13 +34,13 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file DwmMclogLocalReceiver.hh
+//!  @file DwmMclogLoopbackReceiver.hh
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-#ifndef _DWMMCLOGLOCALRECEIVER_HH_
-#define _DWMMCLOGLOCALRECEIVER_HH_
+#ifndef _DWMMCLOGLOOPBACKRECEIVER_HH_
+#define _DWMMCLOGLOOPBACKRECEIVER_HH_
 
 #include <atomic>
 #include <thread>
@@ -55,7 +55,7 @@ namespace Dwm {
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    class LocalReceiver
+    class LoopbackReceiver
     {
     public:
       bool Start();
@@ -78,4 +78,4 @@ namespace Dwm {
 
 }  // namespace Dwm
 
-#endif  // _DWMMCLOGLOCALRECEIVER_HH_
+#endif  // _DWMMCLOGLOOPBACKRECEIVER_HH_

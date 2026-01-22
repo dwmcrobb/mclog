@@ -32,7 +32,7 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file DwmMclogLocalReceiver.cc
+//!  @file DwmMclogLoopbackReceiver.cc
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
@@ -43,7 +43,7 @@ extern "C" {
 }
 
 #include "DwmIpv4Address.hh"
-#include "DwmMclogLocalReceiver.hh"
+#include "DwmMclogLoopbackReceiver.hh"
 #include "DwmMclogMessage.hh"
 #include "DwmMclogMessagePacket.hh"
 
@@ -54,16 +54,16 @@ namespace Dwm {
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    bool LocalReceiver::Start()
+    bool LoopbackReceiver::Start()
     {
       _run = true;
       if (0 == pipe(_stopfds)) {
-        _thread = std::thread(&LocalReceiver::Run, this);
-        Syslog(LOG_INFO, "LocalReceiver started");
+        _thread = std::thread(&LoopbackReceiver::Run, this);
+        Syslog(LOG_INFO, "LoopbackReceiver started");
         return true;
       }
       else {
-        Syslog(LOG_ERR, "LocalReceiver not started: pipe() failed (%m)");
+        Syslog(LOG_ERR, "LoopbackReceiver not started: pipe() failed (%m)");
       }
       return false;
     }
@@ -71,7 +71,7 @@ namespace Dwm {
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    bool LocalReceiver::Restart()
+    bool LoopbackReceiver::Restart()
     {
       Stop();
       return Start();
@@ -80,7 +80,7 @@ namespace Dwm {
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    void LocalReceiver::Stop()
+    void LoopbackReceiver::Stop()
     {
       _run = false;
       char  stop = 's';
@@ -89,7 +89,7 @@ namespace Dwm {
         _thread.join();
         ::close(_stopfds[1]);  _stopfds[1] = -1;
         ::close(_stopfds[0]);  _stopfds[0] = -1;
-        Syslog(LOG_INFO, "LocalReceiver stopped");
+        Syslog(LOG_INFO, "LoopbackReceiver stopped");
       }
       return;
     }
@@ -97,7 +97,7 @@ namespace Dwm {
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    bool LocalReceiver::AddSink(Thread::Queue<Message> *sink)
+    bool LoopbackReceiver::AddSink(Thread::Queue<Message> *sink)
     {
       bool  rc = false;
       std::lock_guard  lck(_sinksMutex);
@@ -114,9 +114,9 @@ namespace Dwm {
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    void LocalReceiver::Run()
+    void LoopbackReceiver::Run()
     {
-      Syslog(LOG_INFO, "LocalReceiver thread started");
+      Syslog(LOG_INFO, "LoopbackReceiver thread started");
       _ifd = socket(PF_INET, SOCK_DGRAM, 0);
       if (0 <= _ifd) {
         struct sockaddr_in  sockAddr;
@@ -158,7 +158,7 @@ namespace Dwm {
         _ifd = -1;
       }
       _run = false;
-      Syslog(LOG_INFO, "LocalReceiver thread done");
+      Syslog(LOG_INFO, "LoopbackReceiver thread done");
       return;
     }
     
