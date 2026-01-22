@@ -85,17 +85,22 @@ namespace Dwm {
       
       static bool Close();
 
+#if DWM_MCLOG_HAVE_STD_FORMAT
       template <typename ...Args>
       static bool Log(std::source_location loc, Severity severity,
                       std::format_string<Args...> fm, Args &&...args)
       {
         return Log(severity, Format(fm, std::forward<Args>(args)...), loc);
       }
-#if 0      
-      static bool
-      Log(Severity severity, std::string_view msg,
-          std::source_location loc = std::source_location::current());
+#else if DWM_MCLOG_HAVE_LIBFMT
+      template <typename ...Args>
+      static bool Log(std::source_location loc, Severity severity,
+                      fmt::format_string<Args...> fm, Args &&...args)
+      {
+        return Log(severity, Format(fm, std::forward<Args>(args)...), loc);
+      }
 #endif
+      
       static bool
       Log(Severity severity, std::string && msg,
           std::source_location loc = std::source_location::current());
@@ -120,11 +125,19 @@ namespace Dwm {
       static bool SendMessageUnix(const Message & msg);
       static void Run();
       
+#if DWM_MCLOG_HAVE_STD_FORMAT
       template <typename ...Args>
       static std::string Format(std::format_string<Args...> fm, Args &&...args)
       {
         return std::format(fm, std::forward<Args>(args)...);
       }
+#else if DWM_MCLOG_HAVE_LIBFMT
+      template <typename ...Args>
+      static std::string Format(fmt::format_string<Args...> fm, Args &&...args)
+      {
+        return fmt::format(fm, std::forward<Args>(args)...);
+      }
+#endif
     };
     
   }  // namespace Mclog
