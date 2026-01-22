@@ -40,6 +40,14 @@
 #ifndef _DWMMCLOGUDP4ENDPOINT_HH_
 #define _DWMMCLOGUDP4ENDPOINT_HH_
 
+#if __has_include(<format>)
+#  include <format>
+#else
+#  if __has_include(<fmt/format.h>)
+#    include <fmt/format.h>
+#  endif
+#endif
+
 #include "DwmIpv4Address.hh"
 
 namespace Dwm {
@@ -117,4 +125,48 @@ namespace Dwm {
 
 }  // namespace Dwm
 
+#if __has_include(<format>)
+
+namespace std {
+  //--------------------------------------------------------------------------
+  //!  
+  //--------------------------------------------------------------------------
+  template <>
+  struct formatter<Dwm::Mclog::Udp4Endpoint> 
+  {
+    constexpr auto parse(format_parse_context & ctx) 
+    { return ctx.begin(); }
+    
+    auto format(const Dwm::Mclog::Udp4Endpoint & ep,
+                format_context & ctx) const
+    {
+      return format_to(ctx.out(), "{}:{}", (string)(ep.Addr()), ep.Port());
+    }
+  };
+}
+
+#else
+#  if __has_include(<fmt/format.h>)
+
+//----------------------------------------------------------------------------
+//!  
+//----------------------------------------------------------------------------
+template <>
+struct fmt::formatter<Dwm::Mclog::Udp4Endpoint> 
+{
+  constexpr auto parse(fmt::format_parse_context & ctx) 
+  { return ctx.begin(); }
+
+  template <typename FormatContext>
+  auto format(const Dwm::Mclog::Udp4Endpoint & ep, FormatContext & ctx) 
+  {
+    return fmt::format_to(ctx.out(), "{}:{}",
+                          (std::string)(ep.Addr()), ep.Port());
+  }
+};
+
+#  endif
+#endif
+  
+    
 #endif  // _DWMMCLOGUDP4ENDPOINT_HH_

@@ -225,10 +225,10 @@ namespace Dwm {
                                          &fromAddrLen);
               Ipv4Address  fromIP(fromAddr.sin_addr.s_addr);
               if ((recvrc > 0) && (_acceptLocal || (fromIP != _config.mcast.intfAddr))) {
-                Syslog(LOG_DEBUG, "Received %lld bytes from %s:%hu",
-                       recvrc, ((std::string)fromIP).c_str(),
-                       ntohs(fromAddr.sin_port));
-                _sources.ProcessPacket(fromAddr, buf, recvrc);
+                Udp4Endpoint  endPoint(fromAddr);
+                FSyslog(LOG_DEBUG, "Received {} bytes from {}",
+                        recvrc, endPoint);
+                _sources.ProcessPacket(endPoint, buf, recvrc);
               }
             }
           }

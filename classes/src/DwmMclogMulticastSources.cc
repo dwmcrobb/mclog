@@ -64,8 +64,7 @@ namespace Dwm {
     {
       auto  it = _sources.find(srcEndpoint);
       if (it != _sources.end()) {
-        Syslog(LOG_DEBUG, "Processing packet from %s",
-               ((std::string)(it->first)).c_str());
+        FSyslog(LOG_DEBUG, "Processing packet from {}", srcEndpoint);
         it->second.ProcessPacket(data, datalen);
       }
       else {
@@ -88,8 +87,8 @@ namespace Dwm {
                     [&] (const auto & src)
                     {
                       if (src.second.LastReceiveTime() < expireTime) {
-                        Syslog(LOG_INFO, "MulticastSource %s expired",
-                               ((std::string)src.first).c_str());
+                        FSyslog(LOG_INFO, "MulticastSource {} expired",
+                                src.first);
                         return true;
                       }
                       return false;
