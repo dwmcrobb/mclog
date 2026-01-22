@@ -148,7 +148,8 @@ namespace Dwm {
                   if (clientit->second.Success()) {
                     _clientsDone.push_back(*clientit);
                     _clients.erase(clientit);
-                    Syslog(LOG_DEBUG, "_clientsDone.size(): %llu", _clientsDone.size());
+                    FSyslog(LOG_DEBUG, "_clientsDone.size(): {}",
+                            _clientsDone.size());
                   }
                 }
               }

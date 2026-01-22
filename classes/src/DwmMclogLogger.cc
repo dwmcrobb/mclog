@@ -61,7 +61,7 @@ extern "C" {
 #endif
 
 
-#include "DwmIpv4Address.hh"
+#include "DwmFormatters.hh"
 #include "DwmMclogLogger.hh"
 
 namespace Dwm {
@@ -221,10 +221,8 @@ namespace Dwm {
             rc = true;
           }
           else {
-            Ipv4Address  dst(_dstAddr.sin_addr.s_addr);
-            Syslog(LOG_ERR, "sendto(%d,%s:%hu) failed: %s",
-                   _ofd, ((std::string)dst).c_str(), ntohs(_dstAddr.sin_port),
-                   strerror(errno));
+            FSyslog(LOG_ERR, "sendto({},{}) failed: {}",
+                    _ofd, _dstAddr, strerror(errno));
           }
         }
       }
@@ -246,8 +244,8 @@ namespace Dwm {
             rc = true;
           }
           else {
-            Syslog(LOG_ERR, "sendto(%d,%s) failed: %s",
-                   _ofd, _dstUnixAddr.sun_path, strerror(errno));
+            FSyslog(LOG_ERR, "sendto({},{}) failed: {}",
+                    _ofd, _dstUnixAddr, strerror(errno));
           }
         }
       }

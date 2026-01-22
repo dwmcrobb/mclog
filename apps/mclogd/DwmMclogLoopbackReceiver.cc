@@ -42,6 +42,8 @@ extern "C" {
   #include <unistd.h>
 }
 
+#include <cstring>
+
 #include "DwmIpv4Address.hh"
 #include "DwmMclogLoopbackReceiver.hh"
 #include "DwmMclogMessage.hh"
@@ -63,7 +65,8 @@ namespace Dwm {
         return true;
       }
       else {
-        Syslog(LOG_ERR, "LoopbackReceiver not started: pipe() failed (%m)");
+        FSyslog(LOG_ERR, "LoopbackReceiver not started: pipe() failed ({})",
+                strerror(errno));
       }
       return false;
     }

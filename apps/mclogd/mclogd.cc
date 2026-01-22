@@ -101,7 +101,7 @@ static int WaitSigHupOrTerm()
   sigaddset(&sigSet, SIGINT);
   int  signum;
   sigwait(&sigSet, &signum);
-  Syslog(LOG_INFO, "Got signal %d", signum);
+  FSyslog(LOG_INFO, "Got signal {}", signum);
   
   return signum;
 }

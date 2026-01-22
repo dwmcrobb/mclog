@@ -99,20 +99,21 @@ namespace Dwm {
               }
             }
             else {
-              Syslog(LOG_ERR, "bind(%d,%s:0) failed: %m",
-                     _fd, ((std::string)_config.mcast.intfAddr).c_str());
+              FSyslog(LOG_ERR, "bind({},{}:0) failed: {}",
+                      _fd, _config.mcast.intfAddr, strerror(errno));
               ::close(_fd);  _fd = -1;
             }
           }
           else {
-            Syslog(LOG_ERR,
-                   "setsockopt(%d,IPPROTO_IP,IP_MULTICAST_IF,%s) failed: %m",
-                   _fd, ((std::string)_config.mcast.intfAddr).c_str());
+            FSyslog(LOG_ERR,
+                    "setsockopt({},IPPROTO_IP,IP_MULTICAST_IF,{}) failed: {}",
+                    _fd, _config.mcast.intfAddr, strerror(errno));
             ::close(_fd);  _fd = -1;
           }
         }
         else {
-          Syslog(LOG_ERR, "socket(PF_INET, SOCK_DGRAM, 0) failed: %m");
+          FSyslog(LOG_ERR, "socket(PF_INET, SOCK_DGRAM, 0) failed: {}",
+                  strerror(errno));
         }
       }
       return rc;

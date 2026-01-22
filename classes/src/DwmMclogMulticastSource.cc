@@ -295,8 +295,8 @@ namespace Dwm {
           break;
         }
         else {
-          Syslog(LOG_DEBUG, "Dropped backlog entry of %llu bytes from %s",
-                 ble.Datalen(), ((std::string)_endpoint).c_str());
+          FSyslog(LOG_DEBUG, "Dropped backlog entry of {} bytes from {}",
+                 ble.Datalen(), _endpoint);
         }
       }
       return;

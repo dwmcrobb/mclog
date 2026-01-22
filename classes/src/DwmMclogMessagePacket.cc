@@ -67,7 +67,8 @@ namespace Dwm {
                         (const uint8_t *)secretKey.data()) == 0) {
         rc = sendto(fd, _buf, k_nonceLen + cbuflen, 0, dst, dstlen);
         if (rc != k_nonceLen + cbuflen) {
-          Syslog(LOG_ERR, "sendto() failed: %s (%d)", strerror(errno), errno);
+          FSyslog(LOG_ERR, "sendto() failed: {} ({})",
+                  strerror(errno), errno);
         }
       }
       else {
@@ -91,7 +92,7 @@ namespace Dwm {
       unsigned long long  cbuflen = _payloadLength + k_macLen;
       rc = sendto(fd, _buf, k_nonceLen + cbuflen, 0, dst, dstlen);
       if (rc != k_nonceLen + cbuflen) {
-        Syslog(LOG_ERR, "sendto() failed: %s (%d)", strerror(errno), errno);
+        FSyslog(LOG_ERR, "sendto() failed: {} ({})", strerror(errno), errno);
       }
       _payload.seekp(0);
       _payloadLength = 0;

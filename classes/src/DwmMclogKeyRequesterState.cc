@@ -39,7 +39,7 @@
 
 #include <vector>
 
-#include "DwmIpv4Address.hh"
+#include "DwmFormatters.hh"
 #include "DwmCredenceKeyStash.hh"
 #include "DwmCredenceKnownKeys.hh"
 #include "DwmCredenceXChaCha20Poly1305Istream.hh"
@@ -85,10 +85,8 @@ namespace Dwm {
             rc = true;
           }
           else {
-            Syslog(LOG_INFO, "SendTo(%d,%s:%hu,%zu) failed: %m",
-                   fd,
-                   ((std::string)(Ipv4Address(dst.sin_addr.s_addr))).c_str(),
-                   ntohs(dst.sin_port), sizeof(dst));
+            FSyslog(LOG_INFO, "SendTo({},{},{}) failed: {}",
+                    fd, dst, sizeof(dst), strerror(errno));
           }
         }
         else {
@@ -143,27 +141,26 @@ namespace Dwm {
               //  xxx - Not ideal....
               _mcastKey = origMsg.substr(_kxKeyPair.PublicKey().Value().size());
               rc = true;
-              Syslog(LOG_INFO, "%s authenticated", id.c_str());
+              FSyslog(LOG_INFO, "{} authenticated", id);
             }
             else {
-              Syslog(LOG_ERR, "Signed message content mismatch from id '%s'",
-                     id.c_str());
+              FSyslog(LOG_ERR, "Signed message content mismatch from id '{}'",
+                     id);
             }
           }
           else {
-              Syslog(LOG_ERR, "Signed message length mismatch from id '%s':"
-                     " %llu should be %llu", id.c_str(), origMsg.size(),
+              FSyslog(LOG_ERR, "Signed message length mismatch from id '{}':"
+                      " {} should be {}", id, origMsg.size(),
                      _kxKeyPair.PublicKey().Value().size()
                      + crypto_kx_SESSIONKEYBYTES);
           }
         }
         else {
-          Syslog(LOG_ERR, "Failed to open signed message from id '%s",
-                 id.c_str());
+          FSyslog(LOG_ERR, "Failed to open signed message from id '{}", id);
         }
       }
       else {
-        Syslog(LOG_ERR, "Unknown id '%s'", id.c_str());
+        FSyslog(LOG_ERR, "Unknown id '{}'", id);
       }
       return rc;
     }
@@ -185,13 +182,13 @@ namespace Dwm {
             }
             else {
               ChangeState(&KeyRequesterState::Failure);
-              Syslog(LOG_ERR, "Invalid id '%s'", _theirId.c_str());
+              FSyslog(LOG_ERR, "Invalid id '{}'", _theirId);
             }
           }
           else {
             ChangeState(&KeyRequesterState::Failure);
-            Syslog(LOG_ERR, "Failed to read signed message from id '%s'",
-                   _theirId.c_str());
+            FSyslog(LOG_ERR, "Failed to read signed message from id '{}'",
+                    _theirId);
           }
         }
         else {
@@ -244,8 +241,8 @@ namespace Dwm {
     {
       std::string  prevState = StateName();
       _currentState = state;
-      Syslog(LOG_INFO, "KeyRequester state change %s -> %s",
-             prevState.c_str(), StateName().c_str());
+      FSyslog(LOG_INFO, "KeyRequester state change {} -> {}",
+              prevState, StateName());
     }
     
   }  // namespace Mclog

@@ -72,7 +72,7 @@ namespace Dwm {
           _sources.insert({srcEndpoint,MulticastSource(srcEndpoint,_keyDir,_sinks)});
         nit->second.ProcessPacket(data, datalen);
         ClearOld();
-        Syslog(LOG_INFO, "%llu active multicast sources", _sources.size());
+        FSyslog(LOG_INFO, "{} active multicast sources", _sources.size());
       }
       return;
     }

@@ -41,7 +41,7 @@
 #include <iostream>
 #include <map>
 
-#include "DwmIpv4Address.hh"
+#include "DwmFormatters.hh"
 #include "DwmCredenceXChaCha20Poly1305Istream.hh"
 #include "DwmCredenceXChaCha20Poly1305Ostream.hh"
 #include "DwmCredenceSigner.hh"
@@ -106,16 +106,13 @@ namespace Dwm {
             ChangeState(&KeyRequestClientState::KXKeySent);
           }
           else {
-            Syslog(LOG_ERR, "sendto(...,%s:%hu,...) failed: %m",
-                   ((std::string)Ipv4Address(src.sin_addr.s_addr)).c_str(),
-                   ntohs(src.sin_port));
+            FSyslog(LOG_ERR, "sendto({},{},...) failed: {}",
+                    fd, src, strerror(errno));
             ChangeState(&KeyRequestClientState::Failure);
           }
         }
         else {
-          Syslog(LOG_ERR, "Incorrect key length from %s:%hu",
-                 ((std::string)Ipv4Address(src.sin_addr.s_addr)).c_str(),
-                 ntohs(src.sin_port));
+          FSyslog(LOG_ERR, "Incorrect key length from {}", src);
           ChangeState(&KeyRequestClientState::Failure);
         }
       }
@@ -165,20 +162,19 @@ namespace Dwm {
         if (Credence::Signer::Open(signedMsg, key, origMsg)) {
           if (origMsg == _keyPair.PublicKey()) {
             rc = true;
-            Syslog(LOG_INFO, "KeyRequestClient %s authenticated", id.c_str());
+            FSyslog(LOG_INFO, "KeyRequestClient {} authenticated", id);
           }
           else {
-            Syslog(LOG_ERR, "Signed message content mismatch from id '%s'",
-                   id.c_str());
+            FSyslog(LOG_ERR, "Signed message content mismatch from id '{}'",
+                    id);
           }
         }
         else {
-          Syslog(LOG_ERR, "Failed to open signed message from id '%s",
-                 id.c_str());
+          FSyslog(LOG_ERR, "Failed to open signed message from id '{}'", id);
         }
       }
       else {
-        Syslog(LOG_WARNING, "Unknown KeyRequestClient id '%s'", id.c_str());
+        FSyslog(LOG_WARNING, "Unknown KeyRequestClient id '{}'", id);
       }
       return rc;
     }
@@ -190,8 +186,7 @@ namespace Dwm {
     {
       if (buflen < MessagePacket::k_minPacketLen) {
         ChangeState(&KeyRequestClientState::Failure);
-        Syslog(LOG_ERR, "Short packet from %s:%hu",
-               inet_ntoa(src.sin_addr), ntohs(src.sin_port));
+        FSyslog(LOG_ERR, "Short packet from {}", src);
         return false;
       }
       
@@ -209,13 +204,13 @@ namespace Dwm {
               }
             }
             else {
-              Syslog(LOG_ERR, "Invalid id '%s'", _theirId.c_str());
+              FSyslog(LOG_ERR, "Invalid id '{}'", _theirId);
               ChangeState(&KeyRequestClientState::Failure);
             }
           }
           else {
-            Syslog(LOG_ERR, "Failed to read signed message from id '%s'",
-                   _theirId.c_str());
+            FSyslog(LOG_ERR, "Failed to read signed message from id '{}'",
+                    _theirId);
           }
         }
         else {
@@ -251,8 +246,8 @@ namespace Dwm {
       std::string  prevStateName = StateName();
       _state = newState;
       _lastStateChangeTime = time((time_t *)0);
-      Syslog(LOG_INFO, "State changed from %s to %s", prevStateName.c_str(),
-             StateName().c_str());
+      FSyslog(LOG_INFO, "State changed from {} to {}",
+              prevStateName, StateName());
       return;
     }
 
