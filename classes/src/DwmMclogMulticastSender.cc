@@ -32,7 +32,7 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file DwmMclogMulticaster.cc
+//!  @file DwmMclogMulticastSender.cc
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
@@ -45,7 +45,7 @@ extern "C" {
 
 #include "DwmCredenceKXKeyPair.hh"
 #include "DwmCredenceXChaCha20Poly1305.hh"
-#include "DwmMclogMulticaster.hh"
+#include "DwmMclogMulticastSender.hh"
 #include "DwmMclogMessagePacket.hh"
 
 namespace Dwm {
@@ -53,7 +53,7 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    Multicaster::Multicaster()
+    MulticastSender::MulticastSender()
         : _fd(-1), _run(false), _thread(), _outQueue(), _config(), _key(),
           _keyRequestListener()
     {
@@ -64,13 +64,13 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
-    Multicaster::~Multicaster()
+    MulticastSender::~MulticastSender()
     {
       Close();
     }
     
     //------------------------------------------------------------------------
-    bool Multicaster::Open(const Config & config)
+    bool MulticastSender::Open(const Config & config)
     {
       bool  rc = false;
       _config = config;
@@ -90,7 +90,7 @@ namespace Dwm {
               if (_keyRequestListener.Start(_fd, &_config.service.keyDirectory,
                                             &_key)) {
                 _run = true;
-                _thread = std::thread(&Multicaster::Run, this);
+                _thread = std::thread(&MulticastSender::Run, this);
                 rc = true;
               }
               else {
@@ -121,14 +121,14 @@ namespace Dwm {
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    bool Multicaster::Restart(const Config & config)
+    bool MulticastSender::Restart(const Config & config)
     {
       Close();
       return Open(config);
     }
     
     //------------------------------------------------------------------------
-    void Multicaster::Close()
+    void MulticastSender::Close()
     {
       _keyRequestListener.Stop();
       
@@ -145,7 +145,7 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
-    bool Multicaster::SendPacket(MessagePacket & pkt)
+    bool MulticastSender::SendPacket(MessagePacket & pkt)
     {
       sockaddr_in  dst;
       memset(&dst, 0, sizeof(dst));
@@ -160,9 +160,9 @@ namespace Dwm {
     }
     
     //------------------------------------------------------------------------
-    void Multicaster::Run()
+    void MulticastSender::Run()
     {
-      Syslog(LOG_INFO, "Multicaster thread started");
+      Syslog(LOG_INFO, "MulticastSender thread started");
       char  buf[1400];
       MessagePacket  pkt(buf, sizeof(buf));
       Message  msg;
@@ -189,7 +189,7 @@ namespace Dwm {
           }
         }
       }
-      Syslog(LOG_INFO, "Multicaster thread done");
+      Syslog(LOG_INFO, "MulticastSender thread done");
       return;
     }
     

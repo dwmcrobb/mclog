@@ -32,13 +32,13 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file DwmMclogMulticaster.hh
+//!  @file DwmMclogMulticastSender.hh
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-#ifndef _DWMMCLOGMULTICASTER_HH_
-#define _DWMMCLOGMULTICASTER_HH_
+#ifndef _DWMMCLOGMULTICASTSENDER_HH_
+#define _DWMMCLOGMULTICASTSENDER_HH_
 
 #include <chrono>
 #include <span>
@@ -59,7 +59,7 @@ namespace Dwm {
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    class Multicaster
+    class MulticastSender
     {
     public:
       using Clock = std::chrono::system_clock;
@@ -67,12 +67,12 @@ namespace Dwm {
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
-      Multicaster();
+      MulticastSender();
 
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
-      ~Multicaster();
+      ~MulticastSender();
       
       //----------------------------------------------------------------------
       //!  
@@ -119,4 +119,4 @@ namespace Dwm {
 
 }  // namespace Dwm
 
-#endif  // _DWMMCLOGMULTICASTER_HH_
+#endif  // _DWMMCLOGMULTICASTSENDER_HH_

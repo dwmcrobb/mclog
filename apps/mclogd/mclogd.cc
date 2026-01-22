@@ -45,12 +45,12 @@ extern "C" {
 #include "DwmDaemonUtils.hh"
 #include "DwmSysLogger.hh"
 #include "DwmMclogLoopbackReceiver.hh"
-#include "DwmMclogMulticaster.hh"
+#include "DwmMclogMulticastSender.hh"
 #include "DwmMclogMulticastReceiver.hh"
 #include "DwmMclogFileLogger.hh"
 
 static Dwm::Mclog::LoopbackReceiver   g_loopbackReceiver;
-static Dwm::Mclog::Multicaster        g_mcaster;
+static Dwm::Mclog::MulticastSender    g_mcastSender;
 static Dwm::Mclog::MulticastReceiver  g_mcastReceiver;
 static Dwm::Mclog::FileLogger         g_fileLogger;
 
@@ -65,7 +65,7 @@ static bool Restart(const std::string & configPath)
   Dwm::Mclog::Config  config;
   if (config.Parse("/usr/local/etc/mclogd.cfg")) {
     if (g_fileLogger.Restart(config.files)) {
-      if (g_mcaster.Restart(config)) {
+      if (g_mcastSender.Restart(config)) {
         if (g_mcastReceiver.Restart(config)) {
           rc = g_loopbackReceiver.Restart();
         }
@@ -191,9 +191,9 @@ int main(int argc, char *argv[])
   Dwm::Mclog::Config  config;
   if (config.Parse(configPath)) {
     SavePID(pidFile);
-    g_mcaster.Open(config);
+    g_mcastSender.Open(config);
     g_fileLogger.Start(config.files);
-    g_loopbackReceiver.AddSink(g_mcaster.OutputQueue());
+    g_loopbackReceiver.AddSink(g_mcastSender.OutputQueue());
     g_loopbackReceiver.AddSink(g_fileLogger.InputQueue());
     g_loopbackReceiver.Start();
     g_mcastReceiver.AddSink(g_fileLogger.InputQueue());
@@ -207,7 +207,7 @@ int main(int argc, char *argv[])
       else if ((SIGTERM == sig) || (SIGINT == sig)) {
         Syslog(LOG_INFO, "Received exit signal");
         g_loopbackReceiver.Stop();
-        g_mcaster.Close();
+        g_mcastSender.Close();
         g_fileLogger.Stop();
         g_mcastReceiver.Close();
         RemovePID();
