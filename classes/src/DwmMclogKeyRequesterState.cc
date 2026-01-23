@@ -62,12 +62,12 @@ namespace Dwm {
     {}
     
     //------------------------------------------------------------------------
-    bool KeyRequesterState::Initial(int fd, const sockaddr_in & src,
+    bool KeyRequesterState::Initial(int fd, const UdpEndpoint & src,
                                    char *buf, size_t buflen)
     { return false; }
     
     //------------------------------------------------------------------------
-    bool KeyRequesterState::SendIdAndSig(int fd, const sockaddr_in & dst)
+    bool KeyRequesterState::SendIdAndSig(int fd, const UdpEndpoint & dst)
     {
       bool  rc = false;
       Credence::Ed25519KeyPair  myKeys;
@@ -81,7 +81,7 @@ namespace Dwm {
                                    myKeys.SecretKey().Key(),
                                    signedMsg)) {
           pkt.Add(signedMsg);
-          if (pkt.SendTo(fd, _sharedKey, &dst) > 0) {
+          if (pkt.SendTo(fd, _sharedKey, dst) > 0) {
             rc = true;
           }
           else {
@@ -100,26 +100,26 @@ namespace Dwm {
     }
     
     //------------------------------------------------------------------------
-    bool KeyRequesterState::KXKeySent(int fd, const sockaddr_in & src,
+    bool KeyRequesterState::KXKeySent(int fd, const UdpEndpoint & src,
                                       char *buf, size_t buflen)
     {
       bool  rc = false;
       std::spanstream  sps{std::span{buf,buflen}};
       if (StreamIO::Read(sps, _theirKX)) {
         _sharedKey = _kxKeyPair.SharedKey(_theirKX.Value());
-        struct sockaddr_in  dst;                                          
-        memcpy(&dst, &src, sizeof(dst));
-        dst.sin_port = htons(_port);
+        
+        UdpEndpoint  dst(src);
+        // dst.Port(htons(_port));
         if (SendIdAndSig(fd, dst)) {
           rc = true;
-          ChangeState(&KeyRequesterState::IDSent);
+          ChangeState(&KeyRequesterState::IDSent, src);
         }
         else {
-          ChangeState(&KeyRequesterState::Failure);
+          ChangeState(&KeyRequesterState::Failure, src);
         }
       }
       else {
-        ChangeState(&KeyRequesterState::Failure);
+        ChangeState(&KeyRequesterState::Failure, src);
       }
       return rc;
     }
@@ -166,7 +166,7 @@ namespace Dwm {
     }
     
     //------------------------------------------------------------------------
-    bool KeyRequesterState::IDSent(int fd, const sockaddr_in & src,
+    bool KeyRequesterState::IDSent(int fd, const UdpEndpoint & src,
                                   char *buf, size_t buflen)
     {
       bool  rc = false;
@@ -178,26 +178,26 @@ namespace Dwm {
           if (StreamIO::Read(pkt.Payload(), signedMsg)) {
             if (IsValidUser(_theirId, signedMsg)) {
               rc = true;
-              ChangeState(&KeyRequesterState::Success);
+              ChangeState(&KeyRequesterState::Success, src);
             }
             else {
-              ChangeState(&KeyRequesterState::Failure);
+              ChangeState(&KeyRequesterState::Failure, src);
               FSyslog(LOG_ERR, "Invalid id '{}'", _theirId);
             }
           }
           else {
-            ChangeState(&KeyRequesterState::Failure);
+            ChangeState(&KeyRequesterState::Failure, src);
             FSyslog(LOG_ERR, "Failed to read signed message from id '{}'",
                     _theirId);
           }
         }
         else {
-          ChangeState(&KeyRequesterState::Failure);
+          ChangeState(&KeyRequesterState::Failure, src);
           Syslog(LOG_ERR, "Failed to read their ID");
         }
       }
       else {
-        ChangeState(&KeyRequesterState::Failure);
+        ChangeState(&KeyRequesterState::Failure, src);
         Syslog(LOG_ERR, "Failed to decrypt packet");
       }
       return rc;
@@ -205,7 +205,7 @@ namespace Dwm {
     
     //------------------------------------------------------------------------
     bool KeyRequesterState::Success(int fd,
-                                   const sockaddr_in & src,
+                                   const UdpEndpoint & src,
                                    char *buf, size_t buflen)
     {
       return true;
@@ -213,7 +213,7 @@ namespace Dwm {
     
     //------------------------------------------------------------------------
     bool KeyRequesterState::Failure(int fd,
-                                   const sockaddr_in & src,
+                                   const UdpEndpoint & src,
                                    char *buf, size_t buflen)
     {
       return false;
@@ -237,12 +237,12 @@ namespace Dwm {
     }
     
     //------------------------------------------------------------------------
-    void KeyRequesterState::ChangeState(State state)
+    void KeyRequesterState::ChangeState(State state, const UdpEndpoint & src)
     {
       std::string  prevState = StateName();
       _currentState = state;
-      FSyslog(LOG_INFO, "KeyRequester state change {} -> {}",
-              prevState, StateName());
+      FSyslog(LOG_INFO, "KeyRequester {} state change {} -> {}",
+              src, prevState, StateName());
     }
     
   }  // namespace Mclog

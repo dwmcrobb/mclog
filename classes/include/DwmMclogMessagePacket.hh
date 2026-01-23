@@ -63,6 +63,7 @@ extern "C" {
 #endif
 
 #include "DwmStreamIO.hh"
+#include "DwmMclogUdpEndpoint.hh"
 
 namespace Dwm {
 
@@ -114,6 +115,9 @@ namespace Dwm {
       ssize_t SendTo(int fd, const std::string & secretKey,
                      const sockaddr_in *dst);
 
+      ssize_t SendTo(int fd, const std::string & secretKey,
+                     const UdpEndpoint & dst);
+      
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
@@ -129,14 +133,28 @@ namespace Dwm {
       //!  
       //----------------------------------------------------------------------
       ssize_t SendTo(int fd, const sockaddr_in6 *dst);
-      
+
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
       ssize_t RecvFrom(int fd, const std::string & secretKey,
-                       struct sockaddr *src, socklen_t *srclen);
+                       struct sockaddr_in *src);
 
-      ssize_t RecvFrom(int fd, struct sockaddr *src, socklen_t *srclen);
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      ssize_t RecvFrom(int fd, const std::string & secretKey,
+                       struct sockaddr_in6 *src);
+      
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      ssize_t RecvFrom(int fd, struct sockaddr_in *src);
+
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      ssize_t RecvFrom(int fd, struct sockaddr_in6 *src);
 
       //----------------------------------------------------------------------
       //!  

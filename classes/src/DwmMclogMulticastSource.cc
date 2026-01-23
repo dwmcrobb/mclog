@@ -180,7 +180,7 @@ namespace Dwm {
     }
     
     //------------------------------------------------------------------------
-    MulticastSource::MulticastSource(const Udp4Endpoint & srcEndpoint,
+    MulticastSource::MulticastSource(const UdpEndpoint & srcEndpoint,
                                      const std::string *keyDir,
                                      vector<Thread::Queue<Message> *> *sinks)
         : _endpoint(srcEndpoint), _key(), _backlog(), _keyDir(keyDir),
@@ -199,9 +199,8 @@ namespace Dwm {
     //------------------------------------------------------------------------
     MulticastSource::MulticastSource(MulticastSource && src)
         : _endpoint(std::move(src._endpoint)), _key(src._key),
-          _keyDir(src._keyDir), _sinks(src._sinks),
-          _queryDone(true), _queryThread(),
-          _lastReceiveTime(src._lastReceiveTime)
+          _keyDir(src._keyDir), _sinks(src._sinks), _queryDone(true),
+          _queryThread(), _lastReceiveTime(src._lastReceiveTime)
     {
       _backlog.Swap(src._backlog);
     }

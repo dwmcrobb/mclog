@@ -88,7 +88,7 @@ namespace Dwm {
     
     //------------------------------------------------------------------------
     bool KeyRequestClientState::Initial(int fd,
-                                        const struct sockaddr_in & src,
+                                        const struct UdpEndpoint & src,
                                         char *buf, size_t buflen)
     {
       bool  rc = false;
@@ -98,33 +98,41 @@ namespace Dwm {
           _sharedKey = _keyPair.SharedKey(_theirKX.Value());
           sps.seekp(0);
           _keyPair.PublicKey().Write(sps);
-          ssize_t sendrc = sendto(fd, buf, sps.tellp(), 0,
-                                  (const struct sockaddr *)&src,
-                                  sizeof(src));
+          ssize_t  sendrc = -1;
+          if (src.Addr().Family() == AF_INET) {
+            sockaddr_in  dstAddr = src;
+            sendrc = sendto(fd, buf, sps.tellp(), 0,
+                            (const sockaddr *)&dstAddr, sizeof(dstAddr));
+          }
+          else {
+            sockaddr_in6  dstAddr = src;
+            sendrc = sendto(fd, buf, sps.tellp(), 0,
+                            (const sockaddr *)&dstAddr, sizeof(dstAddr));
+          }
           if (sendrc == sps.tellp()) {
             rc = true;
-            ChangeState(&KeyRequestClientState::KXKeySent);
+            ChangeState(&KeyRequestClientState::KXKeySent, src);
           }
           else {
             FSyslog(LOG_ERR, "sendto({},{},...) failed: {}",
                     fd, src, strerror(errno));
-            ChangeState(&KeyRequestClientState::Failure);
+            ChangeState(&KeyRequestClientState::Failure, src);
           }
         }
         else {
           FSyslog(LOG_ERR, "Incorrect key length from {}", src);
-          ChangeState(&KeyRequestClientState::Failure);
+          ChangeState(&KeyRequestClientState::Failure, src);
         }
       }
       else {
         Syslog(LOG_ERR, "Failed to read client public key");
-        ChangeState(&KeyRequestClientState::Failure);
+        ChangeState(&KeyRequestClientState::Failure, src);
       }
       return rc;
     }
 
     //------------------------------------------------------------------------
-    bool KeyRequestClientState::SendIdAndSig(int fd, const sockaddr_in & dst)
+    bool KeyRequestClientState::SendIdAndSig(int fd, const UdpEndpoint & dst)
     {
       using namespace Dwm::Credence;
       
@@ -141,7 +149,7 @@ namespace Dwm {
         if (Signer::Sign(_theirKX.Value() + *_mcastKey,
                          myKeys.SecretKey().Key(), signedMsg)) {
           pkt.Add(signedMsg);
-          if (pkt.SendTo(fd, _sharedKey, &dst) > 0) {
+          if (pkt.SendTo(fd, _sharedKey, dst) > 0) {
             rc = true;
           }
         }
@@ -179,12 +187,11 @@ namespace Dwm {
     }
     
     //------------------------------------------------------------------------
-    bool KeyRequestClientState::KXKeySent(int fd,
-                                          const struct sockaddr_in & src,
+    bool KeyRequestClientState::KXKeySent(int fd, const UdpEndpoint & src,
                                           char *buf, size_t buflen)
     {
       if (buflen < MessagePacket::k_minPacketLen) {
-        ChangeState(&KeyRequestClientState::Failure);
+        ChangeState(&KeyRequestClientState::Failure, src);
         FSyslog(LOG_ERR, "Short packet from {}", src);
         return false;
       }
@@ -199,12 +206,12 @@ namespace Dwm {
             if (IsValidUser(_theirId, signedMsg)) {
               if (SendIdAndSig(fd, src)) {
                 rc = true;
-                ChangeState(&KeyRequestClientState::IDSent);
+                ChangeState(&KeyRequestClientState::IDSent, src);
               }
             }
             else {
               FSyslog(LOG_ERR, "Invalid id '{}'", _theirId);
-              ChangeState(&KeyRequestClientState::Failure);
+              ChangeState(&KeyRequestClientState::Failure, src);
             }
           }
           else {
@@ -223,8 +230,7 @@ namespace Dwm {
     }
   
     //------------------------------------------------------------------------
-    bool KeyRequestClientState::IDSent(int fd,
-                                       const struct sockaddr_in & src,
+    bool KeyRequestClientState::IDSent(int fd, const UdpEndpoint & src,
                                        char *buf, size_t buflen)
     {
       bool  rc = false;
@@ -232,21 +238,21 @@ namespace Dwm {
     }
     
     //------------------------------------------------------------------------
-    bool KeyRequestClientState::Failure(int fd,
-                                       const struct sockaddr_in & src,
+    bool KeyRequestClientState::Failure(int fd, const UdpEndpoint & src,
                                        char *buf, size_t buflen)
     {
       return false;
     }
   
     //------------------------------------------------------------------------
-    void KeyRequestClientState::ChangeState(State newState)
+    void KeyRequestClientState::ChangeState(State newState,
+                                            const UdpEndpoint & src)
     {
       std::string  prevStateName = StateName();
       _state = newState;
       _lastStateChangeTime = time((time_t *)0);
-      FSyslog(LOG_INFO, "State changed from {} to {}",
-              prevStateName, StateName());
+      FSyslog(LOG_INFO, "KeyRequestClient {} state changed from {} to {}",
+              src, prevStateName, StateName());
       return;
     }
 

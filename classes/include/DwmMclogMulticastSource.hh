@@ -47,7 +47,7 @@
 #include "DwmThreadQueue.hh"
 #include "DwmMclogMessage.hh"
 #include "DwmMclogMulticastSourceKey.hh"
-#include "DwmMclogUdp4Endpoint.hh"
+#include "DwmMclogUdpEndpoint.hh"
 
 namespace Dwm {
 
@@ -75,7 +75,7 @@ namespace Dwm {
       
       MulticastSource();
       ~MulticastSource();
-      MulticastSource(const Udp4Endpoint & srcEndpoint,
+      MulticastSource(const UdpEndpoint & srcEndpoint,
                       const std::string *keyDir,
                       std::vector<Thread::Queue<Message> *> *sinks);
       MulticastSource(const MulticastSource & src);
@@ -112,7 +112,7 @@ namespace Dwm {
         size_t                                  _datalen;
       };
 
-      Udp4Endpoint                            _endpoint;
+      UdpEndpoint                             _endpoint;
       MulticastSourceKey                      _key;
       Thread::Queue<BacklogEntry>             _backlog;
       const std::string                      *_keyDir;

@@ -49,6 +49,7 @@ extern "C" {
 }
 
 #include "DwmCredenceKXKeyPair.hh"
+#include "DwmMclogUdpEndpoint.hh"
 
 namespace Dwm {
 
@@ -60,7 +61,7 @@ namespace Dwm {
     class KeyRequesterState
     {
     public:
-      using State = bool (KeyRequesterState::*)(int, const sockaddr_in &,
+      using State = bool (KeyRequesterState::*)(int, const UdpEndpoint &,
                                                char *, size_t);
       
       //----------------------------------------------------------------------
@@ -71,7 +72,7 @@ namespace Dwm {
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
-      bool ProcessPacket(int fd, const sockaddr_in & src, char *buf,
+      bool ProcessPacket(int fd, const UdpEndpoint & src, char *buf,
                          size_t buflen)
       {
         return (this->*_currentState)(fd, src, buf, buflen);
@@ -80,17 +81,17 @@ namespace Dwm {
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
-      bool Initial(int fd, const sockaddr_in & src, char *buf, size_t buflen);
+      bool Initial(int fd, const UdpEndpoint & src, char *buf, size_t buflen);
       
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
-      bool KXKeySent(int fd, const sockaddr_in & src,
+      bool KXKeySent(int fd, const UdpEndpoint & src,
                      char *buf, size_t buflen);
       
-      bool IDSent(int fd, const sockaddr_in & src, char *buf, size_t buflen);
-      bool Success(int fd, const sockaddr_in & src, char *buf, size_t buflen);
-      bool Failure(int fd, const sockaddr_in & src, char *buf, size_t buflen);
+      bool IDSent(int fd, const UdpEndpoint & src, char *buf, size_t buflen);
+      bool Success(int fd, const UdpEndpoint & src, char *buf, size_t buflen);
+      bool Failure(int fd, const UdpEndpoint & src, char *buf, size_t buflen);
       
       //----------------------------------------------------------------------
       //!  
@@ -100,7 +101,7 @@ namespace Dwm {
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
-      void ChangeState(State state);
+      void ChangeState(State state, const UdpEndpoint & src);
       
       //----------------------------------------------------------------------
       //!  
@@ -131,7 +132,7 @@ namespace Dwm {
       std::string                _theirId;
       std::string                _mcastKey;
       
-      bool SendIdAndSig(int fd, const sockaddr_in & dst);
+      bool SendIdAndSig(int fd, const UdpEndpoint & dst);
       bool IsValidUser(const std::string & id, const std::string & signedMsg);
     };
 

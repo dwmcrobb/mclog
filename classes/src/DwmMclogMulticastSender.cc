@@ -176,7 +176,8 @@ namespace Dwm {
       if (0 > _fd) {
         if (OpenSocket()) {
           OpenSocket6();
-          if (_keyRequestListener.Start(_fd, &_config.service.keyDirectory,
+          if (_keyRequestListener.Start(_fd, _fd6,
+                                        &_config.service.keyDirectory,
                                         &_key)) {
             _run = true;
             _thread = std::thread(&MulticastSender::Run, this);

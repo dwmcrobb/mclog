@@ -72,6 +72,7 @@ namespace Dwm {
     private:
       Config                                 _config;
       int                                    _fd;
+      int                                    _fd6;
       bool                                   _acceptLocal;
       std::mutex                             _sinksMutex;
       std::vector<Thread::Queue<Message> *>  _sinks;
@@ -81,7 +82,9 @@ namespace Dwm {
       MulticastSources                       _sources;
       
       bool BindSocket();
+      bool BindSocket6();
       bool JoinGroup();
+      bool JoinGroup6();
       void Run();
     };
     

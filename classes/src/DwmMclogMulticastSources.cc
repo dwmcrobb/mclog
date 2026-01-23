@@ -59,7 +59,7 @@ namespace Dwm {
     {}
 
     //------------------------------------------------------------------------
-    void MulticastSources::ProcessPacket(const Udp4Endpoint & srcEndpoint,
+    void MulticastSources::ProcessPacket(const UdpEndpoint & srcEndpoint,
                                          char *data, size_t datalen)
     {
       auto  it = _sources.find(srcEndpoint);

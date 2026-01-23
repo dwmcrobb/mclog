@@ -32,13 +32,13 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file DwmMclogUdp4Endpoint.hh
+//!  @file DwmMclogUdpEndpoint.hh
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-#ifndef _DWMMCLOGUDP4ENDPOINT_HH_
-#define _DWMMCLOGUDP4ENDPOINT_HH_
+#ifndef _DWMMCLOGUDPENDPOINT_HH_
+#define _DWMMCLOGUDPENDPOINT_HH_
 
 #if __has_include(<format>)
 #  include <format>
@@ -48,7 +48,7 @@
 #  endif
 #endif
 
-#include "DwmIpv4Address.hh"
+#include "DwmIpAddress.hh"
 
 namespace Dwm {
 
@@ -57,33 +57,50 @@ namespace Dwm {
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    class Udp4Endpoint
+    class UdpEndpoint
     {
     public:
-      Udp4Endpoint() = default;
-      Udp4Endpoint(const Udp4Endpoint &) = default;
-      Udp4Endpoint & operator = (const Udp4Endpoint &) = default;
+      UdpEndpoint() = default;
+      UdpEndpoint(const UdpEndpoint &) = default;
+      UdpEndpoint & operator = (const UdpEndpoint &) = default;
       
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
-      Udp4Endpoint(const Ipv4Address & addr, uint16_t port)
+      UdpEndpoint(const IpAddress & addr, uint16_t port)
           : _addr(addr), _port(port)
       {}
 
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
-      Udp4Endpoint(const sockaddr_in & sockAddr)
-          : _addr(sockAddr.sin_addr.s_addr), _port(ntohs(sockAddr.sin_port))
+      UdpEndpoint(const sockaddr_in & sockAddr)
+          : _addr(Ipv4Address(sockAddr.sin_addr.s_addr)),
+            _port(ntohs(sockAddr.sin_port))
       {}
 
-      operator sockaddr_in () const;
-        
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
-      const Ipv4Address & Addr() const
+      UdpEndpoint(const sockaddr_in6 & sockAddr)
+          : _addr(Ipv6Address(sockAddr.sin6_addr)),
+            _port(ntohs(sockAddr.sin6_port))
+      {}
+
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      operator sockaddr_in () const;
+
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      operator sockaddr_in6 () const;
+      
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      const IpAddress & Addr() const
       { return _addr; }
 
       //----------------------------------------------------------------------
@@ -91,11 +108,17 @@ namespace Dwm {
       //----------------------------------------------------------------------
       uint16_t Port() const
       { return _port; }
+
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      uint16_t Port(uint16_t port)
+      { return (_port = port); }
       
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
-      bool operator < (const Udp4Endpoint & ep) const
+      bool operator < (const UdpEndpoint & ep) const
       {
         if (_addr < ep._addr) {
           return true;
@@ -109,16 +132,22 @@ namespace Dwm {
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
-      bool operator == (const Udp4Endpoint &) const = default;
+      bool operator == (const UdpEndpoint &) const = default;
 
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
       operator std::string() const;
       
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
       friend std::ostream &
-      operator << (std::ostream & os, const Udp4Endpoint & endPoint);
+      operator << (std::ostream & os, const UdpEndpoint & endPoint);
       
     private:
-      Ipv4Address  _addr;
-      uint16_t     _port;
+      IpAddress  _addr;
+      uint16_t   _port;
     };
     
   }  // namespace Mclog
@@ -129,15 +158,15 @@ namespace Dwm {
 
 namespace std {
   //--------------------------------------------------------------------------
-  //!  
+  //!  Formatter for Dwm::Mclog::UdpEndpoint
   //--------------------------------------------------------------------------
   template <>
-  struct formatter<Dwm::Mclog::Udp4Endpoint> 
+  struct formatter<Dwm::Mclog::UdpEndpoint> 
   {
     constexpr auto parse(format_parse_context & ctx) 
     { return ctx.begin(); }
     
-    auto format(const Dwm::Mclog::Udp4Endpoint & ep,
+    auto format(const Dwm::Mclog::UdpEndpoint & ep,
                 format_context & ctx) const
     {
       return format_to(ctx.out(), "{}:{}", (string)(ep.Addr()), ep.Port());
@@ -149,16 +178,16 @@ namespace std {
 #  if __has_include(<fmt/format.h>)
 
 //----------------------------------------------------------------------------
-//!  
+//!  Formatter for Dwm::Mclog::UdpEndpoint
 //----------------------------------------------------------------------------
 template <>
-struct fmt::formatter<Dwm::Mclog::Udp4Endpoint> 
+struct fmt::formatter<Dwm::Mclog::UdpEndpoint> 
 {
   constexpr auto parse(fmt::format_parse_context & ctx) 
   { return ctx.begin(); }
 
   template <typename FormatContext>
-  auto format(const Dwm::Mclog::Udp4Endpoint & ep, FormatContext & ctx) 
+  auto format(const Dwm::Mclog::UdpEndpoint & ep, FormatContext & ctx) 
   {
     return fmt::format_to(ctx.out(), "{}:{}",
                           (std::string)(ep.Addr()), ep.Port());
@@ -169,4 +198,4 @@ struct fmt::formatter<Dwm::Mclog::Udp4Endpoint>
 #endif
   
     
-#endif  // _DWMMCLOGUDP4ENDPOINT_HH_
+#endif  // _DWMMCLOGUDPENDPOINT_HH_

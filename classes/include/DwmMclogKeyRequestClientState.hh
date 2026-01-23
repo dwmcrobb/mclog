@@ -52,6 +52,7 @@ extern "C" {
 
 #include "DwmCredenceKXKeyPair.hh"
 #include "DwmCredenceKeyStash.hh"
+#include "DwmMclogUdpEndpoint.hh"
 
 namespace Dwm {
 
@@ -64,7 +65,7 @@ namespace Dwm {
     {
     public:
       using State = bool (KeyRequestClientState::*)(int,
-                                                    const struct sockaddr_in &,
+                                                    const UdpEndpoint &,
                                                     char *, size_t);
       
       //----------------------------------------------------------------------
@@ -78,17 +79,17 @@ namespace Dwm {
       //----------------------------------------------------------------------
       ~KeyRequestClientState();
       
-      bool ProcessPacket(int fd, const sockaddr_in & src,
+      bool ProcessPacket(int fd, const UdpEndpoint & src,
                          char *buf, size_t buflen)
       { return (this->*_state)(fd, src, buf, buflen); }
       
-      bool Initial(int fd, const sockaddr_in & src,
+      bool Initial(int fd, const UdpEndpoint & src,
                    char *buf, size_t buflen);
-      bool KXKeySent(int fd, const sockaddr_in & src,
+      bool KXKeySent(int fd, const UdpEndpoint & src,
                      char *buf, size_t buflen);
-      bool IDSent(int fd, const sockaddr_in & src,
+      bool IDSent(int fd, const UdpEndpoint & src,
                   char *buf, size_t buflen);
-      bool Failure(int fd, const sockaddr_in & src,
+      bool Failure(int fd, const UdpEndpoint & src,
                    char *buf, size_t buflen);
       
       //----------------------------------------------------------------------
@@ -125,8 +126,8 @@ namespace Dwm {
       const std::string          *_keyDir;
       const std::string          *_mcastKey;
       
-      void ChangeState(State newState);
-      bool SendIdAndSig(int fd, const sockaddr_in & dst);
+      void ChangeState(State newState, const UdpEndpoint & src);
+      bool SendIdAndSig(int fd, const UdpEndpoint & dst);
       bool IsValidUser(const std::string & id, const std::string & signedMsg);
     };
 

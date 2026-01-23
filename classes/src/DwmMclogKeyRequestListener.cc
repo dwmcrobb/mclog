@@ -62,7 +62,7 @@ namespace Dwm {
     //------------------------------------------------------------------------
     bool KeyRequestListener::Listen()
     {
-      return (0 <= _fd);
+      return ((0 <= _fd) || (0 <= _fd6));
     }
 
     //------------------------------------------------------------------------
@@ -79,10 +79,10 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
-    bool KeyRequestListener::Start(int fd, const std::string *keyDir,
+    bool KeyRequestListener::Start(int fd, int fd6, const std::string *keyDir,
                                    const std::string *mcastKey)
     {
-      assert(0 <= fd);
+      assert((0 <= fd) || (0 <= fd6));
       assert(mcastKey->size() == crypto_aead_xchacha20poly1305_ietf_KEYBYTES);
       
       if (! _run) {
@@ -90,6 +90,7 @@ namespace Dwm {
         _mcastKey = mcastKey;
         if (0 == pipe(_stopfds)) {
           _fd = fd;
+          _fd6 = fd6;
           _run = true;
           _thread = std::thread(&KeyRequestListener::Run, this);
           return true;
@@ -123,28 +124,28 @@ namespace Dwm {
         while (_run) {
           fd_set  fds;
           FD_ZERO(&fds);
-          FD_SET(_fd, &fds);
+          if (0 <= _fd) { FD_SET(_fd, &fds); }
+          if (0 <= _fd6)  { FD_SET(_fd6, &fds); }
           FD_SET(_stopfds[0], &fds);
-          int  selectrc = select(std::max(_fd, _stopfds[0]) + 1, &fds,
-                                 nullptr, nullptr, nullptr);
+          int  maxfd = std::max({_fd, _fd6, _stopfds[0]}) + 1;
+          int  selectrc = select(maxfd, &fds, nullptr, nullptr, nullptr);
           if (selectrc > 0) {
             if (FD_ISSET(_stopfds[0], &fds)) {
               break;
             }
-            struct sockaddr_in  clientAddr;
-            socklen_t           clientAddrLen = sizeof(clientAddr);
             if (FD_ISSET(_fd, &fds)) {
+              struct sockaddr_in  clientAddr;
+              socklen_t           clientAddrLen = sizeof(clientAddr);
               char  buf[1500];
               ssize_t  recvrc = recvfrom(_fd, buf, sizeof(buf), 0,
                                          (struct sockaddr *)&clientAddr,
                                          &clientAddrLen);
               if (recvrc) {
                 std::string  s(buf, recvrc);
-                Udp4Endpoint krcAddr(Ipv4Address(clientAddr.sin_addr.s_addr),
-                                     ntohs(clientAddr.sin_port));
+                UdpEndpoint krcAddr(clientAddr);
                 auto [clientit, dontCare] =
                   _clients.insert({krcAddr,KeyRequestClientState(_keyDir, _mcastKey)});
-                if (clientit->second.ProcessPacket(_fd, clientAddr, buf, recvrc)) {
+                if (clientit->second.ProcessPacket(_fd, krcAddr, buf, recvrc)) {
                   if (clientit->second.Success()) {
                     _clientsDone.push_back(*clientit);
                     _clients.erase(clientit);
@@ -153,7 +154,37 @@ namespace Dwm {
                   }
                 }
               }
+              else {
+                FSyslog(LOG_ERR, "recvfrom({}) failed: {}", _fd, strerror(errno));
+              }
             }
+            if (FD_ISSET(_fd6, &fds)) {
+              struct sockaddr_in6  clientAddr;
+              socklen_t            clientAddrLen = sizeof(clientAddr);
+              char  buf[1500];
+              ssize_t  recvrc = recvfrom(_fd6, buf, sizeof(buf), 0,
+                                         (struct sockaddr *)&clientAddr,
+                                         &clientAddrLen);
+              if (recvrc > 0) {
+                std::string  s(buf, recvrc);
+                UdpEndpoint  krcAddr(clientAddr);
+                auto [clientit, dontCare] =
+                  _clients.insert({krcAddr,KeyRequestClientState(_keyDir, _mcastKey)});
+                if (clientit->second.ProcessPacket(_fd6, krcAddr, buf, recvrc)) {
+                  if (clientit->second.Success()) {
+                    _clientsDone.push_back(*clientit);
+                    _clients.erase(clientit);
+                    FSyslog(LOG_DEBUG, "_clientsDone.size(): {}",
+                            _clientsDone.size());
+                  }
+                }
+              }
+              else {
+                FSyslog(LOG_ERR, "recvfrom({}) failed: {}",
+                        _fd6, strerror(errno));
+              }
+            }
+            
           }
           ClearExpired();
         }

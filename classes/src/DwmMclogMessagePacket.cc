@@ -99,6 +99,34 @@ namespace Dwm {
     //!  
     //------------------------------------------------------------------------
     ssize_t MessagePacket::SendTo(int fd, const std::string & secretKey,
+                                  const UdpEndpoint & dst)
+    {
+      ssize_t        rc = -1;
+      if (Encrypt(secretKey)) {
+        size_t  len = k_nonceLen + k_macLen + _payloadLength;
+        if (dst.Addr().Family() == PF_INET) {
+          sockaddr_in  dstSock = dst;
+          rc = sendto(fd, _buf, len, 0, (const sockaddr *)&dstSock, sizeof(dstSock));
+        }
+        else {
+          sockaddr_in6  dstSock = dst;
+          rc = sendto(fd, _buf, len, 0, (const sockaddr *)&dstSock, sizeof(dstSock));
+        }
+        if (rc != len) {
+          FSyslog(LOG_ERR, "sendto() failed: {} ({})",
+                  strerror(errno), errno);
+        }
+      }
+      else {
+        Syslog(LOG_ERR, "Encryption failed!!!");
+      }
+      return rc;
+    }
+
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    ssize_t MessagePacket::SendTo(int fd, const std::string & secretKey,
                                   const sockaddr_in6 *dst)
     {
       constexpr auto  xcc20p1305enc =
@@ -178,14 +206,16 @@ namespace Dwm {
       }
       return rc;
     }
-    
+
     //------------------------------------------------------------------------
     ssize_t MessagePacket::RecvFrom(int fd, const std::string & secretKey,
-                                    struct sockaddr *src, socklen_t *srclen)
+                                    sockaddr_in *src)
     {
       ssize_t  rc = -1;
       _payloadLength = 0;
-      ssize_t  recvrc = recvfrom(fd, _buf, _buflen, 0, src, srclen);
+      socklen_t  srclen = sizeof(*src);
+      ssize_t  recvrc = recvfrom(fd, _buf, _buflen, 0,
+                                 (sockaddr *)src, &srclen);
       if (recvrc > 0) {
         rc = 0;
         if (recvrc > k_minPacketLen) {
@@ -202,12 +232,37 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
-    ssize_t MessagePacket::RecvFrom(int fd, struct sockaddr *src,
-                                    socklen_t *srclen)
+    ssize_t MessagePacket::RecvFrom(int fd, const std::string & secretKey,
+                                    sockaddr_in6 *src)
     {
       ssize_t  rc = -1;
       _payloadLength = 0;
-      ssize_t  recvrc = recvfrom(fd, _buf, _buflen, 0, src, srclen);
+      socklen_t  srclen = sizeof(*src);
+      ssize_t  recvrc = recvfrom(fd, _buf, _buflen, 0,
+                                 (sockaddr *)src, &srclen);
+      if (recvrc > 0) {
+        rc = 0;
+        if (recvrc > k_minPacketLen) {
+          rc = Decrypt(recvrc, secretKey);
+        }
+        else {
+          _payload = std::spanstream{std::span{_buf,0}};
+        }
+      }
+      else {
+        _payload = std::spanstream{std::span{_buf,0}};
+      }
+      return rc;
+    }
+    
+    //------------------------------------------------------------------------
+    ssize_t MessagePacket::RecvFrom(int fd, sockaddr_in *src)
+    {
+      ssize_t  rc = -1;
+      _payloadLength = 0;
+      socklen_t  srclen = sizeof(*src);
+      ssize_t  recvrc = recvfrom(fd, _buf, _buflen, 0,
+                                 (sockaddr *)src, &srclen);
       if (recvrc > 0) {
         rc = 0;
         if (recvrc > k_minPacketLen) {
@@ -226,7 +281,33 @@ namespace Dwm {
       }
       return rc;
     }
-    
+
+    //------------------------------------------------------------------------
+    ssize_t MessagePacket::RecvFrom(int fd, sockaddr_in6 *src)
+    {
+      ssize_t  rc = -1;
+      _payloadLength = 0;
+      socklen_t  srclen = sizeof(*src);
+      ssize_t  recvrc = recvfrom(fd, _buf, _buflen, 0,
+                                 (sockaddr *)src, &srclen);
+      if (recvrc > 0) {
+        rc = 0;
+        if (recvrc > k_minPacketLen) {
+          unsigned long long plainLen = recvrc - (k_nonceLen + k_macLen);
+          rc = recvrc;
+          _payloadLength = plainLen;
+          _payload = std::spanstream{std::span{_buf + k_nonceLen,              
+                                     _payloadLength}};
+        }
+        else {
+          _payload = std::spanstream{std::span{_buf,0}};
+        }
+      }
+      else {
+        _payload = std::spanstream{std::span{_buf,0}};
+      }
+      return rc;
+    }
     
   }  // namespace Mclog
 

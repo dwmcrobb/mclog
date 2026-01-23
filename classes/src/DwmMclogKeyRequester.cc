@@ -47,6 +47,7 @@ extern "C" {
 
 #include <iostream>
 
+#include "DwmFormatters.hh"
 #include "DwmCredenceKeyStash.hh"
 #include "DwmCredenceKXKeyPair.hh"
 #include "DwmMclogKeyRequester.hh"
@@ -57,7 +58,7 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    MulticastSourceKey KeyRequester::GetKey()
+    MulticastSourceKey KeyRequester::GetKey4()
     {
       MulticastSourceKey  rc;
       rc.LastRequested(std::chrono::system_clock::now());
@@ -69,10 +70,9 @@ namespace Dwm {
         std::spanstream  ss{std::span{buf,sizeof(buf)}};
         _state.KX().PublicKey().Write(ss);
         ssize_t  sendrc = sendto(_fd, buf, ss.tellp(), 0,
-                                 (const struct sockaddr *)&dstAddr,
-                                 addrLen);
+                                 (const sockaddr *)&dstAddr, addrLen);
         if (sendrc == ss.tellp()) {
-          _state.ChangeState(&KeyRequesterState::KXKeySent);
+          _state.ChangeState(&KeyRequesterState::KXKeySent, _servEndpoint);
           while ((_state.CurrentState() != &KeyRequesterState::Success)
                  && (_state.CurrentState() != &KeyRequesterState::Failure)) {
             fd_set  fds;
@@ -83,8 +83,7 @@ namespace Dwm {
               struct sockaddr_in  srcAddr;
               socklen_t           srcAddrLen = sizeof(srcAddr);
               ssize_t  recvrc = recvfrom(_fd, buf, sizeof(buf), 0,
-                                         (struct sockaddr *)&srcAddr,
-                                         &srcAddrLen);
+                                         (sockaddr *)&srcAddr, &srcAddrLen);
               if (recvrc > 0) {
                 if (! _state.ProcessPacket(_fd, srcAddr, buf, recvrc)) {
                   break;
@@ -101,17 +100,82 @@ namespace Dwm {
           }
         }
         else {
-          Syslog(LOG_ERR, "sendto() failed");
+          FSyslog(LOG_ERR, "sendto({},{}) failed", _fd, dstAddr);
         }
-        
         close(_fd);
         _fd = -1;
       }
       else {
         Syslog(LOG_ERR, "Failed to open socket");
       }
-      
+
       return rc;
+    }
+
+    //------------------------------------------------------------------------
+    MulticastSourceKey KeyRequester::GetKey6()
+    {
+      MulticastSourceKey  rc;
+      rc.LastRequested(std::chrono::system_clock::now());
+      _fd6 = socket(PF_INET6, SOCK_DGRAM, IPPROTO_UDP);
+      if (0 <= _fd6) {
+        struct sockaddr_in6  dstAddr = _servEndpoint;
+        socklen_t  addrLen = sizeof(dstAddr);
+        char  buf[1500] = {0};
+        std::spanstream  ss{std::span{buf,sizeof(buf)}};
+        _state.KX().PublicKey().Write(ss);
+        ssize_t  sendrc = sendto(_fd6, buf, ss.tellp(), 0,
+                                 (const sockaddr *)&dstAddr, addrLen);
+        if (sendrc == ss.tellp()) {
+          _state.ChangeState(&KeyRequesterState::KXKeySent, _servEndpoint);
+          while ((_state.CurrentState() != &KeyRequesterState::Success)
+                 && (_state.CurrentState() != &KeyRequesterState::Failure)) {
+            fd_set  fds;
+            FD_ZERO(&fds);
+            FD_SET(_fd6, &fds);
+            timeval  timeout = { 1, 0 };
+            if (select(_fd6+1, &fds, nullptr, nullptr, &timeout) > 0) {
+              struct sockaddr_in6  srcAddr;
+              socklen_t            srcAddrLen = sizeof(srcAddr);
+              ssize_t  recvrc = recvfrom(_fd6, buf, sizeof(buf), 0,
+                                         (sockaddr *)&srcAddr, &srcAddrLen);
+              if (recvrc > 0) {
+                if (! _state.ProcessPacket(_fd6, srcAddr, buf, recvrc)) {
+                  break;
+                }
+              }
+            }
+            else {
+              break;
+            }
+          }
+          if (_state.CurrentState() == &KeyRequesterState::Success) {
+            rc.LastUpdated(std::chrono::system_clock::now());
+            rc.Value(_state.McastKey());
+          }
+        }
+        else {
+          Syslog(LOG_ERR, "sendto({},{}) failed", _fd6, dstAddr);
+        }
+        close(_fd6);
+        _fd6 = -1;
+      }
+      else {
+        Syslog(LOG_ERR, "Failed to open socket");
+      }
+
+      return rc;
+    }
+    
+    //------------------------------------------------------------------------
+    MulticastSourceKey KeyRequester::GetKey()
+    {
+      if (_servEndpoint.Addr().Family() == PF_INET) {
+        return GetKey4();
+      }
+      else {
+        return GetKey6();
+      }
     }
 
   }  // namespace Mclog

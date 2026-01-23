@@ -45,8 +45,7 @@
 #include <map>
 #include <vector>
 
-#include "DwmIpv4Address.hh"
-#include "DwmMclogUdp4Endpoint.hh"
+#include "DwmMclogUdpEndpoint.hh"
 #include "DwmMclogKeyRequesterState.hh"
 #include "DwmMclogMulticastSourceKey.hh"
 
@@ -60,7 +59,7 @@ namespace Dwm {
     class KeyRequester
     {
     public:
-      KeyRequester(const Udp4Endpoint servEndpoint,
+      KeyRequester(const UdpEndpoint servEndpoint,
                    const std::string & keyDir)
           : _servEndpoint(servEndpoint), _keyDir(keyDir), _fd(-1),
             _state(_servEndpoint.Port(), keyDir)
@@ -70,10 +69,14 @@ namespace Dwm {
       MulticastSourceKey GetKey();
       
     private:
-      Udp4Endpoint        _servEndpoint;
+      UdpEndpoint         _servEndpoint;
       std::string         _keyDir;
       int                 _fd;
+      int                 _fd6;
       KeyRequesterState   _state;
+
+      MulticastSourceKey GetKey4();
+      MulticastSourceKey GetKey6();
     };
 
   }  // namespace Mclog

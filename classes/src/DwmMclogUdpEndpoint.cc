@@ -32,24 +32,26 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file DwmMclogUdp4Endpoint.cc
+//!  @file DwmMclogUdpEndpoint.cc
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-#include "DwmMclogUdp4Endpoint.hh"
+#include "DwmMclogUdpEndpoint.hh"
 
 namespace Dwm {
 
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    Udp4Endpoint::operator sockaddr_in () const
+    UdpEndpoint::operator sockaddr_in () const
     {
+      assert(_addr.Family() == AF_INET);
+      
       sockaddr_in  sockAddr;
       memset(&sockAddr, 0, sizeof(sockAddr));
       sockAddr.sin_family = PF_INET;
-      sockAddr.sin_addr.s_addr = _addr.Raw();
+      sockAddr.sin_addr.s_addr = _addr.Addr<Ipv4Address>()->Raw();
       sockAddr.sin_port = htons(_port);
 #ifndef __linux__
       sockAddr.sin_len = sizeof(sockAddr);
@@ -58,7 +60,23 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
-    Udp4Endpoint::operator std::string () const
+    UdpEndpoint::operator sockaddr_in6 () const
+    {
+      assert(_addr.Family() == AF_INET6);
+      
+      sockaddr_in6  sockAddr;
+      memset(&sockAddr, 0, sizeof(sockAddr));
+      sockAddr.sin6_family = PF_INET6;
+      sockAddr.sin6_addr = *(_addr.Addr<Ipv6Address>());
+      sockAddr.sin6_port = htons(_port);
+#ifndef __linux__
+      sockAddr.sin6_len = sizeof(sockAddr);
+#endif
+      return sockAddr;
+    }
+    
+    //------------------------------------------------------------------------
+    UdpEndpoint::operator std::string () const
     {
       std::string  rc((std::string)_addr + ':' + std::to_string(_port));
       return rc;
@@ -66,7 +84,7 @@ namespace Dwm {
 
     //------------------------------------------------------------------------
     std::ostream & operator << (std::ostream & os,
-                                const Udp4Endpoint & endPoint)
+                                const UdpEndpoint & endPoint)
     {
       os << (std::string)endPoint;
       return os;

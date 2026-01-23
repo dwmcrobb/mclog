@@ -39,6 +39,7 @@
 
 #include <algorithm>
 
+#include "DwmFormatters.hh"
 #include "DwmSysLogger.hh"
 #include "DwmCredenceXChaCha20Poly1305.hh"
 #include "DwmMclogKeyRequester.hh"
@@ -51,8 +52,8 @@ namespace Dwm {
 
     //------------------------------------------------------------------------
     MulticastReceiver::MulticastReceiver()
-        : _config(), _fd(-1), _acceptLocal(true), _sinksMutex(), _sinks(),
-          _thread(), _run(false),
+        : _config(), _fd(-1), _fd6(-1), _acceptLocal(true), _sinksMutex(),
+          _sinks(), _thread(), _run(false),
           _sources(&_config.service.keyDirectory, &_sinks)
     {
       _stopfds[0] = -1;
@@ -83,7 +84,56 @@ namespace Dwm {
           if (::bind(_fd, (sockaddr *)&locAddr, sizeof(locAddr)) == 0) {
             rc = true;
           }
+          else {
+            FSyslog(LOG_ERR, "bind({},{},{}) failed: {}",
+                    _fd, locAddr, sizeof(locAddr), strerror(errno));
+          }
         }
+        else {
+          FSyslog(LOG_ERR, "setsockopt({},SOL_SOCKET,SO_REUSEPORT) failed: {}",
+                  _fd, strerror(errno));
+        }
+      }
+      else {
+        FSyslog(LOG_ERR, "setsockopt({},SOL_SOCKET,SO_REUSEADDR) failed: {}",
+                _fd, strerror(errno));
+      }
+      return rc;
+    }
+
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    bool MulticastReceiver::BindSocket6()
+    {
+      bool  rc = false;
+      int   on = 1;
+      if (setsockopt(_fd6, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) == 0) {
+        if (setsockopt(_fd6, SOL_SOCKET, SO_REUSEPORT, &on, sizeof(on)) == 0) {
+          sockaddr_in6  locAddr;
+          memset(&locAddr, 0, sizeof(locAddr));
+          locAddr.sin6_family = PF_INET6;
+          locAddr.sin6_port = htons(_config.mcast.dstPort);
+          locAddr.sin6_addr = _config.mcast.groupAddr6;
+#ifndef __linux__
+          locAddr.sin6_len = sizeof(locAddr); 
+#endif
+          if (::bind(_fd6, (sockaddr *)&locAddr, sizeof(locAddr)) == 0) {
+            rc = true;
+          }
+          else {
+            FSyslog(LOG_ERR, "bind({},{},{}) failed: {}",
+                    _fd6, locAddr, sizeof(locAddr), strerror(errno));
+          }
+        }
+        else {
+          FSyslog(LOG_ERR, "setsockopt({},SOL_SOCKET,SO_REUSEPORT) failed: {}",
+                  _fd6, strerror(errno));
+        }
+      }
+      else {
+        FSyslog(LOG_ERR, "setsockopt({},SOL_SOCKET,SO_REUSEADDR) failed: {}",
+                _fd6, strerror(errno));
       }
       return rc;
     }
@@ -91,13 +141,53 @@ namespace Dwm {
     //------------------------------------------------------------------------
     bool MulticastReceiver::JoinGroup()
     {
-      struct ip_mreq group;
-      group.imr_multiaddr.s_addr = _config.mcast.groupAddr.Raw();
-      group.imr_interface.s_addr = _config.mcast.intfAddr.Raw();
-      return (setsockopt(_fd, IPPROTO_IP, IP_ADD_MEMBERSHIP,
-                         (char *)&group, sizeof(group)) == 0);
+      bool  shouldJoin = ((_config.mcast.groupAddr != Ipv4Address())
+                          && (_config.mcast.intfAddr != Ipv4Address()));
+      if (shouldJoin) {
+        struct ip_mreq group;
+        group.imr_multiaddr.s_addr = _config.mcast.groupAddr.Raw();
+        group.imr_interface.s_addr = _config.mcast.intfAddr.Raw();
+        if (setsockopt(_fd, IPPROTO_IP, IP_ADD_MEMBERSHIP,
+                       (char *)&group, sizeof(group)) == 0) {
+          FSyslog(LOG_INFO, "Joined group {} on {}", _config.mcast.groupAddr,
+                  _config.mcast.intfAddr);
+          return true;
+        }
+        else {
+          FSyslog(LOG_ERR, "setsockopt({},IPPROTO_IP, IP_ADD_MEMBERSHIP,{} {})"
+                  " failed: {}", _fd, _config.mcast.groupAddr,
+                  _config.mcast.intfAddr, strerror(errno));
+          return false;
+        }
+      }
+      return true;
     }
 
+    //------------------------------------------------------------------------
+    bool MulticastReceiver::JoinGroup6()
+    {
+      bool  shouldJoin = ((! _config.mcast.intfName.empty())
+                          && (_config.mcast.groupAddr6 != Ipv6Address()));
+      bool  rc = false;
+      if (shouldJoin) {
+        struct ipv6_mreq  group;
+        group.ipv6mr_multiaddr = _config.mcast.groupAddr6;
+        group.ipv6mr_interface = if_nametoindex(_config.mcast.intfName.c_str());
+        if (setsockopt(_fd6, IPPROTO_IPV6, IPV6_JOIN_GROUP,
+                       (char *)&group, sizeof(group)) == 0) {
+          rc = true;
+          FSyslog(LOG_INFO, "MulticastReceiver joined {} on interface {}",
+                  _config.mcast.groupAddr6, _config.mcast.intfName);
+        }
+        else {
+          FSyslog(LOG_ERR, "MulticastReceiver failed to join {} on interface"
+                  " {}: {}", _config.mcast.groupAddr6,
+                  _config.mcast.intfName, strerror(errno));
+        }
+      }
+      return (shouldJoin ? rc : true);
+    }
+    
     //------------------------------------------------------------------------
     bool MulticastReceiver::Open(const Config & cfg, bool acceptLocal)
     {
@@ -105,23 +195,52 @@ namespace Dwm {
       
       _config = cfg;
       _acceptLocal = acceptLocal;
-      
-      if (0 > _fd) {
-        _fd = socket(PF_INET, SOCK_DGRAM, 0);
-        if (0 <= _fd) {
-          if (BindSocket()) {
-            if (JoinGroup()) {
-              if (0 == pipe(_stopfds)) {
-                _run = true;
-                _thread = std::thread(&MulticastReceiver::Run, this);
-                rc = true;
+
+      bool shouldJoin4 = ((_config.mcast.groupAddr != Ipv4Address())
+                          && (_config.mcast.intfAddr != Ipv4Address()));
+      bool shouldJoin6 = ((! _config.mcast.intfName.empty())
+                          && (_config.mcast.groupAddr6 != Ipv6Address())
+                          && (_config.mcast.intfAddr6 != Ipv6Address()));
+      if (shouldJoin4) {
+        if (0 > _fd) {
+          _fd = socket(PF_INET, SOCK_DGRAM, 0);
+          if (0 <= _fd) {
+            if (! BindSocket()) {
+              ::close(_fd);  _fd = -1;
+            }
+            else {
+              if (! JoinGroup()) {
+                ::close(_fd);  _fd = -1;
               }
             }
           }
-          if (! rc) {
-            Close();
+        }
+      }
+      if (shouldJoin6) {
+        if (0 > _fd6) {
+          _fd6 = socket(PF_INET6, SOCK_DGRAM, 0);
+          if (0 <= _fd6) {
+            if (! BindSocket6()) {
+              ::close(_fd6);  _fd6 = -1;
+            }
+            else {
+              if (! JoinGroup6()) {
+                ::close(_fd6);  _fd6 = -1;
+              }
+            }
           }
         }
+      }
+      if ((shouldJoin4 && (0 <= _fd))
+          || (shouldJoin6 && (0 <= _fd6))) {
+        if (0 == pipe(_stopfds)) {
+          _run = true;
+          _thread = std::thread(&MulticastReceiver::Run, this);
+          rc = true;
+        }
+      }
+      if (! rc) {
+        Close();
       }
       return rc;
     }
@@ -147,10 +266,12 @@ namespace Dwm {
         _thread.join();
       }
       if (0 <= _fd) {
-        ::close(_fd);
-        _fd = -1;
+        ::close(_fd);  _fd = -1;
       }
-
+      if (0 <= _fd6) {
+        ::close(_fd6);  _fd6 = -1;
+      }
+        
       //  Close the stop command pipe descriptors
       if (_stopfds[1] >= 0) {
         ::close(_stopfds[1]);  _stopfds[1] = -1;
@@ -207,13 +328,23 @@ namespace Dwm {
       Syslog(LOG_INFO, "MulticastReceiver thread started");
 
       if (0 <= _fd) {
-        fd_set       fds;
-        sockaddr_in  fromAddr;
+        fd_set        fds;
+        sockaddr_in   fromAddr;
+        sockaddr_in6  fromAddr6;
+        int           maxfd;
+        
         auto  reset_fds = [&] () -> void
-        { FD_ZERO(&fds); FD_SET(_fd, &fds); FD_SET(_stopfds[0], &fds); };
+        {
+          FD_ZERO(&fds);
+          if (0 <= _fd)  { FD_SET(_fd, &fds);  }
+          if (0 <= _fd6) { FD_SET(_fd6, &fds); }
+          FD_SET(_stopfds[0], &fds);
+          maxfd = std::max({_fd, _fd6, _stopfds[0]}) + 1;
+        };
+        
         while (_run) {
           reset_fds();
-          if (select(std::max(_fd,_stopfds[0]) + 1, &fds, nullptr, nullptr, nullptr) > 0) {
+          if (select(maxfd, &fds, nullptr, nullptr, nullptr) > 0) {
             if (FD_ISSET(_stopfds[0], &fds)) {
               break;
             }
@@ -225,12 +356,27 @@ namespace Dwm {
                                          &fromAddrLen);
               Ipv4Address  fromIP(fromAddr.sin_addr.s_addr);
               if ((recvrc > 0) && (_acceptLocal || (fromIP != _config.mcast.intfAddr))) {
-                Udp4Endpoint  endPoint(fromAddr);
+                UdpEndpoint  endPoint(fromAddr);
                 FSyslog(LOG_DEBUG, "Received {} bytes from {}",
                         recvrc, endPoint);
                 _sources.ProcessPacket(endPoint, buf, recvrc);
               }
             }
+            if (FD_ISSET(_fd6, &fds)) {
+              char  buf[1500];
+              socklen_t  fromAddrLen = sizeof(fromAddr6);
+              ssize_t  recvrc = recvfrom(_fd6, buf, sizeof(buf), 0,
+                                         (sockaddr *)&fromAddr6,              
+                                         &fromAddrLen);
+              Ipv6Address  fromIP(fromAddr6.sin6_addr);
+              if ((recvrc > 0) && (_acceptLocal || (fromIP != _config.mcast.intfAddr6))) {
+                UdpEndpoint  endPoint(fromAddr6);
+                FSyslog(LOG_DEBUG, "Received {} bytes from {}",
+                        recvrc, endPoint);
+                _sources.ProcessPacket(endPoint, buf, recvrc);
+              }
+            }
+            
           }
         }
       }
