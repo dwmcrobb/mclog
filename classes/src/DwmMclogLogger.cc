@@ -202,8 +202,8 @@ namespace Dwm {
     //------------------------------------------------------------------------
     bool Logger::SendPacket(MessagePacket & pkt)
     {
-      ssize_t  sendrc = pkt.SendTo(_ofd, (const sockaddr *)&_dstAddr,
-                                   sizeof(_dstAddr));
+      ssize_t  sendrc = pkt.SendTo(_ofd, &_dstAddr);
+      pkt.Reset();
       return (0 < sendrc);
     }
     
@@ -212,7 +212,7 @@ namespace Dwm {
     {
       bool  rc = false;
       if (0 <= _ofd) {
-        char  buf[1500];
+        char  buf[1200];
         std::spanstream  sps{std::span{buf,sizeof(buf)}};
         if (msg.Write(sps)) {
           ssize_t  sendrc = ::sendto(_ofd, buf, sps.tellp(), 0,
@@ -234,7 +234,7 @@ namespace Dwm {
     {
       bool  rc = false;
       if (0 <= _ofd) {
-        char  buf[1500];
+        char  buf[1200];
         std::spanstream  sps{std::span{buf,sizeof(buf)}};
         if (msg.Write(sps)) {
           ssize_t  sendrc = ::sendto(_ofd, buf, sps.tellp(), 0,
@@ -309,7 +309,7 @@ namespace Dwm {
     //------------------------------------------------------------------------
     void Logger::Run()
     {
-      char           buf[1400];
+      char           buf[1200];
       MessagePacket  pkt(buf, sizeof(buf));
       Message        msg;
       

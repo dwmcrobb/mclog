@@ -39,10 +39,12 @@
 
 extern "C" {
   #include <sys/socket.h>
+  #include <net/if.h>
 }
 
 #include <sstream>
 
+#include "DwmFormatters.hh"
 #include "DwmCredenceKXKeyPair.hh"
 #include "DwmCredenceXChaCha20Poly1305.hh"
 #include "DwmMclogMulticastSender.hh"
@@ -54,8 +56,8 @@ namespace Dwm {
 
     //------------------------------------------------------------------------
     MulticastSender::MulticastSender()
-        : _fd(-1), _run(false), _thread(), _outQueue(), _config(), _key(),
-          _keyRequestListener()
+        : _fd(-1), _fd6(-1), _run(false), _thread(), _outQueue(), _config(),
+          _key(), _keyRequestListener()
     {
       Credence::KXKeyPair  key1;
       Credence::KXKeyPair  key2;
@@ -68,6 +70,103 @@ namespace Dwm {
     {
       Close();
     }
+
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    bool MulticastSender::OpenSocket()
+    {
+      bool  rc = false;
+      _fd = socket(PF_INET, SOCK_DGRAM, 0);
+      if (0 <= _fd) {
+        sockaddr_in  bindAddr;
+        memset(&bindAddr, 0, sizeof(bindAddr));
+        bindAddr.sin_family = PF_INET;
+        bindAddr.sin_addr.s_addr = _config.mcast.intfAddr.Raw();
+#ifndef __linux__
+        bindAddr.sin_len = sizeof(bindAddr);
+#endif
+        if (setsockopt(_fd, IPPROTO_IP, IP_MULTICAST_IF, &bindAddr.sin_addr,
+                       sizeof(bindAddr.sin_addr)) == 0) {
+          if (0 == bind(_fd, (sockaddr *)&bindAddr, sizeof(bindAddr))) {
+            rc = true;
+          }
+          else {
+            FSyslog(LOG_ERR, "bind({},{},{}) failed: {}",
+                    _fd, bindAddr, sizeof(bindAddr), strerror(errno));
+            ::close(_fd);  _fd = -1;
+          }
+        }
+        else {
+          FSyslog(LOG_ERR,
+                  "setsockopt({},IPPROTO_IP,IP_MULTICAST_IF,{},{}) failed: {}",
+                  _fd, bindAddr.sin_addr, sizeof(bindAddr.sin_addr),
+                  strerror(errno));
+          ::close(_fd);  _fd = -1;
+        }
+      }
+      else {
+        FSyslog(LOG_ERR, "socket(PF_INET,SOCK_DGRAM,0) failed: {}",
+                strerror(errno));
+      }
+      return rc;
+    }
+
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    bool MulticastSender::OpenSocket6()
+    {
+      bool  rc = false;
+      if (_config.mcast.intfName.empty()) {
+        FSyslog(LOG_ERR, "intfName is empty in configuration but required for"
+                " IPv6");
+        return false;
+      }
+      
+      _fd6 = socket(PF_INET6, SOCK_DGRAM, 0);
+      if (0 <= _fd6) {
+        unsigned int  intfIndex =
+          if_nametoindex(_config.mcast.intfName.c_str());
+        if (0 < intfIndex) {
+          if (setsockopt(_fd6, IPPROTO_IPV6, IPV6_MULTICAST_IF, &intfIndex,
+                       sizeof(intfIndex)) == 0) {
+            sockaddr_in6  bindAddr;
+            memset(&bindAddr, 0, sizeof(bindAddr));
+            bindAddr.sin6_family = PF_INET6;
+            bindAddr.sin6_addr = _config.mcast.intfAddr6;
+#ifndef __linux__
+            bindAddr.sin6_len = sizeof(bindAddr);
+#endif
+            if (0 == bind(_fd6, (sockaddr *)&bindAddr, sizeof(bindAddr))) {
+              rc = true;
+            }
+            else {
+              FSyslog(LOG_ERR, "bind({},{},{}) failed: {}",
+                      _fd6, bindAddr, sizeof(bindAddr), strerror(errno));
+              ::close(_fd6);  _fd6 = -1;
+            }
+          }
+          else {
+            FSyslog(LOG_ERR, "setsockopt({},IPPROTO_IPV6,IPV6_MULTICAST_IF,"
+                    "{},{}) failed: {}", _fd6, intfIndex, sizeof(intfIndex),
+                    strerror(errno));
+            ::close(_fd6);  _fd6 = -1;
+          }
+        }
+        else {
+          FSyslog(LOG_ERR,
+                  "intefface index not found for interface '{}': {}",
+                  _config.mcast.intfName, strerror(errno));
+          ::close(_fd6);  _fd6 = -1;
+        }
+      }
+      else {
+        FSyslog(LOG_ERR, "socket(PF_INET6,SOCK_DGRAM,0) failed: {}",
+                strerror(errno));
+      }
+      return rc;
+    }
     
     //------------------------------------------------------------------------
     bool MulticastSender::Open(const Config & config)
@@ -75,45 +174,20 @@ namespace Dwm {
       bool  rc = false;
       _config = config;
       if (0 > _fd) {
-        _fd = socket(PF_INET, SOCK_DGRAM, 0);
-        if (0 <= _fd) {
-          in_addr  inAddr;
-          inAddr.s_addr = _config.mcast.intfAddr.Raw();
-          if (setsockopt(_fd, IPPROTO_IP, IP_MULTICAST_IF,
-                         &inAddr, sizeof(inAddr)) == 0) {
-            sockaddr_in  bindAddr;
-            memset(&bindAddr, 0, sizeof(bindAddr));
-            bindAddr.sin_family = PF_INET;
-            bindAddr.sin_addr.s_addr = inAddr.s_addr;
-            bindAddr.sin_port = 0;
-            if (0 == bind(_fd, (struct sockaddr *)&bindAddr, sizeof(bindAddr))) {
-              if (_keyRequestListener.Start(_fd, &_config.service.keyDirectory,
-                                            &_key)) {
-                _run = true;
-                _thread = std::thread(&MulticastSender::Run, this);
-                rc = true;
-              }
-              else {
-                Syslog(LOG_ERR, "Failed to start KeyRequestListener");
-                ::close(_fd);  _fd = -1;
-              }
-            }
-            else {
-              FSyslog(LOG_ERR, "bind({},{}:0) failed: {}",
-                      _fd, _config.mcast.intfAddr, strerror(errno));
-              ::close(_fd);  _fd = -1;
-            }
+        if (OpenSocket()) {
+          OpenSocket6();
+          if (_keyRequestListener.Start(_fd, &_config.service.keyDirectory,
+                                        &_key)) {
+            _run = true;
+            _thread = std::thread(&MulticastSender::Run, this);
+            rc = true;
           }
           else {
-            FSyslog(LOG_ERR,
-                    "setsockopt({},IPPROTO_IP,IP_MULTICAST_IF,{}) failed: {}",
-                    _fd, _config.mcast.intfAddr, strerror(errno));
-            ::close(_fd);  _fd = -1;
+            Syslog(LOG_ERR, "Failed to start KeyRequestListener");
           }
         }
         else {
-          FSyslog(LOG_ERR, "socket(PF_INET, SOCK_DGRAM, 0) failed: {}",
-                  strerror(errno));
+          FSyslog(LOG_ERR, "MulticastSender failed to open socket");
         }
       }
       return rc;
@@ -142,6 +216,10 @@ namespace Dwm {
         ::close(_fd);
         _fd = -1;
       }
+      if (0 <= _fd6) {
+        ::close(_fd6);
+        _fd6 = -1;
+      }
       return;
     }
 
@@ -156,15 +234,35 @@ namespace Dwm {
 #ifndef __linux__
       dst.sin_len = sizeof(dst);
 #endif
-      ssize_t  sendrc = pkt.SendTo(_fd, _key, (sockaddr *)&dst, sizeof(dst));
-      return (0 < sendrc);
+      ssize_t  ip4rc = -1, ip6rc = -1;
+      if (pkt.Encrypt(_key)) {
+        if (0 <= _fd) {
+          ip4rc = pkt.SendTo(_fd, &dst);
+        }
+        if (0 <= _fd6) {
+          sockaddr_in6  dst6;
+          memset(&dst6, 0, sizeof(dst6));
+          dst6.sin6_family = PF_INET6;
+          dst6.sin6_addr = _config.mcast.groupAddr6;
+          dst6.sin6_port = htons(_config.mcast.dstPort);
+#ifndef __linux__
+          dst6.sin6_len = sizeof(dst6);
+#endif
+          ip6rc = pkt.SendTo(_fd6, &dst6);
+        }
+      }
+      pkt.Reset();
+
+      bool  rc = ((0 <= _fd) ? (ip4rc > 0) : true);
+      rc &= ((0 <= _fd6) ? (ip6rc > 0) : true);
+      return rc;
     }
     
     //------------------------------------------------------------------------
     void MulticastSender::Run()
     {
       Syslog(LOG_INFO, "MulticastSender thread started");
-      char  buf[1400];
+      char  buf[1200];
       MessagePacket  pkt(buf, sizeof(buf));
       Message  msg;
       while (_run) {

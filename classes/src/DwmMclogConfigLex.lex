@@ -71,7 +71,10 @@
   static const std::map<std::string,int>  g_configKeywords = {
     { "files",              FILES          },
     { "groupAddr",          GROUPADDR      },
+    { "groupAddr6",         GROUPADDR6     },
     { "intfAddr",           INTFADDR       },
+    { "intfAddr6",          INTFADDR6      },
+    { "intfName",           INTFNAME       },
     { "keyDirectory",       KEYDIRECTORY   },
     { "logDirectory",       LOGDIRECTORY   },
     { "multicast",          MULTICAST      },

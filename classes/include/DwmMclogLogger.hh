@@ -92,13 +92,15 @@ namespace Dwm {
       {
         return Log(severity, Format(fm, std::forward<Args>(args)...), loc);
       }
-#else if DWM_MCLOG_HAVE_LIBFMT
+#else
+#  if DWM_MCLOG_HAVE_LIBFMT
       template <typename ...Args>
       static bool Log(std::source_location loc, Severity severity,
                       fmt::format_string<Args...> fm, Args &&...args)
       {
         return Log(severity, Format(fm, std::forward<Args>(args)...), loc);
       }
+#  endif
 #endif
       
       static bool
@@ -131,12 +133,14 @@ namespace Dwm {
       {
         return std::format(fm, std::forward<Args>(args)...);
       }
-#else if DWM_MCLOG_HAVE_LIBFMT
+#else
+#  if DWM_MCLOG_HAVE_LIBFMT
       template <typename ...Args>
       static std::string Format(fmt::format_string<Args...> fm, Args &&...args)
       {
         return fmt::format(fm, std::forward<Args>(args)...);
       }
+#  endif
 #endif
     };
     

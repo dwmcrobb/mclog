@@ -41,6 +41,7 @@
 #define _DWMMCLOGCONFIG_HH_
 
 #include "DwmIpv4Address.hh"
+#include "DwmIpv6Address.hh"
 
 namespace Dwm {
 
@@ -58,7 +59,10 @@ namespace Dwm {
       void Clear();
       
       Ipv4Address  groupAddr;
+      Ipv6Address  groupAddr6;
+      std::string  intfName;
       Ipv4Address  intfAddr;
+      Ipv6Address  intfAddr6;
       uint16_t     dstPort;
     };
 

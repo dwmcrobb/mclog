@@ -103,6 +103,7 @@ namespace Dwm {
         
     private:
       int                     _fd;
+      int                     _fd6;
       std::atomic<bool>       _run;
       std::thread             _thread;
       Thread::Queue<Message>  _outQueue;
@@ -110,7 +111,9 @@ namespace Dwm {
       std::string             _key;
       Clock::time_point       _nextSendTime;
       KeyRequestListener      _keyRequestListener;
-      
+
+      bool OpenSocket();
+      bool OpenSocket6();
       bool SendPacket(MessagePacket & pkt);
       void Run();
     };

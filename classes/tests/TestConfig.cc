@@ -49,7 +49,10 @@ int main(int argc, char *argv[])
   assert(cfg.Parse("../../etc/mclogd.cfg"));
   assert(cfg.service.keyDirectory == "/usr/local/etc/mclogd");
   assert(cfg.mcast.groupAddr == Dwm::Ipv4Address("239.108.111.103"));
+  assert(cfg.mcast.groupAddr6 == Dwm::Ipv6Address("ff02::006d:636c:6f67"));
   assert(cfg.mcast.intfAddr == Dwm::Ipv4Address("192.168.168.42"));
+  assert(cfg.mcast.intfAddr6 == Dwm::Ipv6Address("fd60:3019:f4a:6aaf::39"));
+  assert(cfg.mcast.intfName == "en0");
   assert(cfg.mcast.dstPort == 3456);
   assert(cfg.files.logDirectory == "/usr/local/var/logs");
   

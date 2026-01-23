@@ -141,8 +141,7 @@ namespace Dwm {
         if (Signer::Sign(_theirKX.Value() + *_mcastKey,
                          myKeys.SecretKey().Key(), signedMsg)) {
           pkt.Add(signedMsg);
-          if (pkt.SendTo(fd, _sharedKey, (const sockaddr *)&dst,
-                         sizeof(dst)) > 0) {
+          if (pkt.SendTo(fd, _sharedKey, &dst) > 0) {
             rc = true;
           }
         }

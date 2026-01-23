@@ -4,7 +4,7 @@
 
   #include "DwmIpv4Address.hh"
 
-  using std::string, Dwm::Ipv4Address;
+  using std::string, Dwm::Ipv4Address, Dwm::Ipv6Address;
 }
 
 %{
@@ -36,6 +36,7 @@
   uint16_t                      uint16Val;
   string                       *stringVal;
   Ipv4Address                  *ipv4AddrVal;
+  Ipv6Address                  *ipv6AddrVal;
   Dwm::Mclog::ServiceConfig    *serviceConfigVal;
   Dwm::Mclog::MulticastConfig  *mcastConfigVal;
   Dwm::Mclog::FilesConfig      *filesConfigVal;
@@ -51,18 +52,19 @@
   YY_DECL;
 }
 
-%token FILES GROUPADDR INTFADDR KEYDIRECTORY LOGDIRECTORY MULTICAST
-%token PORT SERVICE
+%token FILES GROUPADDR GROUPADDR6 INTFADDR INTFADDR6 INTFNAME KEYDIRECTORY
+%token LOGDIRECTORY MULTICAST PORT SERVICE
 
 %token<stringVal>  STRING
 %token<intVal>     INTEGER
 
 %type<uint16Val>          UDP4Port Port
-%type<stringVal>          KeyDirectory LogDirectory
+%type<stringVal>          KeyDirectory LogDirectory IntfName
 %type<serviceConfigVal>   ServiceSettings
 %type<filesConfigVal>     FilesSettings
 %type<mcastConfigVal>     Multicast MulticastSettings
 %type<ipv4AddrVal>        GroupAddr IntfAddr
+%type<ipv6AddrVal>        GroupAddr6 IntfAddr6
 
 %%
 
@@ -124,10 +126,28 @@ MulticastSettings: GroupAddr
   $$->groupAddr = *($1);
   delete $1;
 }
+| GroupAddr6
+{
+  $$ = new Dwm::Mclog::MulticastConfig();
+  $$->groupAddr6 = *($1);
+  delete $1;
+}
 | IntfAddr
 {
   $$ = new Dwm::Mclog::MulticastConfig();
   $$->intfAddr = *($1);
+  delete $1;
+}
+| IntfAddr6
+{
+  $$ = new Dwm::Mclog::MulticastConfig();
+  $$->intfAddr6 = *($1);
+  delete $1;
+}
+| IntfName
+{
+  $$ = new Dwm::Mclog::MulticastConfig();
+  $$->intfName = *($1);
   delete $1;
 }
 | Port
@@ -140,6 +160,11 @@ MulticastSettings: GroupAddr
   $$->groupAddr = *($2);
   delete $2;
 }
+| MulticastSettings GroupAddr6
+{
+  $$->groupAddr6 = *($2);
+  delete $2;
+}
 | MulticastSettings IntfAddr
 {
   $$->intfAddr = *($2);
@@ -148,8 +173,18 @@ MulticastSettings: GroupAddr
 | MulticastSettings Port
 {
   $$->dstPort = $2;
-};
-
+}
+| MulticastSettings IntfAddr6
+{
+  $$->intfAddr6 = *($2);
+  delete $2;
+}
+| MulticastSettings IntfName
+{
+  $$->intfName = *($2);
+  delete $2;
+}
+;
 
 GroupAddr: GROUPADDR '=' STRING ';'
 {
@@ -157,10 +192,27 @@ GroupAddr: GROUPADDR '=' STRING ';'
   delete $3;
 };
 
+GroupAddr6: GROUPADDR6 '=' STRING ';'
+{
+  $$ = new Dwm::Ipv6Address(*($3));
+  delete $3;
+};
+
 IntfAddr: INTFADDR '=' STRING ';'
 {
   $$ = new Dwm::Ipv4Address(*$3);
   delete $3;
+};
+
+IntfAddr6: INTFADDR6 '=' STRING ';'
+{
+  $$ = new Dwm::Ipv6Address(*($3));
+  delete $3;
+};
+
+IntfName: INTFNAME '=' STRING ';'
+{
+  $$ = $3;
 };
 
 Port: PORT '=' UDP4Port ';'

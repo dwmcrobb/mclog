@@ -81,7 +81,7 @@ namespace Dwm {
                                    myKeys.SecretKey().Key(),
                                    signedMsg)) {
           pkt.Add(signedMsg);
-          if (pkt.SendTo(fd, _sharedKey, (sockaddr *)&dst, sizeof(dst)) > 0) {
+          if (pkt.SendTo(fd, _sharedKey, &dst) > 0) {
             rc = true;
           }
           else {
