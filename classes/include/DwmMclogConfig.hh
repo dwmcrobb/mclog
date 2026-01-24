@@ -56,6 +56,8 @@ namespace Dwm {
       MulticastConfig() = default;
       MulticastConfig(const MulticastConfig &) = default;
       MulticastConfig & operator = (const MulticastConfig &) = default;
+      bool ShouldSendIpv4() const;
+      bool ShouldSendIpv6() const;
       void Clear();
       
       Ipv4Address  groupAddr;
@@ -105,6 +107,8 @@ namespace Dwm {
       Config & operator = (const Config &) = default;
       
       bool Parse(const std::string & path);
+      bool ShouldSendIpv4() const;
+      bool ShouldSendIpv6() const;
       void Clear();
       
       MulticastConfig  mcast;

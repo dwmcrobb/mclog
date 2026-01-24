@@ -114,6 +114,7 @@ namespace Dwm {
       Clock::time_point       _nextSendTime;
       KeyRequestListener      _keyRequestListener;
 
+      bool DesiredSocketsOpen() const;
       bool OpenSocket();
       bool OpenSocket6();
       bool SendPacket(MessagePacket & pkt);

@@ -250,8 +250,25 @@ namespace Dwm {
 
   namespace Mclog {
 
-    //------------------------------------------------------------------------
+    //---------------------------------------------------------------------
     //!  
+    //---------------------------------------------------------------------
+    bool MulticastConfig::ShouldSendIpv4() const
+    {
+      return ((groupAddr != Ipv4Address())
+              && (intfAddr != Ipv4Address())
+              && (dstPort != 0));
+    }
+    
+    //-----------------------------------------------------------------------
+    bool MulticastConfig::ShouldSendIpv6() const
+    {
+      return ((! intfName.empty())
+              && (groupAddr6 != Ipv6Address())
+              && (intfAddr6 != Ipv6Address())
+              && (dstPort != 0));
+    }
+
     //------------------------------------------------------------------------
     void MulticastConfig::Clear()
     {
@@ -262,8 +279,6 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
-    //!  
-    //------------------------------------------------------------------------
     void ServiceConfig::Clear()
     {
       keyDirectory.clear();
@@ -271,17 +286,21 @@ namespace Dwm {
     }
     
     //------------------------------------------------------------------------
-    //!  
-    //------------------------------------------------------------------------
     void Config::Clear()
     {
       mcast.Clear();
       service.Clear();
       return;
     }
-      
-    //------------------------------------------------------------------------
-    //!  
+
+    //-----------------------------------------------------------------------
+    bool Config::ShouldSendIpv4() const
+    { return mcast.ShouldSendIpv4(); }
+
+    //-----------------------------------------------------------------------
+    bool Config::ShouldSendIpv6() const
+    { return mcast.ShouldSendIpv6(); }
+    
     //------------------------------------------------------------------------
     bool Config::Parse(const string & path)
     {
@@ -299,9 +318,7 @@ namespace Dwm {
         FSyslog(LOG_ERR, "Failed to open config file {}", path);
       }
       if (rc) {
-        if ((mcast.groupAddr != Ipv4Address())
-            && (mcast.intfAddr != Ipv4Address())
-            && (mcast.dstPort != 0)
+        if ((ShouldSendIpv4() || ShouldSendIpv6())
             && (! service.keyDirectory.empty())) {
           FSyslog(LOG_INFO, "Config loaded from {}", path);
         }

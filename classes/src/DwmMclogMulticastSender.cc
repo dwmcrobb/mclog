@@ -88,8 +88,14 @@ namespace Dwm {
 #endif
         if (setsockopt(_fd, IPPROTO_IP, IP_MULTICAST_IF, &bindAddr.sin_addr,
                        sizeof(bindAddr.sin_addr)) == 0) {
+          FSyslog(LOG_INFO, "MulticastSender socket fd {} interface set to {}",
+                  _fd, bindAddr.sin_addr);
           if (0 == bind(_fd, (sockaddr *)&bindAddr, sizeof(bindAddr))) {
             rc = true;
+            socklen_t  socklen = sizeof(bindAddr);
+            getsockname(_fd, (sockaddr *)&bindAddr, &socklen);
+            FSyslog(LOG_INFO, "MulticastSender socket fd {} bound to {}",
+                    _fd, bindAddr);
           }
           else {
             FSyslog(LOG_ERR, "bind({},{},{}) failed: {}",
@@ -131,6 +137,8 @@ namespace Dwm {
         if (0 < intfIndex) {
           if (setsockopt(_fd6, IPPROTO_IPV6, IPV6_MULTICAST_IF, &intfIndex,
                        sizeof(intfIndex)) == 0) {
+            FSyslog(LOG_INFO, "MulticastSender socket fd {} interface set"
+                    " to {} ({})", _fd6, intfIndex, _config.mcast.intfName);
             sockaddr_in6  bindAddr;
             memset(&bindAddr, 0, sizeof(bindAddr));
             bindAddr.sin6_family = PF_INET6;
@@ -140,6 +148,10 @@ namespace Dwm {
 #endif
             if (0 == bind(_fd6, (sockaddr *)&bindAddr, sizeof(bindAddr))) {
               rc = true;
+              socklen_t  socklen = sizeof(bindAddr);
+              getsockname(_fd6, (sockaddr *)&bindAddr, &socklen);
+              FSyslog(LOG_INFO, "MulticastSender socket fd {} bound to {}",
+                      _fd6, bindAddr);
             }
             else {
               FSyslog(LOG_ERR, "bind({},{},{}) failed: {}",
@@ -167,6 +179,19 @@ namespace Dwm {
       }
       return rc;
     }
+
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    bool MulticastSender::DesiredSocketsOpen() const
+    {
+      bool  v4ok =
+        (_config.mcast.ShouldSendIpv4() ? (0 <= _fd) : (0 > _fd));
+      bool  v6ok =
+        (_config.mcast.ShouldSendIpv6() ? (0 <= _fd6) : (0 > _fd6));
+
+      return (v4ok && v6ok);
+    }
     
     //------------------------------------------------------------------------
     bool MulticastSender::Open(const Config & config)
@@ -175,25 +200,44 @@ namespace Dwm {
       _config = config;
       _dstEndpoint = UdpEndpoint(config.mcast.groupAddr, config.mcast.dstPort);
       _dstEndpoint6 = UdpEndpoint(config.mcast.groupAddr6, config.mcast.dstPort);
-      
-      if (0 > _fd) {
-        if (OpenSocket()) {
-          OpenSocket6();
-          if (_keyRequestListener.Start(_fd, _fd6,
-                                        &_config.service.keyDirectory,
-                                        &_key)) {
-            _run = true;
-            _thread = std::thread(&MulticastSender::Run, this);
-            rc = true;
-          }
-          else {
-            Syslog(LOG_ERR, "Failed to start KeyRequestListener");
+
+      if (_config.mcast.ShouldSendIpv4()) {
+        if (0 > _fd) {
+          if (! OpenSocket()) {
+            FSyslog(LOG_ERR, "Failed to open IPv4 socket");
           }
         }
         else {
-          FSyslog(LOG_ERR, "MulticastSender failed to open socket");
+          FSyslog(LOG_ERR, "Ipv4 socket already open (fd {})", _fd);
         }
       }
+      if (_config.mcast.ShouldSendIpv6()) {
+        if (0 > _fd6) {
+          if (! OpenSocket6()) {
+            FSyslog(LOG_ERR, "Failed to open IPv4 socket");
+          }
+        }
+        else {
+          FSyslog(LOG_ERR, "Ipv6 socket already open (fd {})", _fd6);
+        }
+      }
+      if (DesiredSocketsOpen()) {
+        if (_keyRequestListener.Start(_fd, _fd6,
+                                      &_config.service.keyDirectory,
+                                      &_key)) {
+          _run = true;
+          _thread = std::thread(&MulticastSender::Run, this);
+          rc = true;
+        }
+        else {
+          Syslog(LOG_ERR, "Failed to start KeyRequestListener");
+        }
+      }
+      else {
+        Syslog(LOG_ERR,
+               "Desired sockets not open, KEyRequestListener not started!");
+      }
+      
       return rc;
     }
 
@@ -210,20 +254,11 @@ namespace Dwm {
     void MulticastSender::Close()
     {
       _keyRequestListener.Stop();
-      
       _run = false;
       _outQueue.ConditionSignal();
-      if (_thread.joinable()) {
-        _thread.join();
-      }
-      if (0 <= _fd) {
-        ::close(_fd);
-        _fd = -1;
-      }
-      if (0 <= _fd6) {
-        ::close(_fd6);
-        _fd6 = -1;
-      }
+      if (_thread.joinable()) { _thread.join();   }
+      if (0 <= _fd)           { ::close(_fd);   _fd = -1;  }
+      if (0 <= _fd6)          { ::close(_fd6);  _fd6 = -1; }
       return;
     }
 
@@ -232,12 +267,8 @@ namespace Dwm {
     {
       ssize_t  ip4rc = -1, ip6rc = -1;
       if (pkt.Encrypt(_key)) {
-        if (0 <= _fd) {
-          ip4rc = pkt.SendTo(_fd, _dstEndpoint);
-        }
-        if (0 <= _fd6) {
-          ip6rc = pkt.SendTo(_fd6, _dstEndpoint6);
-        }
+        if (0 <= _fd)  { ip4rc = pkt.SendTo(_fd, _dstEndpoint);   }
+        if (0 <= _fd6) { ip6rc = pkt.SendTo(_fd6, _dstEndpoint6); }
       }
       pkt.Reset();
 

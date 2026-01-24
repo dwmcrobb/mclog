@@ -327,7 +327,7 @@ namespace Dwm {
     {
       Syslog(LOG_INFO, "MulticastReceiver thread started");
 
-      if (0 <= _fd) {
+      if ((0 <= _fd) || (0 <= _fd6)) {
         fd_set        fds;
         sockaddr_in   fromAddr;
         sockaddr_in6  fromAddr6;
@@ -376,7 +376,6 @@ namespace Dwm {
                 _sources.ProcessPacket(endPoint, buf, recvrc);
               }
             }
-            
           }
         }
       }
