@@ -86,13 +86,13 @@ namespace Dwm {
         if (NeedRollBeforeOpen()) {
           Roll();
         }
-        _ofs.open(_path);
+        _ofs.open(_path, std::ios_base::in|std::ios_base::ate);
         if (static_cast<bool>(_ofs)) {
           rc = true;
         }
         else if (! fs::exists(_path.parent_path())) {
           if (fs::create_directories(_path.parent_path())) {
-            _ofs.open(_path);
+            _ofs.open(_path, std::ios_base::in|std::ios_base::ate);
             rc = static_cast<bool>(_ofs);
           }
         }
