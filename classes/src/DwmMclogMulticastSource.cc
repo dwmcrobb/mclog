@@ -167,7 +167,9 @@ namespace Dwm {
     MulticastSource::MulticastSource()
         : _endpoint(), _key(), _backlog(), _keyDir(nullptr), _sinks(nullptr),
           _queryDone(true), _queryThread(), _lastReceiveTime()
-    {}
+    {
+      _backlog.MaxLength(100);   // limit backlog to 100 entries (packets)
+    }
 
     //------------------------------------------------------------------------
     MulticastSource::~MulticastSource()
@@ -185,7 +187,9 @@ namespace Dwm {
                                      vector<Thread::Queue<Message> *> *sinks)
         : _endpoint(srcEndpoint), _key(), _backlog(), _keyDir(keyDir),
           _sinks(sinks), _queryDone(true), _queryThread(), _lastReceiveTime()
-    {}
+    {
+      _backlog.MaxLength(100);   // limit backlog to 100 entries (packets)
+    }
 
     //------------------------------------------------------------------------
     MulticastSource::MulticastSource(const MulticastSource & src)
@@ -194,6 +198,7 @@ namespace Dwm {
           _lastReceiveTime(src._lastReceiveTime)
     {
       src._backlog.Copy(_backlog);
+      _backlog.MaxLength(100);   // limit backlog to 100 entries (packets)
     }
     
     //------------------------------------------------------------------------
@@ -203,6 +208,7 @@ namespace Dwm {
           _queryThread(), _lastReceiveTime(src._lastReceiveTime)
     {
       _backlog.Swap(src._backlog);
+      _backlog.MaxLength(100);   // limit backlog to 100 entries (packets)      
     }
     
     //------------------------------------------------------------------------
