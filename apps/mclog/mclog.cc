@@ -41,6 +41,7 @@
 
 extern "C" {
   #include <sys/socket.h>
+  #include <unistd.h>
 }
 
 #include <fstream>
@@ -57,10 +58,36 @@ extern "C" {
 //----------------------------------------------------------------------------
 //!  
 //----------------------------------------------------------------------------
+static void Usage(const char *argv0)
+{
+  std::cerr << "usage: " << argv0 << " [-d]\n";
+  return;
+}
+
+//----------------------------------------------------------------------------
+//!  
+//----------------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
-  Dwm::SysLogger::Open("mclog", LOG_PERROR, LOG_USER);
+  bool  debug = false;
+  
+  int  optChar;
+  while ((optChar = getopt(argc, argv, "d")) != -1) {
+    switch (optChar) {
+      case 'd':
+        debug = true;
+        break;
+      default:
+        Usage(argv[0]);
+        exit(1);
+        break;
+    }
+  }
 
+  if (debug) {
+    Dwm::SysLogger::Open("mclog", LOG_PERROR, LOG_USER);
+  }
+  
   std::string  keyDir("~/.credence");
   Dwm::Mclog::MulticastReceiver  mcastRecv;
   Dwm::Mclog::Config  config;
