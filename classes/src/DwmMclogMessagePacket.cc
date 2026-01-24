@@ -77,25 +77,6 @@ namespace Dwm {
     }
     
     //------------------------------------------------------------------------
-    ssize_t MessagePacket::SendTo(int fd, const std::string & secretKey,
-                                  const sockaddr_in *dst)
-    {
-      ssize_t        rc = -1;
-      if (Encrypt(secretKey)) {
-        size_t  len = k_nonceLen + k_macLen + _payloadLength;
-        rc = sendto(fd, _buf, len, 0, (const sockaddr *)dst, sizeof(*dst));
-        if (rc != len) {
-          FSyslog(LOG_ERR, "sendto() failed: {} ({})",
-                  strerror(errno), errno);
-        }
-      }
-      else {
-        Syslog(LOG_ERR, "Encryption failed!!!");
-      }
-      return rc;
-    }
-
-    //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
     ssize_t MessagePacket::SendTo(int fd, const std::string & secretKey,
@@ -106,11 +87,13 @@ namespace Dwm {
         size_t  len = k_nonceLen + k_macLen + _payloadLength;
         if (dst.Addr().Family() == PF_INET) {
           sockaddr_in  dstSock = dst;
-          rc = sendto(fd, _buf, len, 0, (const sockaddr *)&dstSock, sizeof(dstSock));
+          rc = sendto(fd, _buf, len, 0, (const sockaddr *)&dstSock,
+                      sizeof(dstSock));
         }
         else {
           sockaddr_in6  dstSock = dst;
-          rc = sendto(fd, _buf, len, 0, (const sockaddr *)&dstSock, sizeof(dstSock));
+          rc = sendto(fd, _buf, len, 0, (const sockaddr *)&dstSock,
+                      sizeof(dstSock));
         }
         if (rc != len) {
           FSyslog(LOG_ERR, "sendto() failed: {} ({})",
@@ -124,56 +107,27 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
-    //!  
-    //------------------------------------------------------------------------
-    ssize_t MessagePacket::SendTo(int fd, const std::string & secretKey,
-                                  const sockaddr_in6 *dst)
+    ssize_t MessagePacket::SendTo(int fd, const UdpEndpoint & dst)
     {
-      constexpr auto  xcc20p1305enc =
-        crypto_aead_xchacha20poly1305_ietf_encrypt;
       ssize_t        rc = -1;
-      if (Encrypt(secretKey)) {
-        size_t  len = k_nonceLen + k_macLen + _payloadLength;
-        rc = sendto(fd, _buf, len, 0, (const sockaddr *)dst, sizeof(*dst));
-        if (rc != len) {
-          FSyslog(LOG_ERR, "sendto({}) failed: {} ({})",
-                  *dst, strerror(errno), errno);
-        }
+      size_t  len = k_nonceLen + k_macLen + _payloadLength;
+      if (dst.Addr().Family() == PF_INET) {
+        sockaddr_in  dstSock = dst;
+        rc = sendto(fd, _buf, len, 0, (const sockaddr *)&dstSock,
+                    sizeof(dstSock));
       }
       else {
-        Syslog(LOG_ERR, "Encryption failed!!!");
+        sockaddr_in6  dstSock = dst;
+        rc = sendto(fd, _buf, len, 0, (const sockaddr *)&dstSock,
+                    sizeof(dstSock));
       }
-      return rc;
-    }
-    
-    //------------------------------------------------------------------------
-    //!  
-    //------------------------------------------------------------------------
-    ssize_t MessagePacket::SendTo(int fd, const sockaddr_in *dst)
-    {
-      ssize_t  rc = -1;
-      size_t   len = k_nonceLen + _payloadLength + k_macLen;
-      rc = sendto(fd, _buf, len, 0, (const sockaddr *)dst, sizeof(*dst));
       if (rc != len) {
-        FSyslog(LOG_ERR, "sendto() failed: {} ({})", strerror(errno), errno);
+        FSyslog(LOG_ERR, "sendto() failed: {} ({})",
+                strerror(errno), errno);
       }
       return rc;
     }
 
-    //------------------------------------------------------------------------
-    //!  
-    //------------------------------------------------------------------------
-    ssize_t MessagePacket::SendTo(int fd, const sockaddr_in6 *dst)
-    {
-      ssize_t  rc = -1;
-      size_t   len = k_nonceLen + _payloadLength + k_macLen;
-      rc = sendto(fd, _buf, len, 0, (const sockaddr *)dst, sizeof(*dst));
-      if (rc != len) {
-        FSyslog(LOG_ERR, "sendto() failed: {} ({})", strerror(errno), errno);
-      }
-      return rc;
-    }
-    
     //------------------------------------------------------------------------
     ssize_t MessagePacket::Decrypt(size_t recvlen,
                                    const std::string & secretKey)

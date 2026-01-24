@@ -64,6 +64,7 @@ extern "C" {
 #include "DwmThreadQueue.hh"
 #include "DwmMclogMessage.hh"
 #include "DwmMclogMessagePacket.hh"
+#include "DwmMclogUdpEndpoint.hh"
 
 namespace Dwm {
 
@@ -112,7 +113,7 @@ namespace Dwm {
       static Facility       _facility;
       static int            _options;
       static int            _ofd;
-      static sockaddr_in    _dstAddr;
+      static UdpEndpoint    _dstAddr;
       static sockaddr_un    _dstUnixAddr;
       static std::mutex     _ofdmtx;
       static Thread::Queue<Message>  _msgs;

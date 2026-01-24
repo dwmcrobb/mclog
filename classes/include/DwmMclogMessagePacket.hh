@@ -113,26 +113,12 @@ namespace Dwm {
       //!  
       //----------------------------------------------------------------------
       ssize_t SendTo(int fd, const std::string & secretKey,
-                     const sockaddr_in *dst);
-
-      ssize_t SendTo(int fd, const std::string & secretKey,
                      const UdpEndpoint & dst);
-      
-      //----------------------------------------------------------------------
-      //!  
-      //----------------------------------------------------------------------
-      ssize_t SendTo(int fd, const std::string & secretKey,
-                     const sockaddr_in6 *dst);
 
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
-      ssize_t SendTo(int fd, const sockaddr_in *dst);
-
-      //----------------------------------------------------------------------
-      //!  
-      //----------------------------------------------------------------------
-      ssize_t SendTo(int fd, const sockaddr_in6 *dst);
+      ssize_t SendTo(int fd, const UdpEndpoint & dst);
 
       //----------------------------------------------------------------------
       //!  

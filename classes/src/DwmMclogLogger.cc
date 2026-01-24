@@ -69,7 +69,7 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    sockaddr_in    Logger::_dstAddr;
+    UdpEndpoint    Logger::_dstAddr;
     sockaddr_un    Logger::_dstUnixAddr;
     
     //------------------------------------------------------------------------
@@ -115,13 +115,7 @@ namespace Dwm {
     {
       bool  rc = false;
 
-      memset(&_dstAddr, 0, sizeof(_dstAddr));
-      _dstAddr.sin_family = PF_INET;
-      _dstAddr.sin_addr.s_addr = Ipv4Address("127.0.0.1").Raw();
-      _dstAddr.sin_port = htons(3456);
-#ifndef __linux__
-      _dstAddr.sin_len = sizeof(_dstAddr);
-#endif
+      _dstAddr = UdpEndpoint(Ipv4Address("127.0.0.1"), 3456);
 
       char  hn[255];
       memset(hn, 0, sizeof(hn));
@@ -202,11 +196,12 @@ namespace Dwm {
     //------------------------------------------------------------------------
     bool Logger::SendPacket(MessagePacket & pkt)
     {
-      ssize_t  sendrc = pkt.SendTo(_ofd, &_dstAddr);
+      ssize_t  sendrc = pkt.SendTo(_ofd, _dstAddr);
       pkt.Reset();
       return (0 < sendrc);
     }
-    
+
+#if 0
     //------------------------------------------------------------------------
     bool Logger::SendMessage(const Message & msg)
     {
@@ -251,7 +246,8 @@ namespace Dwm {
       }
       return rc;
     }
-
+#endif
+    
 #if 0
     //------------------------------------------------------------------------
     bool Logger::Log(Severity severity, std::string_view msg,

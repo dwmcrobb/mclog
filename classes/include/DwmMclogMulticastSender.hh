@@ -108,6 +108,8 @@ namespace Dwm {
       std::thread             _thread;
       Thread::Queue<Message>  _outQueue;
       Config                  _config;
+      UdpEndpoint             _dstEndpoint;
+      UdpEndpoint             _dstEndpoint6;
       std::string             _key;
       Clock::time_point       _nextSendTime;
       KeyRequestListener      _keyRequestListener;

@@ -57,7 +57,7 @@ namespace Dwm {
     //------------------------------------------------------------------------
     MulticastSender::MulticastSender()
         : _fd(-1), _fd6(-1), _run(false), _thread(), _outQueue(), _config(),
-          _key(), _keyRequestListener()
+          _dstEndpoint(), _dstEndpoint6(), _key(), _keyRequestListener()
     {
       Credence::KXKeyPair  key1;
       Credence::KXKeyPair  key2;
@@ -173,6 +173,9 @@ namespace Dwm {
     {
       bool  rc = false;
       _config = config;
+      _dstEndpoint = UdpEndpoint(config.mcast.groupAddr, config.mcast.dstPort);
+      _dstEndpoint6 = UdpEndpoint(config.mcast.groupAddr6, config.mcast.dstPort);
+      
       if (0 > _fd) {
         if (OpenSocket()) {
           OpenSocket6();
@@ -227,29 +230,13 @@ namespace Dwm {
     //------------------------------------------------------------------------
     bool MulticastSender::SendPacket(MessagePacket & pkt)
     {
-      sockaddr_in  dst;
-      memset(&dst, 0, sizeof(dst));
-      dst.sin_family = PF_INET;
-      dst.sin_addr.s_addr = _config.mcast.groupAddr.Raw();
-      dst.sin_port = htons(_config.mcast.dstPort);
-#ifndef __linux__
-      dst.sin_len = sizeof(dst);
-#endif
       ssize_t  ip4rc = -1, ip6rc = -1;
       if (pkt.Encrypt(_key)) {
         if (0 <= _fd) {
-          ip4rc = pkt.SendTo(_fd, &dst);
+          ip4rc = pkt.SendTo(_fd, _dstEndpoint);
         }
         if (0 <= _fd6) {
-          sockaddr_in6  dst6;
-          memset(&dst6, 0, sizeof(dst6));
-          dst6.sin6_family = PF_INET6;
-          dst6.sin6_addr = _config.mcast.groupAddr6;
-          dst6.sin6_port = htons(_config.mcast.dstPort);
-#ifndef __linux__
-          dst6.sin6_len = sizeof(dst6);
-#endif
-          ip6rc = pkt.SendTo(_fd6, &dst6);
+          ip6rc = pkt.SendTo(_fd6, _dstEndpoint6);
         }
       }
       pkt.Reset();
