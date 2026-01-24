@@ -114,9 +114,11 @@ namespace Dwm {
           memset(&locAddr, 0, sizeof(locAddr));
           locAddr.sin6_family = PF_INET6;
           locAddr.sin6_port = htons(_config.mcast.dstPort);
-          locAddr.sin6_addr = _config.mcast.groupAddr6;
+          locAddr.sin6_addr = (in6_addr)_config.mcast.groupAddr6;
 #ifndef __linux__
-          locAddr.sin6_len = sizeof(locAddr); 
+          locAddr.sin6_len = sizeof(locAddr);
+#else
+          locAddr.sin6_scope_id = if_nametoindex(_config.mcast.intfName.c_str());
 #endif
           if (::bind(_fd6, (sockaddr *)&locAddr, sizeof(locAddr)) == 0) {
             rc = true;
@@ -236,7 +238,7 @@ namespace Dwm {
         if (0 == pipe(_stopfds)) {
           _run = true;
           _thread = std::thread(&MulticastReceiver::Run, this);
-#ifdef __FreeBSD__
+#if (defined(__FreeBSD__) || defined(__linux__))
           pthread_setname_np(_thread.native_handle(), "MulticastReceiver");
 #endif
           rc = true;
@@ -329,7 +331,7 @@ namespace Dwm {
     void MulticastReceiver::Run()
     {
       Syslog(LOG_INFO, "MulticastReceiver thread started");
-#ifndef __FreeBSD__
+#if (__APPLE__)
       pthread_setname_np("MulticastReceiver");
 #endif
       if ((0 <= _fd) || (0 <= _fd6)) {
