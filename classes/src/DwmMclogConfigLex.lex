@@ -59,8 +59,9 @@
       va_list  ap;
       va_start(ap, arg);
       vfprintf(stderr, arg, ap);
-      fprintf(stderr, ": '%s' at line %d of %s\n",
-              yytext, yylineno, g_configPath.c_str());
+      va_end(ap);
+      fprintf(stderr, " at line %d of %s\n",
+              yylineno, g_configPath.c_str());
       return;
     }
   }

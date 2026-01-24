@@ -3,6 +3,7 @@
   #include <string>
 
   #include "DwmIpv4Address.hh"
+  #include "DwmIpv6Prefix.hh"
 
   using std::string, Dwm::Ipv4Address, Dwm::Ipv6Address;
 }
@@ -11,6 +12,7 @@
   #include <cstdio>
 
   extern "C" {
+    #include <ifaddrs.h>
     #include <netdb.h>
 
     extern void mclogcfgerror(const char *arg, ...);
@@ -19,6 +21,9 @@
         
   #include <string>
 
+  #include "DwmIpv4Prefix.hh"
+  #include "DwmIpv6Prefix.hh"
+  #include "DwmLocalInterfaces.hh"
   #include "DwmSysLogger.hh"
   #include "DwmMclogConfig.hh"
 
@@ -27,6 +32,69 @@
   string                 g_configPath;
   Dwm::Mclog::Config    *g_config = nullptr;
 
+  static bool IsValidIpv4MulticastAddr(const Dwm::Ipv4Address & addr)
+  {
+    if (addr != Dwm::Ipv4Address()) {
+      Dwm::Ipv4Prefix  pfx("224.0.0.0/4");
+      return pfx.Contains(addr);
+    }
+    return false;
+  }
+
+  static bool IsValidIpv4IntfAddr(const Dwm::Ipv4Address & addr)
+  {
+    std::map<std::string,Dwm::LocalInterface>  intfs;
+    Dwm::GetLocalInterfaces(intfs);
+    auto  it = std::find_if(intfs.begin(), intfs.end(),
+                            [&] (const auto & intf)
+                            { if (intf.second.Addr() == addr) {
+                                return true;
+                              }
+                              else {
+                                auto  alit = std::find_if(intf.second.Aliases().begin(),
+                                                          intf.second.Aliases().end(),
+                                                          [&] (const auto & alias) 
+                                                          { return (alias.Addr() == addr); });
+                                return (alit != intf.second.Aliases().end());
+                              }
+                            }
+                            );
+    return (it != intfs.end());
+  }
+  
+  static bool IsValidIpv6MulticastAddr(const Dwm::Ipv6Address & addr)
+  {
+    if (addr != Dwm::Ipv6Address()) {
+      Dwm::Ipv6Prefix  pfx("ff00::/8");
+      return pfx.Contains(addr);
+    }
+    return false;
+  }
+
+  static bool IsValidIpv6IntfAddr(const Dwm::Ipv6Address & addr)
+  {
+    bool  rc = false;
+    struct ifaddrs  *ifAddrs;
+    if (getifaddrs(&ifAddrs) == 0) {
+      struct ifaddrs  *ifAddr = ifAddrs;
+      while (ifAddr) {
+        if (ifAddr->ifa_addr) {
+          if (ifAddr->ifa_addr->sa_family == AF_INET6) {
+            const sockaddr_in6  *sa6 =
+                (const sockaddr_in6 *)ifAddr->ifa_addr;
+            if (Dwm::Ipv6Address(sa6->sin6_addr) == addr) {
+              rc = true;
+              break;
+            }
+          }
+        }
+        ifAddr = ifAddr->ifa_next;
+      }
+      freeifaddrs(ifAddrs);
+    }
+    return rc;
+  }
+      
 %}
 
 %define api.prefix {mclogcfg}
@@ -189,24 +257,52 @@ MulticastSettings: GroupAddr
 GroupAddr: GROUPADDR '=' STRING ';'
 {
   $$ = new Dwm::Ipv4Address(*$3);
+  if (! IsValidIpv4MulticastAddr(*($$))) {
+    mclogcfgerror("invalid ipv4 multicast group address %s",
+                  $3->c_str());
+    delete $3;
+    return 1;
+  }
   delete $3;
 };
 
 GroupAddr6: GROUPADDR6 '=' STRING ';'
 {
   $$ = new Dwm::Ipv6Address(*($3));
+  if (! IsValidIpv6MulticastAddr(*($$))) {
+    mclogcfgerror("invalid ipv6 multicast group address %s",
+                  $3->c_str());
+    delete $3;
+    return 1;
+  }
   delete $3;
 };
 
 IntfAddr: INTFADDR '=' STRING ';'
 {
   $$ = new Dwm::Ipv4Address(*$3);
+  if (! IsValidIpv4IntfAddr(*$$)) {
+    mclogcfgerror("Warning: invalid intfAddr %s for this host",
+                  $3->c_str());
+  }
   delete $3;
 };
 
 IntfAddr6: INTFADDR6 '=' STRING ';'
 {
   $$ = new Dwm::Ipv6Address(*($3));
+  if (Dwm::Ipv6Address() == *($$)) {
+    mclogcfgerror("invalid ipv6 intfAddr address %s",
+                  $3->c_str());
+    delete $3;
+    return 1;
+  }
+  else {
+    if (! IsValidIpv6IntfAddr(*($$))) {
+      mclogcfgerror("Warning: invalid intfAddr6 address %s for this host",
+                    $3->c_str());
+    }
+  }
   delete $3;
 };
 
