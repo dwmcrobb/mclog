@@ -37,6 +37,10 @@
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
+extern "C" {
+  #include <sys/stat.h>
+}
+
 #include <regex>
 
 #include "DwmMclogLogFile.hh"
@@ -55,6 +59,21 @@ namespace Dwm {
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
+    bool LogFile::NeedRollBeforeOpen() const
+    {
+      struct stat  statbuf;
+      if (0 == stat(_path.string().c_str(), &statbuf)) {
+        if (Clock::to_time_t(NextMidnight() - std::chrono::hours(24))
+            > statbuf.st_mtimespec.tv_sec) {
+          return true;
+        }
+      }
+      return false;
+    }
+    
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
     bool LogFile::Open()
     {
       namespace fs = std::filesystem;
@@ -64,6 +83,9 @@ namespace Dwm {
         rc = true;
       }
       else {
+        if (NeedRollBeforeOpen()) {
+          Roll();
+        }
         _ofs.open(_path);
         if (static_cast<bool>(_ofs)) {
           rc = true;

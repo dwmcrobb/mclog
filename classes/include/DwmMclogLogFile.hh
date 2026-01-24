@@ -74,8 +74,11 @@ namespace Dwm {
       //----------------------------------------------------------------------
       void Close();
 
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
       bool Log(const Message & msg);
-      
+
     private:
       std::filesystem::path  _path;
       std::ofstream          _ofs;
@@ -101,6 +104,7 @@ namespace Dwm {
       };
 
       Clock::time_point NextMidnight() const;
+      bool NeedRollBeforeOpen() const;
       bool RollCriteriaMet() const;
       void RollArchives(size_t numToKeep) const;
       void RollCurrent();
