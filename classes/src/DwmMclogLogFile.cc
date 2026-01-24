@@ -64,7 +64,7 @@ namespace Dwm {
       struct stat  statbuf;
       if (0 == stat(_path.string().c_str(), &statbuf)) {
         if (Clock::to_time_t(NextMidnight() - std::chrono::hours(24))
-            > statbuf.st_mtimespec.tv_sec) {
+            > statbuf.st_mtime) {
           return true;
         }
       }
