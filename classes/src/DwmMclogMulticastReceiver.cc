@@ -236,6 +236,9 @@ namespace Dwm {
         if (0 == pipe(_stopfds)) {
           _run = true;
           _thread = std::thread(&MulticastReceiver::Run, this);
+#ifdef __FreeBSD__
+          pthread_setname_np(_thread.native_handle(), "MulticastReceiver");
+#endif
           rc = true;
         }
       }
@@ -326,7 +329,9 @@ namespace Dwm {
     void MulticastReceiver::Run()
     {
       Syslog(LOG_INFO, "MulticastReceiver thread started");
-
+#ifndef __FreeBSD__
+      pthread_setname_np("MulticastReceiver");
+#endif
       if ((0 <= _fd) || (0 <= _fd6)) {
         fd_set        fds;
         sockaddr_in   fromAddr;

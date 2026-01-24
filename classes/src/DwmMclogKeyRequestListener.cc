@@ -93,6 +93,9 @@ namespace Dwm {
           _fd6 = fd6;
           _run = true;
           _thread = std::thread(&KeyRequestListener::Run, this);
+#ifdef __FreeBSD__
+          pthread_setname_np(_thread.native_handle(), "KeyRequestListener");
+#endif
           return true;
         }
       }
@@ -120,6 +123,9 @@ namespace Dwm {
     void KeyRequestListener::Run()
     {
       Syslog(LOG_INFO, "KeyRequestListener thread started");
+#ifndef __FreeBSD__
+      pthread_setname_np("KeyRequestListener");
+#endif 
       if (Listen()) {
         while (_run) {
           fd_set  fds;

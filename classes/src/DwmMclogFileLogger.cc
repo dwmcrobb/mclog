@@ -55,6 +55,9 @@ namespace Dwm {
       _run = true;
       _logFiles.LogDirectory(filesConfig.logDirectory);
       _thread = std::thread(&FileLogger::Run, this);
+#ifdef __FreeBSD__
+      pthread_setname_np(_thread.native_handle(), "FileLogger");
+#endif
       rc = true;
       return rc;
     }
@@ -84,6 +87,9 @@ namespace Dwm {
     void FileLogger::Run()
     {
       Syslog(LOG_INFO, "FileLogger thread started");
+#ifndef __FreeBSD__
+      pthread_setname_np("FileLogger");
+#endif
       std::deque<Message>  msgs;
       while (_run) {
         _inQueue.ConditionWait();

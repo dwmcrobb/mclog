@@ -61,6 +61,9 @@ namespace Dwm {
       _run = true;
       if (0 == pipe(_stopfds)) {
         _thread = std::thread(&LoopbackReceiver::Run, this);
+#ifdef __FreeBSD__
+        pthread_setname_np(_thread.native_handle(), "LoopbackReceiver");
+#endif
         Syslog(LOG_INFO, "LoopbackReceiver started");
         return true;
       }
@@ -120,6 +123,9 @@ namespace Dwm {
     void LoopbackReceiver::Run()
     {
       Syslog(LOG_INFO, "LoopbackReceiver thread started");
+#ifndef __FreeBSD__
+      pthread_setname_np("LoopbackReceiver");
+#endif
       _ifd = socket(PF_INET, SOCK_DGRAM, 0);
       if (0 <= _ifd) {
         struct sockaddr_in  sockAddr;
