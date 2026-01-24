@@ -227,7 +227,7 @@ namespace Dwm {
                                       &_key)) {
           _run = true;
           _thread = std::thread(&MulticastSender::Run, this);
-#ifdef __FreeBSD__
+#if (defined(__FreeBSD__) || defined(__linux__))
           pthread_setname_np(_thread.native_handle(), "MulticastSender");
 #endif
           rc = true;
@@ -284,7 +284,7 @@ namespace Dwm {
     void MulticastSender::Run()
     {
       Syslog(LOG_INFO, "MulticastSender thread started");
-#ifndef __FreeBSD__
+#if (__APPLE__)
       pthread_setname_np("MulticastSender");
 #endif
       char  buf[1200];
