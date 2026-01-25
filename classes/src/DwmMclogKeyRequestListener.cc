@@ -94,7 +94,7 @@ namespace Dwm {
           _run = true;
           _thread = std::thread(&KeyRequestListener::Run, this);
 #if (defined(__FreeBSD__) || defined (__linux__))
-          pthread_setname_np(_thread.native_handle(), "KeyRequestListener");
+          pthread_setname_np(_thread.native_handle(), "KeyReqListener");
 #endif
           return true;
         }
