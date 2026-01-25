@@ -80,21 +80,38 @@ namespace Dwm {
       
       bool  rc = false;
       if (_ofs.is_open()) {
+        FSyslog(LOG_INFO, "LogFile '{}' already open", _path.string());
         rc = true;
       }
       else {
         if (NeedRollBeforeOpen()) {
+          FSyslog(LOG_INFO, "Rolling '{}' before open", _path.string());
           Roll();
         }
-        _ofs.open(_path, std::ios_base::in|std::ios_base::ate);
+        _ofs.open(_path, std::ios::out|std::ios::app);
         if (static_cast<bool>(_ofs)) {
           rc = true;
+          FSyslog(LOG_INFO, "LogFile '{}' opened", _path.string());
         }
         else if (! fs::exists(_path.parent_path())) {
           if (fs::create_directories(_path.parent_path())) {
-            _ofs.open(_path, std::ios_base::in|std::ios_base::ate);
+            _ofs.open(_path, std::ios::out|std::ios::app);
             rc = static_cast<bool>(_ofs);
+            if (rc) {
+              FSyslog(LOG_INFO, "LogFile '{}' opened", _path.string());
+            }
+            else {
+              FSyslog(LOG_ERR, "Failed to open LogFile '{}'", _path.string());
+            }
           }
+          else {
+            FSyslog(LOG_ERR, "Failed to create directory '{}'",
+                    _path.parent_path().string());
+          }
+        }
+        else {
+          FSyslog(LOG_ERR, "Failed to open LogFile '{}': {}",
+                  _path.string(), strerror(errno));
         }
       }
       return rc;
@@ -128,6 +145,9 @@ namespace Dwm {
             rc = true;
           }
         }
+      }
+      else {
+        FSyslog(LOG_ERR, "LogFile {} not open", _path.string());
       }
       return rc;
     }
