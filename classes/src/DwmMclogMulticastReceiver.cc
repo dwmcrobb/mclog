@@ -239,7 +239,7 @@ namespace Dwm {
           _run = true;
           _thread = std::thread(&MulticastReceiver::Run, this);
 #if (defined(__FreeBSD__) || defined(__linux__))
-          pthread_setname_np(_thread.native_handle(), "MulticastReceiver");
+          pthread_setname_np(_thread.native_handle(), "MulticastRecv");
 #endif
           rc = true;
         }
