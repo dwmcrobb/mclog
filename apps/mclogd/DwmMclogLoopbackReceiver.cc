@@ -62,7 +62,7 @@ namespace Dwm {
       if (0 == pipe(_stopfds)) {
         _thread = std::thread(&LoopbackReceiver::Run, this);
 #if (defined(__FreeBSD__) || defined(__linux__))
-        pthread_setname_np(_thread.native_handle(), "LoopbackReceiver");
+        pthread_setname_np(_thread.native_handle(), "LoopbackRecv");
 #endif
         Syslog(LOG_INFO, "LoopbackReceiver started");
         return true;
