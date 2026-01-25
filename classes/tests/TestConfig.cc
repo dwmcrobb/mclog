@@ -55,6 +55,9 @@ int main(int argc, char *argv[])
   assert(cfg.mcast.intfName == "en0");
   assert(cfg.mcast.dstPort == 3456);
   assert(cfg.files.logDirectory == "/usr/local/var/logs");
+  assert(false == cfg.loopback.ListenIpv4());
+  assert(true == cfg.loopback.ListenIpv6());
+  assert(3737 == cfg.loopback.port);
   
   return 0;
 }

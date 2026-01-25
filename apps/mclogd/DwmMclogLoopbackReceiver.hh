@@ -1,7 +1,5 @@
 //===========================================================================
-// @(#) $DwmPath$
-//===========================================================================
-//  Copyright (c) Daniel W. McRobb 2025
+//  Copyright (c) Daniel W. McRobb 2025, 2026
 //  All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
@@ -46,6 +44,7 @@
 #include <thread>
 
 #include "DwmThreadQueue.hh"
+#include "DwmMclogConfig.hh"
 #include "DwmMclogMessage.hh"
 
 namespace Dwm {
@@ -58,19 +57,25 @@ namespace Dwm {
     class LoopbackReceiver
     {
     public:
-      bool Start();
-      bool Restart();
+      LoopbackReceiver();
+      bool Start(const Config & config);
+      bool Restart(const Config & config);
       void Stop();
       bool AddSink(Thread::Queue<Message> *msgQueue);
       
     private:
-      int                                    _ifd;        // receive socket
+      Config                                 _config;
+      int                                    _ifd;        // ipv4 receive
+      int                                    _ifd6;       // ipv6 receive
       int                                    _stopfds[2]; // stop cmd pipe
       std::atomic<bool>                      _run;
       std::thread                            _thread;
       std::mutex                             _sinksMutex;
       std::vector<Thread::Queue<Message> *>  _sinks;
-      
+
+      bool OpenIpv4Socket();
+      bool OpenIpv6Socket();
+      bool DesiredSocketsOpen() const;
       void Run();
     };
     

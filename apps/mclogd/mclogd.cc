@@ -67,7 +67,7 @@ static bool Restart(const std::string & configPath)
     if (g_fileLogger.Restart(config.files)) {
       if (g_mcastSender.Restart(config)) {
         if (g_mcastReceiver.Restart(config)) {
-          rc = g_loopbackReceiver.Restart();
+          rc = g_loopbackReceiver.Restart(config);
         }
       }
     }
@@ -201,7 +201,7 @@ int main(int argc, char *argv[])
     g_fileLogger.Start(config.files);
     g_loopbackReceiver.AddSink(g_mcastSender.OutputQueue());
     g_loopbackReceiver.AddSink(g_fileLogger.InputQueue());
-    g_loopbackReceiver.Start();
+    g_loopbackReceiver.Start(config);
     g_mcastReceiver.AddSink(g_fileLogger.InputQueue());
     g_mcastReceiver.Open(config, false);
     for (;;) {

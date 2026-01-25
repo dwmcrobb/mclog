@@ -77,7 +77,10 @@
     { "intfAddr6",          INTFADDR6      },
     { "intfName",           INTFNAME       },
     { "keyDirectory",       KEYDIRECTORY   },
+    { "listenV4",           LISTENV4       },
+    { "listenV6",           LISTENV6       },
     { "logDirectory",       LOGDIRECTORY   },
+    { "loopback",           LOOPBACK       },
     { "multicast",          MULTICAST      },
     { "port",               PORT           },
     { "service",            SERVICE        }

@@ -83,6 +83,7 @@ namespace Dwm {
         memset(&bindAddr, 0, sizeof(bindAddr));
         bindAddr.sin_family = PF_INET;
         bindAddr.sin_addr.s_addr = _config.mcast.intfAddr.Raw();
+        bindAddr.sin_port = htons(_config.mcast.dstPort);
 #ifndef __linux__
         bindAddr.sin_len = sizeof(bindAddr);
 #endif
@@ -143,6 +144,7 @@ namespace Dwm {
             memset(&bindAddr, 0, sizeof(bindAddr));
             bindAddr.sin6_family = PF_INET6;
             bindAddr.sin6_addr = _config.mcast.intfAddr6;
+            bindAddr.sin6_port = htons(_config.mcast.dstPort);
 #ifndef __linux__
             bindAddr.sin6_len = sizeof(bindAddr);
 #endif

@@ -106,8 +106,10 @@
   Ipv4Address                  *ipv4AddrVal;
   Ipv6Address                  *ipv6AddrVal;
   Dwm::Mclog::ServiceConfig    *serviceConfigVal;
+  Dwm::Mclog::LoopbackConfig   *loopbackConfigVal;
   Dwm::Mclog::MulticastConfig  *mcastConfigVal;
   Dwm::Mclog::FilesConfig      *filesConfigVal;
+  bool                          boolVal;
 }
 
 %code provides
@@ -121,7 +123,7 @@
 }
 
 %token FILES GROUPADDR GROUPADDR6 INTFADDR INTFADDR6 INTFNAME KEYDIRECTORY
-%token LOGDIRECTORY MULTICAST PORT SERVICE
+%token LISTENV4 LISTENV6 LOOPBACK LOGDIRECTORY MULTICAST PORT SERVICE
 
 %token<stringVal>  STRING
 %token<intVal>     INTEGER
@@ -129,16 +131,18 @@
 %type<uint16Val>          UDP4Port Port
 %type<stringVal>          KeyDirectory LogDirectory IntfName
 %type<serviceConfigVal>   ServiceSettings
+%type<loopbackConfigVal>  LoopbackSettings
 %type<filesConfigVal>     FilesSettings
 %type<mcastConfigVal>     Multicast MulticastSettings
 %type<ipv4AddrVal>        GroupAddr IntfAddr
 %type<ipv6AddrVal>        GroupAddr6 IntfAddr6
+%type<boolVal>            ListenV4 ListenV6
 
 %%
 
 Config: TopStanza | Config TopStanza;
 
-TopStanza: Service | Multicast | Files;
+TopStanza: Service | Loopback | Multicast | Files;
 
 Service: SERVICE '{' ServiceSettings '}' ';'
 {
@@ -159,6 +163,65 @@ KeyDirectory : KEYDIRECTORY '=' STRING ';'
 {
   $$ = $3;
 };
+
+Loopback: LOOPBACK '{' LoopbackSettings '}' ';'
+{
+  if (g_config) {
+    g_config->loopback = *($3);
+  }
+  delete $3;
+}
+
+LoopbackSettings: ListenV4
+{
+  $$ = new Dwm::Mclog::LoopbackConfig();
+  $$->listenIpv4 = $1;
+}
+| ListenV6
+{
+  $$ = new Dwm::Mclog::LoopbackConfig();
+  $$->listenIpv6 = $1;
+}
+| Port
+{
+  $$ = new Dwm::Mclog::LoopbackConfig();
+  $$->port = $1;
+}
+| LoopbackSettings ListenV4
+{
+  $$->listenIpv4 = $2;
+}
+| LoopbackSettings ListenV6
+{
+  $$->listenIpv6 = $2;
+}
+| LoopbackSettings Port
+{
+  $$->port = $2;
+};
+
+ListenV4: LISTENV4 '=' STRING ';'
+{
+  if ("false" == *($3)) {
+    $$ = false;
+  }
+  else {
+    $$ = true;
+  }
+  delete $3;
+};
+
+ListenV6: LISTENV6 '=' STRING ';'
+{
+  if ("true" == *($3)) {
+    $$ = true;
+  }
+  else {
+    $$ = false;
+  }
+  delete $3;
+};
+
 
 Files: FILES '{' FilesSettings '}' ';'
 {
@@ -384,6 +447,7 @@ namespace Dwm {
     //------------------------------------------------------------------------
     void Config::Clear()
     {
+      loopback.Clear();
       mcast.Clear();
       service.Clear();
       return;

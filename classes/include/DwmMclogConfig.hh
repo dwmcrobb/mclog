@@ -71,6 +71,28 @@ namespace Dwm {
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
+    class LoopbackConfig
+    {
+    public:
+      LoopbackConfig()
+          : listenIpv4(true), listenIpv6(false), port(3737)
+      {}
+      
+      LoopbackConfig(const LoopbackConfig &) = default;
+      LoopbackConfig & operator = (const LoopbackConfig &) = default;
+
+      bool ListenIpv4() const  { return (listenIpv4 && (port != 0)); }
+      bool ListenIpv6() const  { return (listenIpv6 && (port != 0)); }
+      void Clear() { listenIpv4 = false; listenIpv6 = false; port = 3737; }
+
+      bool         listenIpv4;
+      bool         listenIpv6;
+      uint16_t     port;
+    };
+    
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
     class ServiceConfig
     {
     public:
@@ -110,7 +132,8 @@ namespace Dwm {
       bool ShouldSendIpv4() const;
       bool ShouldSendIpv6() const;
       void Clear();
-      
+
+      LoopbackConfig   loopback;
       MulticastConfig  mcast;
       ServiceConfig    service;
       FilesConfig      files;

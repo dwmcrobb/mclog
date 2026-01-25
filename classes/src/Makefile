@@ -26,7 +26,7 @@ $(dwm_include $(abspath $(my mydir)/../../Makefile.rules))
 #  dependency rule
 $(eval $(dwm_cppdeps $(my mydir)/deps,\
 $(abspath $(my mydir)/../obj),$(my mydir)/%.cc,\
-${CXX} -MM $(my CxxFlags) -c $<,.o .lo))
+${CXX} -MM $(my CxxFlags) $<,.o .lo))
 
 #  only include dependency makefiles if target is not a 'clean' target
 ifneq ($(MAKECMDGOALS),clean)
