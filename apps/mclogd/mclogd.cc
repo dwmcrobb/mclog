@@ -157,13 +157,13 @@ static void Usage(const char *argv0)
 //----------------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
-  bool         daemonize = true;
+  bool         daemonize = true, debug = false;
   int          syslogOpts = 0;
   std::string  pidFile("/var/run/mclogd.pid");
   std::string  configPath("/usr/local/etc/mclogd.cfg");
   
   int  optChar;
-  while ((optChar = getopt(argc, argv, "c:dp:")) != -1) {
+  while ((optChar = getopt(argc, argv, "c:dDp:")) != -1) {
     switch (optChar) {
       case 'c':
         configPath = optarg;
@@ -171,6 +171,9 @@ int main(int argc, char *argv[])
       case 'd':
         syslogOpts |= LOG_PERROR;
         daemonize = false;
+        break;
+      case 'D':
+        debug = true;
         break;
       case 'p':
         pidFile = optarg;
@@ -187,6 +190,9 @@ int main(int argc, char *argv[])
   }
   
   Dwm::SysLogger::Open("mclogd", syslogOpts, LOG_USER);
+  if (! debug) {
+    Dwm::SysLogger::MinimumPriority("info");
+  }
   
   Dwm::Mclog::Config  config;
   if (config.Parse(configPath)) {
