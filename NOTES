@@ -80,5 +80,6 @@ todo list, but what operators do I need?
   !
   &&
   ||
+  ()
 
 This is all boolean logic.
