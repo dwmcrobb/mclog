@@ -1,0 +1,16 @@
+I need a routing configuration so I can specify whether or not
+to forward:
+
+- local messages (received on loopback) to files
+  - local messages (received on loopback) to multicast
+  - multicast messages (sent to group from others) to files
+
+I need a filtering config that allows message selection, so
+I can configure file output and also what gets sent via the
+aforementioned routing.  Message selection:
+
+  - source host
+  - facility
+  - minimum priority
+  - ident
+
