@@ -6,6 +6,8 @@ I need a routing configuration so I can specify whether or not to forward:
   - multicast messages (sent to group from others) to files
 
 #------------------------------------------------------------------------------
+#  Filtering (work started in Mclog::MessageSelector)
+#------------------------------------------------------------------------------
 I need a filtering config that allows message selection, so I can configure
 file output and also what gets sent via the aforementioned routing.  Message
 selection:
@@ -39,7 +41,7 @@ Or:
     host = ".+";
     facility = "";
     minimumSeverity = debug;
-    ident = ".*";
+    ident = ! "Test.*";
   }
 
 Internal representation:
@@ -49,7 +51,34 @@ Internal representation:
   - identrgx: std::regex, default std::regex(".*")
 
 And the matching logic:
-  - true == regex_match(msg.Origin().hostname(), sm, _sourceHost)
+  - _sourceHost.second == regex_match(msg.Origin().hostname(), sm, _sourceHost.first)
   - _facilities.empty() || (_facilities.find(msg.Header().facility()) != _facilities.end())
   - msg.Header().severity() <= _minimumSeverity
-  - true == (regex_match(msg.Origin().appname(), sm, _identrgx)
+  - _ident.second == (regex_match(msg.Origin().appname(), sm, _ident.first)
+
+I added negative logic handling for sourceHostrgx, facility and identrgx.
+
+So if I have a selectors section in the config, I should be able to reference
+another selector when configuring a selector:
+
+selectors {
+
+  mydaemons = {
+    host = ".+\.(mcplex\.net|rfdm\.com)";
+    facility = "";
+    minimumSeverity = info;
+    ident = "mcroverd|mctallyd|mccurtaind|mcblockd"
+  };
+
+  notmydaemons = ! mydaemons;
+  
+};
+
+Of course this means I need to specify a filtering language.  It's on the
+todo list, but what operators do I need?
+
+  !
+  &&
+  ||
+
+This is all boolean logic.
