@@ -57,7 +57,8 @@ namespace Dwm {
     //------------------------------------------------------------------------
     MulticastSender::MulticastSender()
         : _fd(-1), _fd6(-1), _run(false), _thread(), _outQueue(), _config(),
-          _dstEndpoint(), _dstEndpoint6(), _key(), _keyRequestListener()
+          _dstEndpoint(), _dstEndpoint6(), _key(), _keyRequestListener(),
+          _msgSelectors()
     {
       Credence::KXKeyPair  key1;
       Credence::KXKeyPair  key2;
@@ -267,6 +268,23 @@ namespace Dwm {
       return;
     }
 
+    //------------------------------------------------------------------------
+    bool MulticastSender::PushBack(const Message & msg)
+    {
+      if (_msgSelectors.empty()) {
+        return _outQueue.PushBack(msg);
+      }
+      else {
+        auto  it = std::find_if(_msgSelectors.cbegin(), _msgSelectors.cend(),
+                                [&] (const auto & selector)
+                                { return selector.Matches(msg); });
+        if (it != _msgSelectors.cend()) {
+          return _outQueue.PushBack(msg);
+        }
+      }
+      return false;
+    }
+    
     //------------------------------------------------------------------------
     bool MulticastSender::SendPacket(MessagePacket & pkt)
     {

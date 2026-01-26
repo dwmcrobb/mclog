@@ -199,10 +199,10 @@ int main(int argc, char *argv[])
     SavePID(pidFile);
     g_mcastSender.Open(config);
     g_fileLogger.Start(config.files);
-    g_loopbackReceiver.AddSink(g_mcastSender.OutputQueue());
-    g_loopbackReceiver.AddSink(g_fileLogger.InputQueue());
+    g_loopbackReceiver.AddSink(&g_mcastSender);
+    g_loopbackReceiver.AddSink(&g_fileLogger);
     g_loopbackReceiver.Start(config);
-    g_mcastReceiver.AddSink(g_fileLogger.InputQueue());
+    g_mcastReceiver.AddSink(&g_fileLogger);
     g_mcastReceiver.Open(config, false);
     for (;;) {
       BlockSigHupAndTerm();

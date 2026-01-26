@@ -45,6 +45,7 @@
 #include "DwmThreadQueue.hh"
 #include "DwmMclogConfig.hh"
 #include "DwmMclogLogFiles.hh"
+#include "DwmMclogMessageSink.hh"
 
 namespace Dwm {
 
@@ -54,6 +55,7 @@ namespace Dwm {
     //!  
     //------------------------------------------------------------------------
     class FileLogger
+      : public MessageSink
     {
     public:
       FileLogger();
@@ -62,7 +64,8 @@ namespace Dwm {
       bool Stop();
       Thread::Queue<Message> *InputQueue()
       { return &_inQueue; }
-        
+      bool PushBack(const Message & msg) override;
+      
     private:
       std::thread             _thread;
       Thread::Queue<Message>  _inQueue;

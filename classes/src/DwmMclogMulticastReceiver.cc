@@ -288,7 +288,7 @@ namespace Dwm {
     }
     
     //------------------------------------------------------------------------
-    bool MulticastReceiver::AddSink(Thread::Queue<Message> *sink)
+    bool MulticastReceiver::AddSink(MessageSink *sink)
     {
       bool  rc = false;
       std::lock_guard  lck(_sinksMutex);
@@ -303,7 +303,7 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
-    bool MulticastReceiver::RemoveSink(Thread::Queue<Message> *sink)
+    bool MulticastReceiver::RemoveSink(MessageSink *sink)
     {
       bool  rc = false;
       std::lock_guard  lck(_sinksMutex);

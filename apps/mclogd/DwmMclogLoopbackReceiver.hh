@@ -45,7 +45,7 @@
 
 #include "DwmThreadQueue.hh"
 #include "DwmMclogConfig.hh"
-#include "DwmMclogMessage.hh"
+#include "DwmMclogMessageSink.hh"
 
 namespace Dwm {
 
@@ -61,17 +61,17 @@ namespace Dwm {
       bool Start(const Config & config);
       bool Restart(const Config & config);
       void Stop();
-      bool AddSink(Thread::Queue<Message> *msgQueue);
+      bool AddSink(MessageSink *msgQueue);
       
     private:
-      Config                                 _config;
-      int                                    _ifd;        // ipv4 receive
-      int                                    _ifd6;       // ipv6 receive
-      int                                    _stopfds[2]; // stop cmd pipe
-      std::atomic<bool>                      _run;
-      std::thread                            _thread;
-      std::mutex                             _sinksMutex;
-      std::vector<Thread::Queue<Message> *>  _sinks;
+      Config                      _config;
+      int                         _ifd;        // ipv4 receive
+      int                         _ifd6;       // ipv6 receive
+      int                         _stopfds[2]; // stop cmd pipe
+      std::atomic<bool>           _run;
+      std::thread                 _thread;
+      std::mutex                  _sinksMutex;
+      std::vector<MessageSink *>  _sinks;
 
       bool OpenIpv4Socket();
       bool OpenIpv6Socket();

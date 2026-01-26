@@ -54,7 +54,7 @@ namespace Dwm {
     //!  
     //------------------------------------------------------------------------
     MulticastSources::MulticastSources(const std::string *keyDir,
-                                       std::vector<Thread::Queue<Message> *> *sinks)
+                                       std::vector<MessageSink *> *sinks)
         : _keyDir(keyDir), _sources(), _sinks(sinks)
     {}
 

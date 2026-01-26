@@ -47,7 +47,8 @@
 #include "DwmThreadQueue.hh"
 #include "DwmCredenceKeyStash.hh"
 #include "DwmCredenceKnownKeys.hh"
-#include "DwmMclogMessage.hh"
+#include "DwmMclogMessageSelector.hh"
+#include "DwmMclogMessageSink.hh"
 #include "DwmMclogMessagePacket.hh"
 #include "DwmMclogKeyRequestListener.hh"
 #include "DwmMclogConfig.hh"
@@ -60,6 +61,7 @@ namespace Dwm {
     //!  
     //------------------------------------------------------------------------
     class MulticastSender
+      : public MessageSink
     {
     public:
       using Clock = std::chrono::system_clock;
@@ -94,7 +96,9 @@ namespace Dwm {
       //----------------------------------------------------------------------
       Thread::Queue<Message> *OutputQueue()
       { return &_outQueue; }
-        
+
+      bool PushBack(const Message & msg) override;
+      
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
@@ -102,18 +106,19 @@ namespace Dwm {
       { return _key; }
         
     private:
-      int                     _fd;
-      int                     _fd6;
-      std::atomic<bool>       _run;
-      std::thread             _thread;
-      Thread::Queue<Message>  _outQueue;
-      Config                  _config;
-      UdpEndpoint             _dstEndpoint;
-      UdpEndpoint             _dstEndpoint6;
-      std::string             _key;
-      Clock::time_point       _nextSendTime;
-      KeyRequestListener      _keyRequestListener;
-
+      int                           _fd;
+      int                           _fd6;
+      std::atomic<bool>             _run;
+      std::thread                   _thread;
+      Thread::Queue<Message>        _outQueue;
+      Config                        _config;
+      UdpEndpoint                   _dstEndpoint;
+      UdpEndpoint                   _dstEndpoint6;
+      std::string                   _key;
+      Clock::time_point             _nextSendTime;
+      KeyRequestListener            _keyRequestListener;
+      std::vector<MessageSelector>  _msgSelectors;
+      
       bool DesiredSocketsOpen() const;
       bool OpenSocket();
       bool OpenSocket6();

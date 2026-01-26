@@ -32,84 +32,34 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file DwmMclogFileLogger.cc
+//!  @file DwmMclogMessageSink.hh
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-#include "DwmMclogFileLogger.hh"
+#ifndef _DWMMCLOGMESSAGESINK_HH_
+#define _DWMMCLOGMESSAGESINK_HH_
+
+#include "DwmMclogMessage.hh"
 
 namespace Dwm {
 
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    FileLogger::FileLogger()
-        : _thread(), _inQueue(), _run(false), _logFiles()
-    {}
+    //!  
+    //------------------------------------------------------------------------
+    class MessageSink
+    {
+    public:
+      virtual ~MessageSink() { }
+      virtual bool PushBack(const Message & msg)
+      { return true; }
+    };
     
-    //------------------------------------------------------------------------
-    bool FileLogger::Start(const FilesConfig & filesConfig)
-    {
-      bool  rc = false;
-      _run = true;
-      _logFiles.LogDirectory(filesConfig.logDirectory);
-      _thread = std::thread(&FileLogger::Run, this);
-#if (defined(__FreeBSD__) || defined(__linux__))
-      pthread_setname_np(_thread.native_handle(), "FileLogger");
-#endif
-      rc = true;
-      return rc;
-    }
-
-    //------------------------------------------------------------------------
-    bool FileLogger::Restart(const FilesConfig & filesConfig)
-    {
-      bool  rc = false;
-      Stop();
-      return Start(filesConfig);
-    }
-
-    //------------------------------------------------------------------------
-    bool FileLogger::Stop()
-    {
-      bool  rc = false;
-      _run = false;
-      _inQueue.ConditionSignal();
-      if (_thread.joinable()) {
-        _thread.join();
-        rc = true;
-      }
-      return rc;
-    }
-
-    //------------------------------------------------------------------------
-    bool FileLogger::PushBack(const Message & msg)
-    {
-      return _inQueue.PushBack(msg);
-    }
-    
-    //------------------------------------------------------------------------
-    void FileLogger::Run()
-    {
-      Syslog(LOG_INFO, "FileLogger thread started");
-#if (__APPLE__)
-      pthread_setname_np("FileLogger");
-#endif
-      std::deque<Message>  msgs;
-      while (_run) {
-        _inQueue.ConditionWait();
-        _inQueue.Swap(msgs);
-        for (const auto & msg : msgs) {
-          _logFiles.Log(msg);
-        }
-        msgs.clear();
-      }
-      Syslog(LOG_INFO, "FileLogger thread done");
-      return;
-    }
-    
-    
+      
   }  // namespace Mclog
 
 }  // namespace Dwm
+
+#endif  // _DWMMCLOGMESSAGESINK_HH_

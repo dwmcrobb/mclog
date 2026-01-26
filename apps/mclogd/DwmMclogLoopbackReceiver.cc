@@ -103,7 +103,7 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
-    bool LoopbackReceiver::AddSink(Thread::Queue<Message> *sink)
+    bool LoopbackReceiver::AddSink(MessageSink *sink)
     {
       bool  rc = false;
       std::lock_guard  lck(_sinksMutex);

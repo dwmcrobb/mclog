@@ -93,7 +93,15 @@ namespace Dwm {
         if (0 <= _ofd) {
           rc = true;
         }
+        else {
+          FSyslog(LOG_ERR, "socket(PF_INET, SOCK_DGRAM, 0) failed: {}",
+                  strerror(errno));
+        }
       }
+      else {
+        Syslog(LOG_ERR, "Logger socket alread open");
+      }
+      
       return rc;
     }
 
@@ -115,7 +123,7 @@ namespace Dwm {
     {
       bool  rc = false;
 
-      _dstAddr = UdpEndpoint(Ipv4Address("127.0.0.1"), 3456);
+      _dstAddr = UdpEndpoint(Ipv4Address("127.0.0.1"), 3737);
 
       char  hn[255];
       memset(hn, 0, sizeof(hn));

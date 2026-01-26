@@ -45,7 +45,7 @@
 #include <thread>
 
 #include "DwmThreadQueue.hh"
-#include "DwmMclogMessage.hh"
+#include "DwmMclogMessageSink.hh"
 #include "DwmMclogMulticastSourceKey.hh"
 #include "DwmMclogUdpEndpoint.hh"
 
@@ -77,7 +77,7 @@ namespace Dwm {
       ~MulticastSource();
       MulticastSource(const UdpEndpoint & srcEndpoint,
                       const std::string *keyDir,
-                      std::vector<Thread::Queue<Message> *> *sinks);
+                      std::vector<MessageSink *> *sinks);
       MulticastSource(const MulticastSource & src);
       MulticastSource(MulticastSource && src);
       MulticastSource & operator = (const MulticastSource & src);
@@ -112,14 +112,14 @@ namespace Dwm {
         size_t                                  _datalen;
       };
 
-      UdpEndpoint                             _endpoint;
-      MulticastSourceKey                      _key;
-      Thread::Queue<BacklogEntry>             _backlog;
-      const std::string                      *_keyDir;
-      std::vector<Thread::Queue<Message> *>  *_sinks;
-      std::atomic<bool>                       _queryDone;
-      std::thread                             _queryThread;
-      Clock::time_point                       _lastReceiveTime;
+      UdpEndpoint                   _endpoint;
+      MulticastSourceKey            _key;
+      Thread::Queue<BacklogEntry>   _backlog;
+      const std::string            *_keyDir;
+      std::vector<MessageSink *>   *_sinks;
+      std::atomic<bool>             _queryDone;
+      std::thread                   _queryThread;
+      Clock::time_point             _lastReceiveTime;
       
       bool ProcessBacklog();
       void ClearOldBacklog();

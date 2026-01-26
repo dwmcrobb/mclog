@@ -47,7 +47,7 @@
 #include "DwmIpv4Address.hh"
 #include "DwmThreadQueue.hh"
 #include "DwmMclogConfig.hh"
-#include "DwmMclogMessage.hh"
+#include "DwmMclogMessageSink.hh"
 #include "DwmMclogMulticastSources.hh"
 
 namespace Dwm {
@@ -65,21 +65,21 @@ namespace Dwm {
       bool Open(const Config & cfg, bool acceptLocal = true);
       bool Restart(const Config & cfg);
       void Close();
-      bool AddSink(Thread::Queue<Message> *sink);
-      bool RemoveSink(Thread::Queue<Message> *sink);
+      bool AddSink(MessageSink *sink);
+      bool RemoveSink(MessageSink *sink);
       void ClearSinks();
       
     private:
-      Config                                 _config;
-      int                                    _fd;
-      int                                    _fd6;
-      bool                                   _acceptLocal;
-      std::mutex                             _sinksMutex;
-      std::vector<Thread::Queue<Message> *>  _sinks;
-      std::thread                            _thread;
-      int                                    _stopfds[2];
-      std::atomic<bool>                      _run;
-      MulticastSources                       _sources;
+      Config                      _config;
+      int                         _fd;
+      int                         _fd6;
+      bool                        _acceptLocal;
+      std::mutex                  _sinksMutex;
+      std::vector<MessageSink *>  _sinks;
+      std::thread                 _thread;
+      int                         _stopfds[2];
+      std::atomic<bool>           _run;
+      MulticastSources            _sources;
       
       bool BindSocket();
       bool BindSocket6();

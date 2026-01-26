@@ -44,7 +44,7 @@
 #include <vector>
 
 #include "DwmThreadQueue.hh"
-#include "DwmMclogMessage.hh"
+#include "DwmMclogMessageSink.hh"
 #include "DwmMclogUdpEndpoint.hh"
 #include "DwmMclogMulticastSource.hh"
 
@@ -60,14 +60,14 @@ namespace Dwm {
     public:
       MulticastSources();
       MulticastSources(const std::string *keyDir,
-                       std::vector<Thread::Queue<Message> *> *sinks);
+                       std::vector<MessageSink *> *sinks);
       void ProcessPacket(const UdpEndpoint & src, char *data,
                          size_t datalen);
       
     private:
-      std::map<UdpEndpoint,MulticastSource>    _sources;
-      std::vector<Thread::Queue<Message> *>   *_sinks;
-      const std::string                       *_keyDir;
+      std::map<UdpEndpoint,MulticastSource>   _sources;
+      std::vector<MessageSink *>             *_sinks;
+      const std::string                      *_keyDir;
 
       void ClearOld();
     };

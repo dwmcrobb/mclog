@@ -184,7 +184,7 @@ namespace Dwm {
     //------------------------------------------------------------------------
     MulticastSource::MulticastSource(const UdpEndpoint & srcEndpoint,
                                      const std::string *keyDir,
-                                     vector<Thread::Queue<Message> *> *sinks)
+                                     vector<MessageSink *> *sinks)
         : _endpoint(srcEndpoint), _key(), _backlog(), _keyDir(keyDir),
           _sinks(sinks), _queryDone(true), _queryThread(), _lastReceiveTime()
     {
