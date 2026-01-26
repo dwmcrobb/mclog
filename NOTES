@@ -1,16 +1,55 @@
-I need a routing configuration so I can specify whether or not
-to forward:
+#------------------------------------------------------------------------------
+I need a routing configuration so I can specify whether or not to forward:
 
-- local messages (received on loopback) to files
+  - local messages (received on loopback) to files
   - local messages (received on loopback) to multicast
   - multicast messages (sent to group from others) to files
 
-I need a filtering config that allows message selection, so
-I can configure file output and also what gets sent via the
-aforementioned routing.  Message selection:
+#------------------------------------------------------------------------------
+I need a filtering config that allows message selection, so I can configure
+file output and also what gets sent via the aforementioned routing.  Message
+selection:
 
   - source host
   - facility
-  - minimum priority
+  - minimum severity
   - ident
 
+Source host:
+  - should probably be a regular expression.
+Facility:
+  - list of facilities, or empty (empty means all)
+Minimum severity:
+  - textual representation of minimum priority (Mclog::Severity)
+ident:
+  - regular expression to match appname in MessageOrigin
+
+What a filter might look like in config:
+
+  mydaemons = {
+    host = ".+\.(mcplex\.net|rfdm\.com)";
+    facility = "";
+    minimumSeverity = info;
+    ident = "mcroverd|mctallyd|mccurtaind|mcblockd"
+  }
+
+Or:
+
+  everything = {
+    host = ".+";
+    facility = "";
+    minimumSeverity = debug;
+    ident = ".*";
+  }
+
+Internal representation:
+  - sourceHostrgx: std::regex, default std::regex(".*")
+  - facility: std::set<Mclog::Facility>, default empty set
+  - minimumSeverity: Mclog::Severity, default Mclog::Severity::debug
+  - identrgx: std::regex, default std::regex(".*")
+
+And the matching logic:
+  - true == regex_match(msg.Origin().hostname(), sm, _sourceHost)
+  - _facilities.empty() || (_facilities.find(msg.Header().facility()) != _facilities.end())
+  - msg.Header().severity() <= _minimumSeverity
+  - true == (regex_match(msg.Origin().appname(), sm, _identrgx)
