@@ -1,11 +1,12 @@
 %code requires
 {
   #include <string>
-
+  #include <map>
+    
   #include "DwmIpv4Address.hh"
   #include "DwmIpv6Prefix.hh"
 
-  using std::string, Dwm::Ipv4Address, Dwm::Ipv6Address;
+  using std::map, std::pair, std::string, Dwm::Ipv4Address, Dwm::Ipv6Address;
 }
 
 %{
@@ -18,7 +19,8 @@
     extern void mclogcfgerror(const char *arg, ...);
     extern FILE *mclogcfgin;
   }
-        
+
+  #include <map>
   #include <string>
 
   #include "DwmIpv4Prefix.hh"
@@ -100,16 +102,19 @@
 %define api.prefix {mclogcfg}
 
 %union {
-  int                           intVal;
-  uint16_t                      uint16Val;
-  string                       *stringVal;
-  Ipv4Address                  *ipv4AddrVal;
-  Ipv6Address                  *ipv6AddrVal;
-  Dwm::Mclog::ServiceConfig    *serviceConfigVal;
-  Dwm::Mclog::LoopbackConfig   *loopbackConfigVal;
-  Dwm::Mclog::MulticastConfig  *mcastConfigVal;
-  Dwm::Mclog::FilesConfig      *filesConfigVal;
-  bool                          boolVal;
+  int                                        intVal;
+  uint16_t                                   uint16Val;
+  string                                    *stringVal;
+  Ipv4Address                               *ipv4AddrVal;
+  Ipv6Address                               *ipv6AddrVal;
+  Dwm::Mclog::ServiceConfig                 *serviceConfigVal;
+  Dwm::Mclog::LoopbackConfig                *loopbackConfigVal;
+  Dwm::Mclog::MulticastConfig               *mcastConfigVal;
+  Dwm::Mclog::FilesConfig                   *filesConfigVal;
+  Dwm::Mclog::MessageSelector               *msgSelectorVal;
+  pair<string,Dwm::Mclog::MessageSelector>  *namedSelectorVal;
+  map<string,Dwm::Mclog::MessageSelector>   *selectorsVal;
+  bool                                       boolVal;
 }
 
 %code provides
@@ -122,8 +127,9 @@
   YY_DECL;
 }
 
-%token FILES GROUPADDR GROUPADDR6 INTFADDR INTFADDR6 INTFNAME KEYDIRECTORY
-%token LISTENV4 LISTENV6 LOOPBACK LOGDIRECTORY MULTICAST PORT SERVICE
+%token FACILITY FILES GROUPADDR GROUPADDR6 HOST IDENT INTFADDR INTFADDR6
+%token INTFNAME KEYDIRECTORY LISTENV4 LISTENV6 LOGICALOR LOGICALAND LOOPBACK
+%token LOGDIRECTORY MINIMUMSEVERITY MULTICAST NOT PORT SELECTORS SERVICE
 
 %token<stringVal>  STRING
 %token<intVal>     INTEGER
@@ -137,12 +143,15 @@
 %type<ipv4AddrVal>        GroupAddr IntfAddr
 %type<ipv6AddrVal>        GroupAddr6 IntfAddr6
 %type<boolVal>            ListenV4 ListenV6
+%type<msgSelectorVal>     SelectorSettings
+%type<namedSelectorVal>   Selector
+%type<selectorsVal>       SelectorList
 
 %%
 
 Config: TopStanza | Config TopStanza;
 
-TopStanza: Service | Loopback | Multicast | Files;
+TopStanza: Service | Loopback | Multicast | Files | Selectors;
 
 Service: SERVICE '{' ServiceSettings '}' ';'
 {
@@ -402,6 +411,108 @@ UDP4Port: INTEGER
   }
   delete $1;
 };
+
+Selectors: SELECTORS '{' SelectorList '}' ';'
+{
+  if (g_config) {
+    g_config->selectors = *($3);
+  }
+  delete $3;
+};
+
+SelectorList: Selector
+{
+  $$ = new std::map<std::string,Dwm::Mclog::MessageSelector>();
+  $$->insert(*$1);
+  delete $1;
+}
+| SelectorList ',' Selector
+{
+  $$->insert(*$3);
+  delete $3;
+};
+
+Selector: STRING '=' '{' SelectorSettings '}'
+{
+  $$ = new std::pair<std::string,Dwm::Mclog::MessageSelector>(*$1,*$4);
+  delete $1;
+  delete $4;
+};
+     
+SelectorSettings: HOST '=' STRING ';'
+{
+  $$ = new Dwm::Mclog::MessageSelector();
+  if (! $$->SourceHost(*$3)) {
+    mclogcfgerror("bad host expression '%s'", $3->c_str());
+    delete $3;
+    return 1;
+  }
+  delete $3;
+}
+| FACILITY '=' STRING ';'
+{
+  $$ = new Dwm::Mclog::MessageSelector();
+  std::set<Dwm::Mclog::Facility>  facilities;
+  Dwm::Mclog::Facilities(*$3, facilities);
+  $$->Facilities(facilities);
+  delete $3;
+}
+| MINIMUMSEVERITY '=' STRING ';'
+{
+  $$ = new Dwm::Mclog::MessageSelector();
+  assert(false);
+  delete $3;
+}
+| IDENT '=' STRING ';'
+{
+  $$ = new Dwm::Mclog::MessageSelector();
+  if (! $$->Ident(*$3)) {
+    mclogcfgerror("bad ident expression '%s'", $3->c_str());
+    delete $3;
+    return 1;
+  }
+  delete $3;
+}
+| SelectorSettings HOST '=' STRING ';'
+{
+  if (! $$->SourceHost(*$4)) {
+    mclogcfgerror("bad host expression '%s'", $4->c_str());
+    delete $4;
+    return 1;
+  }
+  delete $4;
+}
+| SelectorSettings FACILITY '=' STRING ';'
+{
+  std::set<Dwm::Mclog::Facility>  facilities;
+  Dwm::Mclog::Facilities(*($4), facilities);
+  $$->Facilities(facilities);
+  delete $4;
+}
+| SelectorSettings MINIMUMSEVERITY '=' STRING ';'
+{
+  assert(false);
+  delete $4;
+}
+| SelectorSettings IDENT '=' STRING ';'
+{
+  if (! $$->Ident(*$4)) {
+    mclogcfgerror("bad ident expression '%s'", $4->c_str());
+    delete $4;
+    return 1;
+  }
+};
+
+FilterExpression: STRING
+{}
+| NOT FilterExpression
+{}
+| FilterExpression LOGICALOR FilterExpression
+{}
+| FilterExpression LOGICALAND FilterExpression
+{}
+| '(' FilterExpression ')'
+{};
 
 %%
 

@@ -59,7 +59,8 @@ int main(int argc, char *argv[])
 #endif
   uint64_t  i = 0;
   for (;;) {
-    MCLOG(Dwm::Mclog::Severity::info, "{} hello there.", i);
+    MCLOG(Dwm::Mclog::Severity::info, "{} hello there info.", i++);
+    MCLOG(Dwm::Mclog::Severity::debug, "{} hello there debug.", i++);
     ++i;
     usleep(100000);
   }

@@ -51,9 +51,34 @@ extern "C" {
 #include "DwmSysLogger.hh"
 #include "DwmCredenceXChaCha20Poly1305.hh"
 #include "DwmMclogConfig.hh"
-#include "DwmMclogMessage.hh"
+#include "DwmMclogMessageSelector.hh"
+#include "DwmMclogMessageSink.hh"
 #include "DwmMclogKeyRequester.hh"
 #include "DwmMclogMulticastReceiver.hh"
+
+class MySink
+  : public Dwm::Mclog::MessageSink
+{
+public:
+  MySink()
+      : _selector()
+  {
+    _selector.SourceHost(".+.rfdm.com");
+    _selector.MinimumSeverity(Dwm::Mclog::Severity::info);
+    _selector.Ident("TestLogger", false);
+  }
+  
+  bool PushBack(const Dwm::Mclog::Message & msg) override
+  {
+    if (_selector.Matches(msg)) {
+      std::cout << msg << std::flush;
+    }
+    return true;
+  }
+
+private:
+  Dwm::Mclog::MessageSelector  _selector;
+};
 
 //----------------------------------------------------------------------------
 //!  
@@ -94,15 +119,19 @@ int main(int argc, char *argv[])
   if (config.Parse("/usr/local/etc/mclogd.cfg")) {
     config.service.keyDirectory = keyDir;
     if (mcastRecv.Open(config)) {
-      Dwm::Thread::Queue<Dwm::Mclog::Message> msgQueue;
-      mcastRecv.AddSink(&msgQueue);
+      MySink  mysink;
+      mcastRecv.AddSink(&mysink);
       for (;;) {
+#if 1
+        sleep(60);
+#else
         msgQueue.WaitForNotEmpty();
         while (! msgQueue.Empty()) {
           Dwm::Mclog::Message  msg;
           msgQueue.PopFront(msg);
           std::cout << msg;
         }
+#endif
       }
     }
   }

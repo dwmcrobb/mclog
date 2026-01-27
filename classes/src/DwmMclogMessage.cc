@@ -102,69 +102,6 @@ namespace Dwm {
     }
     
     //------------------------------------------------------------------------
-    std::ostream & operator << (std::ostream & os, const Facility & facility)
-    {
-      using namespace std;
-      static constexpr array<pair<Facility,const char *>,20> facilities = {
-        make_pair(Facility::kernel,    "kernel"),
-        make_pair(Facility::user,      "user"),
-        make_pair(Facility::mail,      "mail"),
-        make_pair(Facility::daemon,    "daemon"),
-        make_pair(Facility::auth,      "auth"),
-        make_pair(Facility::syslog,    "syslog"),
-        make_pair(Facility::lpr,       "lpr"),
-        make_pair(Facility::news,      "news"),
-        make_pair(Facility::uucp,      "uucp"),
-        make_pair(Facility::cron,      "cron"),
-        make_pair(Facility::authpriv,  "authpriv"),
-        make_pair(Facility::ftp,       "ftp"),
-        make_pair(Facility::local0,    "local0"),
-        make_pair(Facility::local1,    "local1"),
-        make_pair(Facility::local2,    "local2"),
-        make_pair(Facility::local3,    "local3"),
-        make_pair(Facility::local4,    "local4"),
-        make_pair(Facility::local5,    "local5"),
-        make_pair(Facility::local6,    "local6"),
-        make_pair(Facility::local7,    "local7")
-      };
-      if (auto it = ranges::find(facilities, facility,
-                                 &pair<Facility,const char *>::first);
-          it != facilities.end()) {
-        os << it->second;
-      }
-      else {
-        os << "unknown";
-      }
-      return os;
-    }
-    
-    //------------------------------------------------------------------------
-    std::ostream & operator << (std::ostream & os, const Severity & severity)
-    {
-      using namespace std;
-      static constexpr array<pair<Severity,const char *>,8>
-        severities = {
-        make_pair(Severity::emerg,   "[M]"),
-        make_pair(Severity::alert,   "[A]"),
-        make_pair(Severity::crit,    "[C]"),
-        make_pair(Severity::err,     "[E]"),
-        make_pair(Severity::warning, "[W]"),
-        make_pair(Severity::notice,  "[N]"),
-        make_pair(Severity::info,    "[I]"),
-        make_pair(Severity::debug,   "[D]")
-      };
-      if (auto it = ranges::find(severities, severity,
-                                 &pair<Severity,const char *>::first);
-          it != severities.end()) {
-        os << it->second;
-      }
-      else {
-        os << "[U]";
-      }
-      return os;
-    }
-
-    //------------------------------------------------------------------------
     MessageHeader::MessageHeader(const MessageHeader & hdr)
         : _timestamp(hdr._timestamp), _facility(hdr._facility),
           _severity(hdr._severity), _origin(hdr._origin), _msgid(hdr._msgid)

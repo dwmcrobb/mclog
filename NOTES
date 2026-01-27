@@ -32,7 +32,7 @@ What a filter might look like in config:
     host = ".+\.(mcplex\.net|rfdm\.com)";
     facility = "";
     minimumSeverity = info;
-    ident = "mcroverd|mctallyd|mccurtaind|mcblockd"
+    ident = "mcroverd|mctallyd|mccurtaind|mcblockd";
   }
 
 Or:
@@ -67,7 +67,7 @@ selectors {
     host = ".+\.(mcplex\.net|rfdm\.com)";
     facility = "";
     minimumSeverity = info;
-    ident = "mcroverd|mctallyd|mccurtaind|mcblockd"
+    ident = "mcroverd|mctallyd|mccurtaind|mcblockd";
   };
 
   notmydaemons = ! mydaemons;
@@ -83,3 +83,32 @@ todo list, but what operators do I need?
   ()
 
 This is all boolean logic.
+
+The grammar would look something like:
+
+%union {
+  bool          boolVal;
+  std::string  *stringVal;
+}
+
+%type <boolVal> Filter Selector
+
+Filter:
+    Selector            { $$ = $1; }
+    | '!' Filter        { $$ = (! $1); }
+    | Filter OR Filter  { $$ = ($1 || $3); }
+    | Filter AND Filter { $$ = ($1 && $3); }
+    | '(' Filter ')'    { $$ = $2; };
+    
+Selector: STRING
+{
+    auto it = g_selectors.find(*$1);
+    if (it != g_selectors.end()) {
+      $$ = it->second(msg);
+    }
+    else {
+      $$ = false;
+    }
+    delete $1;
+};
+

@@ -70,20 +70,25 @@
   //!  
   //--------------------------------------------------------------------------
   static const std::map<std::string,int>  g_configKeywords = {
-    { "files",              FILES          },
-    { "groupAddr",          GROUPADDR      },
-    { "groupAddr6",         GROUPADDR6     },
-    { "intfAddr",           INTFADDR       },
-    { "intfAddr6",          INTFADDR6      },
-    { "intfName",           INTFNAME       },
-    { "keyDirectory",       KEYDIRECTORY   },
-    { "listenV4",           LISTENV4       },
-    { "listenV6",           LISTENV6       },
-    { "logDirectory",       LOGDIRECTORY   },
-    { "loopback",           LOOPBACK       },
-    { "multicast",          MULTICAST      },
-    { "port",               PORT           },
-    { "service",            SERVICE        }
+    { "facility",           FACILITY        },
+    { "files",              FILES           },
+    { "groupAddr",          GROUPADDR       },
+    { "groupAddr6",         GROUPADDR6      },
+    { "host",               HOST            },
+    { "ident",              IDENT           },
+    { "intfAddr",           INTFADDR        },
+    { "intfAddr6",          INTFADDR6       },
+    { "intfName",           INTFNAME        },
+    { "keyDirectory",       KEYDIRECTORY    },
+    { "listenV4",           LISTENV4        },
+    { "listenV6",           LISTENV6        },
+    { "logDirectory",       LOGDIRECTORY    },
+    { "loopback",           LOOPBACK        },
+    { "minimumSeverity",    MINIMUMSEVERITY },
+    { "multicast",          MULTICAST       },
+    { "port",               PORT            },
+    { "selectors",          SELECTORS       },
+    { "service",            SERVICE         }
   };
 
   //--------------------------------------------------------------------------
@@ -122,7 +127,7 @@
 %%
 
 <INITIAL>#.*\n
-<INITIAL>[^ \t\n\[\]{}=,;"]+       { if (IsNumber(yytext)) {
+<INITIAL>[^ \t\n\[\]{}=,;!\|\&"]+    { if (IsNumber(yytext)) {
                                        mclogcfglval.intVal = atoi(yytext);
                                        return INTEGER;
                                      }
@@ -138,12 +143,15 @@
                                        }
                                      }
                                    }
+<INITIAL>[\|]{2,2}                 { return LOGICALOR; }
+<INITIAL>[\&]{2,2}                 { return LOGICALAND; }
+<INITIAL>[!]                       { return NOT; }
 <INITIAL>["]                       { BEGIN(x_quoted); }
 <x_quoted>[^"]+                    { mclogcfglval.stringVal =
                                        new std::string(yytext);
                                      return STRING; }
 <x_quoted>["]                      { BEGIN(INITIAL); }
-<INITIAL>[=,;\[\]\{\}]             { return yytext[0]; }
+<INITIAL>[=,;!\[\]\{\}]            { return yytext[0]; }
 <INITIAL>[ \t\n]
 
 %%

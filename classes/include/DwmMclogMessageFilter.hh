@@ -32,35 +32,23 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file TestConfig.cc
+//!  @file DwmMclogMessageFilter.hh
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-#include "DwmMclogConfig.hh"
+#ifndef _DWMMCLOGMESSAGEFILTER_HH_
+#define _DWMMCLOGMESSAGEFILTER_HH_
 
-//----------------------------------------------------------------------------
-//!  
-//----------------------------------------------------------------------------
-int main(int argc, char *argv[])
-{
-  Dwm::Mclog::Config  cfg;
-  
-  assert(cfg.Parse("../../etc/mclogd.cfg"));
-  assert(cfg.service.keyDirectory == "/usr/local/etc/mclogd");
-  assert(cfg.mcast.groupAddr == Dwm::Ipv4Address("239.108.111.103"));
-  assert(cfg.mcast.groupAddr6 == Dwm::Ipv6Address("ff02::006d:636c:6f67"));
-  assert(cfg.mcast.intfAddr == Dwm::Ipv4Address("192.168.168.42"));
-  assert(cfg.mcast.intfAddr6 == Dwm::Ipv6Address("fd60:3019:f4a:6aaf::39"));
-  assert(cfg.mcast.intfName == "en0");
-  assert(cfg.mcast.dstPort == 3456);
-  assert(cfg.files.logDirectory == "/usr/local/var/logs");
-  assert(false == cfg.loopback.ListenIpv4());
-  assert(true == cfg.loopback.ListenIpv6());
-  assert(3737 == cfg.loopback.port);
-  assert(1 == cfg.selectors.size());
-  assert(cfg.selectors.begin()->first == "mydaemons");
-  assert(cfg.selectors.begin()->second.Facilities().first.size() == 8);
-  
-  return 0;
-}
+namespace Dwm {
+
+  namespace Mclog {
+
+    class MessageFilter
+    {};
+    
+  }  // namespace Mclog
+
+}  // namespace Dwm
+
+#endif  // _DWMMCLOGMESSAGEFILTER_HH_

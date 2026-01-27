@@ -47,16 +47,18 @@ namespace Dwm {
     
     //------------------------------------------------------------------------
     MessageSelector::MessageSelector()
-        : _sourceHost(".+",regex::ECMAScript|regex::optimize),
-          _facilities(), _minimumSeverity(Severity::debug),
-          _ident(".*",regex::ECMAScript|regex::optimize)
+        : _sourceHost(std::regex{".+",regex::ECMAScript|regex::optimize}, true),
+          _facilities({}, true), _minimumSeverity(Severity::debug),
+          _ident(std::regex{".*",regex::ECMAScript|regex::optimize}, true)
     {}
     
     //------------------------------------------------------------------------
-    bool MessageSelector::SourceHost(const string & srcHostExpr)
+    bool MessageSelector::SourceHost(const string & srcHostExpr, bool match)
     {
       try {
-        _sourceHost = regex(srcHostExpr, regex::ECMAScript|regex::optimize);
+        _sourceHost.first = regex(srcHostExpr,
+                                  regex::ECMAScript|regex::optimize);
+        _sourceHost.second = match;
         return true;
       }
       catch (...) {
@@ -67,9 +69,11 @@ namespace Dwm {
     }
     
     //------------------------------------------------------------------------
-    void MessageSelector::Facilities(const set<Facility> & facilities)
+    void MessageSelector::Facilities(const set<Facility> & facilities,
+                                     bool match)
     {
-      _facilities = facilities;
+      _facilities.first = facilities;
+      _facilities.second = match;
       return;
     }
     
@@ -81,10 +85,11 @@ namespace Dwm {
     }
     
     //------------------------------------------------------------------------
-    bool MessageSelector::Ident(const string & identExpr)
+    bool MessageSelector::Ident(const string & identExpr, bool match)
     {
       try {
-        _ident = regex(identExpr, regex::ECMAScript|regex::optimize);
+        _ident.first = regex(identExpr, regex::ECMAScript|regex::optimize);
+        _ident.second = match;
         return true;
       }
       catch (...) {
@@ -100,12 +105,16 @@ namespace Dwm {
       bool  rc = false;
       smatch  hnsm;
       const MessageHeader  & hdr = msg.Header();
-      if (regex_match(hdr.origin().hostname(), hnsm, _sourceHost)) {
-        if (_facilities.empty()
-            || (_facilities.find(hdr.facility()) != _facilities.end())) {
+      if (regex_match(hdr.origin().hostname(), hnsm, _sourceHost.first)
+          == _sourceHost.second) {
+        if (_facilities.first.empty()
+            || (_facilities.second
+                == (_facilities.first.find(hdr.facility())
+                    != _facilities.first.end()))) {
           if (hdr.severity() <= _minimumSeverity) {
             smatch  ansm;
-            rc = regex_match(hdr.origin().appname(), ansm, _ident);
+            rc = (_ident.second
+                  == regex_match(hdr.origin().appname(), ansm, _ident.first));
           }
         }
       }
@@ -115,10 +124,13 @@ namespace Dwm {
     //------------------------------------------------------------------------
     void MessageSelector::Clear()
     {
-      _sourceHost = regex(".+", regex::ECMAScript|regex::optimize);
-      _facilities.clear();
+      _sourceHost.first = regex(".+", regex::ECMAScript|regex::optimize);
+      _sourceHost.second = true;
+      _facilities.first.clear();
+      _facilities.second = true;
       _minimumSeverity = Severity::debug;
-      _ident = regex(".+", regex::ECMAScript|regex::optimize);
+      _ident.first = regex(".+", regex::ECMAScript|regex::optimize);
+      _ident.second = true;
       return;
     }
     

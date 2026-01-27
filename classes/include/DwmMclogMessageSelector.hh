@@ -42,6 +42,7 @@
 
 #include <regex>
 #include <set>
+#include <utility>
 
 #include "DwmMclogMessage.hh"
 
@@ -54,20 +55,24 @@ namespace Dwm {
     public:
       MessageSelector();
 
-      bool SourceHost(const std::string & srcHostExpr);
-      void Facilities(const std::set<Facility> & facilities);
+      bool SourceHost(const std::string & srcHostExpr, bool match = true);
+      void Facilities(const std::set<Facility> & facilities,
+                      bool match = true);
+      const std::pair<std::set<Facility>,bool> & Facilities() const
+      { return _facilities; }
+        
       void MinimumSeverity(Severity minSeverity);
-      bool Ident(const std::string & identExpr);
+      bool Ident(const std::string & identExpr, bool match = true);
 
       bool Matches(const Message & msg) const;
       
       void Clear();
       
     private:
-      std::regex          _sourceHost;
-      std::set<Facility>  _facilities;
-      Severity            _minimumSeverity;
-      std::regex          _ident;
+      std::pair<std::regex,bool>          _sourceHost;
+      std::pair<std::set<Facility>,bool>  _facilities;
+      Severity                            _minimumSeverity;
+      std::pair<std::regex,bool>          _ident;
     };
     
   }  // namespace Mclog

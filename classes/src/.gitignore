@@ -1,3 +1,5 @@
 DwmMclogConfigLex.cc
 DwmMclogConfigParse.cc
 DwmMclogConfigParse.hh
+DwmMclogFilterParse.cc
+DwmMclogFilterParse.hh

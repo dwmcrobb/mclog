@@ -42,6 +42,7 @@
 
 #include "DwmIpv4Address.hh"
 #include "DwmIpv6Address.hh"
+#include "DwmMclogMessageSelector.hh"
 
 namespace Dwm {
 
@@ -89,7 +90,7 @@ namespace Dwm {
       bool         listenIpv6;
       uint16_t     port;
     };
-    
+
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
@@ -133,10 +134,11 @@ namespace Dwm {
       bool ShouldSendIpv6() const;
       void Clear();
 
-      LoopbackConfig   loopback;
-      MulticastConfig  mcast;
-      ServiceConfig    service;
-      FilesConfig      files;
+      LoopbackConfig                         loopback;
+      MulticastConfig                        mcast;
+      ServiceConfig                          service;
+      std::map<std::string,MessageSelector>  selectors;
+      FilesConfig                            files;
     };
     
   }  // namespace Mclog

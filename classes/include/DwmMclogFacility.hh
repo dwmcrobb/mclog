@@ -32,35 +32,63 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file TestConfig.cc
+//!  @file DwmMclogFacility.hh
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-#include "DwmMclogConfig.hh"
+#ifndef _DWMMCLOGFACILITY_HH_
+#define _DWMMCLOGFACILITY_HH_
 
-//----------------------------------------------------------------------------
-//!  
-//----------------------------------------------------------------------------
-int main(int argc, char *argv[])
-{
-  Dwm::Mclog::Config  cfg;
-  
-  assert(cfg.Parse("../../etc/mclogd.cfg"));
-  assert(cfg.service.keyDirectory == "/usr/local/etc/mclogd");
-  assert(cfg.mcast.groupAddr == Dwm::Ipv4Address("239.108.111.103"));
-  assert(cfg.mcast.groupAddr6 == Dwm::Ipv6Address("ff02::006d:636c:6f67"));
-  assert(cfg.mcast.intfAddr == Dwm::Ipv4Address("192.168.168.42"));
-  assert(cfg.mcast.intfAddr6 == Dwm::Ipv6Address("fd60:3019:f4a:6aaf::39"));
-  assert(cfg.mcast.intfName == "en0");
-  assert(cfg.mcast.dstPort == 3456);
-  assert(cfg.files.logDirectory == "/usr/local/var/logs");
-  assert(false == cfg.loopback.ListenIpv4());
-  assert(true == cfg.loopback.ListenIpv6());
-  assert(3737 == cfg.loopback.port);
-  assert(1 == cfg.selectors.size());
-  assert(cfg.selectors.begin()->first == "mydaemons");
-  assert(cfg.selectors.begin()->second.Facilities().first.size() == 8);
-  
-  return 0;
-}
+#include <cstdint>
+#include <iostream>
+#include <set>
+#include <string>
+
+namespace Dwm {
+
+  namespace Mclog {
+
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    enum class Facility : uint8_t {
+      kernel   = (0<<3),
+      user     = (1<<3),
+      mail     = (2<<3),
+      daemon   = (3<<3),
+      auth     = (4<<3),
+      syslog   = (5<<3),
+      lpr      = (6<<3),
+      news     = (7<<3),
+      uucp     = (8<<3),
+      cron     = (9<<3),
+      authpriv = (10<<3),
+      ftp      = (11<<3),
+      local0   = (16<<3),
+      local1   = (17<<3),
+      local2   = (18<<3),
+      local3   = (19<<3),
+      local4   = (20<<3),
+      local5   = (21<<3),
+      local6   = (22<<3),
+      local7   = (23<<3)
+    };
+
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    std::ostream & operator << (std::ostream & os, const Facility & facility);
+
+    std::string FacilityName(Facility facility);
+
+    Facility FacilityValue(const std::string & facilityName);
+    
+    void Facilities(const std::string & rgxstr,
+                    std::set<Facility> & facilities);
+    
+  }  // namespace Mclog
+
+}  // namespace Dwm
+
+#endif  // _DWMMCLOGFACILITY_HH_
