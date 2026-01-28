@@ -9,7 +9,7 @@ $(my ObjNames := $(patsubst %.cc,%.o,$(dwm_files $(testsDir),.+\.cc)))
 $(my Objs     := $(patsubst %.o,$(testsDir)/%.o,$(my ObjNames)))
 $(my ObjDeps  := $(patsubst %.o,$(testsDir)/deps/%_deps,$(my ObjNames)))
 $(my Exes     := $(patsubst %.o,%,$(my Objs)))
-$(my Incs     := ${DWMINCS} -I$(abspath $(testsDir)/../include))
+$(my Incs     := ${DWMINCS} -I$(abspath $(testsDir)/../include) -I$(abspath $(testsDir)/../src))
 $(my Libs     := ${DWMLIBS})
 
 $(eval TARGETS $(dwm_ifcwd :=,+=) $(my Exes))

@@ -46,7 +46,7 @@
 // #undef yyFlexLexer
 #endif
 
-#include "DwmMclogFilterParse.hh"
+#include "DwmMclogFilterDriver.hh"
 
 namespace Dwm {
 
@@ -56,11 +56,7 @@ namespace Dwm {
     : public yyFlexLexer
     {
     public:
-      virtual FilterParser::symbol_type
-      yylex(FilterParser::semantic_type * const lval,
-            FilterParser::location_type *location);
-    private:
-      FilterParser::semantic_type  *yylval = nullptr;
+      FilterParser::symbol_type scan(FilterDriver & drv);
     };
     
   }  // namespace Mclog

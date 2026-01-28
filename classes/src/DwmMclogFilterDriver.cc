@@ -37,6 +37,8 @@
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
+#include <sstream>
+
 #include "DwmMclogFilterDriver.hh"
 #include "DwmMclogFilterParse.hh"
 
@@ -58,10 +60,12 @@ namespace Dwm {
     {
       file = f;
       location.initialize(&file);
-      scan_begin();
+      std::istringstream  iss(f);
+      scanner.switch_streams(iss, std::cerr);
+      // scan_begin();
       FilterParser  parser(*this);
       int res = parser();
-      scan_end();
+      // scan_end();
       return res;
     }
     

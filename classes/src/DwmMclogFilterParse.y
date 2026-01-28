@@ -1,4 +1,4 @@
- // %language "C++"
+%language "c++"
 %skeleton "lalr1.cc"
 %require "3.8.2"
 %header
@@ -23,6 +23,7 @@
     namespace Mclog {
       class FilterDriver;
       class FilterParser;
+      class FilterScanner;
     }
   }
 }
@@ -33,35 +34,43 @@
 %code
 {
     #include "DwmMclogFilterDriver.hh"
+
+    Dwm::Mclog::FilterParser::symbol_type
+    yylex(Dwm::Mclog::FilterDriver & drv)
+    {
+        return drv.scanner.scan(drv);
+    }
 }
 
 %token AND INTEGER LPAREN NOT OR RPAREN
 %token <std::string> STRING
-%nterm <bool> Expression
+%type <bool> Expression
 
 %%
 
+%start Result;
+
 Result: Expression { drv.result = $1; };
-     
+
 Expression: STRING
 {
-    return (($1).size() == 5);
+    $$ = (($1).size() == 5);
 }
 | NOT Expression
 {
-  return (! ($2));
+  $$ = (! ($2));
 }
 | Expression OR Expression
 {
-  return (($1) || ($3));
+  $$ = (($1) || ($3));
 }
 | Expression AND Expression
 {
-  return (($1) && ($3));
+  $$ = (($1) && ($3));
 }
 | LPAREN Expression RPAREN
 {
-  return $2;
+  $$ = $2;
 };
 
 %%

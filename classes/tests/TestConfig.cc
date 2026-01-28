@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
   assert(false == cfg.loopback.ListenIpv4());
   assert(true == cfg.loopback.ListenIpv6());
   assert(3737 == cfg.loopback.port);
-  assert(1 == cfg.selectors.size());
+  assert(2 == cfg.selectors.size());
   assert(cfg.selectors.begin()->first == "mydaemons");
   assert(cfg.selectors.begin()->second.Facilities().first.size() == 8);
   

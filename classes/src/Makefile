@@ -11,7 +11,7 @@ shlib_version := $(shell $(my mydir)/../../getvers.sh -s)
 $(dwm_setltlibvars lib,../lib/libDwmMclog.la,../obj,deps,.+\.(cc|lex|y)$$)
 
 $(my Link       := ${LIBTOOL} --mode=link --tag=CXX $(CXX))
-$(my Incs       := -I$(abspath $(my mydir)/../include) -I. ${DWMINCS})
+$(my Incs       := -I$(abspath $(my mydir)/../include) -I$(abspath $(my mydir)) ${DWMINCS})
 $(my CxxFlags   := ${CXXFLAGS} ${PTHREADCXXFLAGS} $(my Incs))
 $(my Compile    := $(LIBTOOLCOMPILE) $(my CxxFlags))
 
@@ -52,7 +52,7 @@ $(my lib.mydir)/%Parse.cc $(my lib.mydir)/%Parse.hh &: $(my lib.mydir)/%Parse.y
 
 $(my lib.mydir)/%Lex.cc: $(my lib.mydir)/%Lex.lex $(my lib.mydir)/%Parse.hh
 	@dwmgmk_quiet "generating lexer from $(dwm_relpwd $<)" \
-	 flex -o $@ $<
+	 flex -d -o $@ $<
 
 ${TARDIR}/lib/%.la: $(my lib.Lib)
 	@dwmgmk_quiet "creating $(dwm_relpwd $@)" ${INSTALL} -c $< $@

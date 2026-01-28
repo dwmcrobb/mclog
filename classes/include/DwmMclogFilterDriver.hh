@@ -43,14 +43,15 @@
 #include <string>
 
 #include "DwmMclogFilterParse.hh"
+#include "DwmMclogFilterScanner.hh"
 
 // Give Flex the prototype of yylex we want ...
 #undef YY_DECL
 # define YY_DECL \
   Dwm::Mclog::FilterParser::symbol_type                           \
-  yylex(Dwm::Mclog::FilterDriver & drv)
+  Dwm::Mclog::FilterScanner::scan(Dwm::Mclog::FilterDriver & drv)
 // ... and declare it for the parser's sake.
-YY_DECL;
+// YY_DECL;
 
 namespace Dwm {
 
@@ -70,7 +71,7 @@ namespace Dwm {
       void scan_end();
 
       Dwm::Mclog::location  location;
-      
+      FilterScanner  scanner;
     };
     
   }  // namespace Mclog
