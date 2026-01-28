@@ -32,26 +32,39 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file DwmMclogMessageFilter.hh
+//!  @file DwmMclogFilterScanner.hh
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-#ifndef _DWMMCLOGMESSAGEFILTER_HH_
-#define _DWMMCLOGMESSAGEFILTER_HH_
+#ifndef _DWMMCLOGFILTERSCANNER_HH_
+#define _DWMMCLOGFILTERSCANNER_HH_
+
+#ifndef __FLEX_LEXER_H
+// #define yyFlexLexer ExampleFlexLexer
+#include "FlexLexer.h"
+// #undef yyFlexLexer
+#endif
+
+#include "DwmMclogFilterParse.hh"
 
 namespace Dwm {
 
   namespace Mclog {
 
-    class MessageFilter
+    class FilterScanner
+    : public yyFlexLexer
     {
     public:
-      
+      virtual FilterParser::symbol_type
+      yylex(FilterParser::semantic_type * const lval,
+            FilterParser::location_type *location);
+    private:
+      FilterParser::semantic_type  *yylval = nullptr;
     };
     
   }  // namespace Mclog
 
 }  // namespace Dwm
 
-#endif  // _DWMMCLOGMESSAGEFILTER_HH_
+#endif  // _DWMMCLOGFILTERSCANNER_HH_

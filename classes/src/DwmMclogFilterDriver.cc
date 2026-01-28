@@ -32,26 +32,39 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file DwmMclogMessageFilter.hh
+//!  @file DwmMclogFilterDriver.cc
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-#ifndef _DWMMCLOGMESSAGEFILTER_HH_
-#define _DWMMCLOGMESSAGEFILTER_HH_
+#include "DwmMclogFilterDriver.hh"
+#include "DwmMclogFilterParse.hh"
 
 namespace Dwm {
 
   namespace Mclog {
 
-    class MessageFilter
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    FilterDriver::FilterDriver()
+        : result(0)
+    {}
+
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    int FilterDriver::parse(const std::string & f)
     {
-    public:
-      
-    };
+      file = f;
+      location.initialize(&file);
+      scan_begin();
+      FilterParser  parser(*this);
+      int res = parser();
+      scan_end();
+      return res;
+    }
     
   }  // namespace Mclog
 
 }  // namespace Dwm
-
-#endif  // _DWMMCLOGMESSAGEFILTER_HH_

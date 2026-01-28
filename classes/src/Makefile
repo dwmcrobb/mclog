@@ -11,7 +11,7 @@ shlib_version := $(shell $(my mydir)/../../getvers.sh -s)
 $(dwm_setltlibvars lib,../lib/libDwmMclog.la,../obj,deps,.+\.(cc|lex|y)$$)
 
 $(my Link       := ${LIBTOOL} --mode=link --tag=CXX $(CXX))
-$(my Incs       := -I$(abspath $(my mydir)/../include) ${DWMINCS})
+$(my Incs       := -I$(abspath $(my mydir)/../include) -I. ${DWMINCS})
 $(my CxxFlags   := ${CXXFLAGS} ${PTHREADCXXFLAGS} $(my Incs))
 $(my Compile    := $(LIBTOOLCOMPILE) $(my CxxFlags))
 

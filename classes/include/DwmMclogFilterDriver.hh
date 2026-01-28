@@ -32,21 +32,44 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file DwmMclogMessageFilter.hh
+//!  @file DwmMclogFilterDriver.hh
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-#ifndef _DWMMCLOGMESSAGEFILTER_HH_
-#define _DWMMCLOGMESSAGEFILTER_HH_
+#ifndef _DWMMCLOGFILTERDRIVER_HH_
+#define _DWMMCLOGFILTERDRIVER_HH_
+
+#include <string>
+
+#include "DwmMclogFilterParse.hh"
+
+// Give Flex the prototype of yylex we want ...
+#undef YY_DECL
+# define YY_DECL \
+  Dwm::Mclog::FilterParser::symbol_type                           \
+  yylex(Dwm::Mclog::FilterDriver & drv)
+// ... and declare it for the parser's sake.
+YY_DECL;
 
 namespace Dwm {
 
   namespace Mclog {
 
-    class MessageFilter
+    class FilterDriver
     {
     public:
+      FilterDriver();
+
+      int          result;
+      std::string  file;
+      
+      int parse(const std::string & inputString);
+
+      void scan_begin();
+      void scan_end();
+
+      Dwm::Mclog::location  location;
       
     };
     
@@ -54,4 +77,4 @@ namespace Dwm {
 
 }  // namespace Dwm
 
-#endif  // _DWMMCLOGMESSAGEFILTER_HH_
+#endif  // _DWMMCLOGFILTERDRIVER_HH_
