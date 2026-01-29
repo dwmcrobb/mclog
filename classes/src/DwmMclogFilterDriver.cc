@@ -47,26 +47,41 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  
+    FilterDriver::FilterDriver(const Config & cfg, const std::string & expr)
+        : cfg(cfg), tokens(), tokenIter(tokens.begin()), tokenized(false),
+          expr(expr)
+    { }
+    
     //------------------------------------------------------------------------
-    FilterDriver::FilterDriver()
-        : result(0)
-    {}
-
-    //------------------------------------------------------------------------
-    //!  
-    //------------------------------------------------------------------------
-    int FilterDriver::parse(const std::string & f)
+    FilterParser::symbol_type FilterDriver::next_token()
     {
-      file = f;
-      location.initialize(&file);
-      std::istringstream  iss(f);
-      scanner.switch_streams(iss, std::cerr);
-      // scan_begin();
-      FilterParser  parser(*this);
-      int res = parser();
-      // scan_end();
-      return res;
+      if (tokenIter == tokens.end()) {
+        return FilterParser::make_YYEOF(location);
+      }
+      return *tokenIter++;
+    }
+    
+    //------------------------------------------------------------------------
+    bool FilterDriver::parse(const Message *msg, bool & result)
+    {
+      location.initialize(nullptr);
+      if (! tokenized) {
+        std::istringstream  is(expr);
+        tokens.clear();
+        scanner.switch_streams(is, std::cerr);
+        while (scanner.scan(*this).kind()
+               != FilterParser::symbol_kind_type::S_YYEOF) {
+        }
+        tokenized = true;
+      }
+      result = false;
+      tokenIter = tokens.begin();
+      FilterParser  parser(this, msg, result);
+      bool  rc = (0 == parser());
+      if (! rc) {
+        parser.error(location, std::string("invalid filter '") + expr + "'");
+      }
+      return rc;
     }
     
   }  // namespace Mclog

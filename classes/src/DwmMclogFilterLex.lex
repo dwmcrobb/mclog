@@ -29,15 +29,49 @@
   loc.step();
 %}
 
-[^\|\&!\(\) \t\n]+       { return FilterParser::make_STRING(drv.scanner.YYText(), loc); }
-"||"                     { return FilterParser::make_OR(loc); }
-"&&"                     { return FilterParser::make_AND(loc); }
-"!"                      { return FilterParser::make_NOT(loc); }
-"("                      { return FilterParser::make_LPAREN(loc); }
-")"                      { return FilterParser::make_RPAREN(loc); }
-[ \t\r]+                 { loc.step(); }
-\n+                      { loc.lines(yyleng); loc.step(); }
-<<EOF>>                  { return FilterParser::make_YYEOF(loc); }
+[^\|\&!\(\) \t\n]+     {
+  auto  it = drv.cfg.selectors.find(YYText());
+  if (it != drv.cfg.selectors.cend()) {
+    auto  tok = FilterParser::make_SELECTOR(&(it->second), loc);
+    drv.tokens.push_back(tok);
+    return tok;
+  }
+  else {
+    // auto  tok = FilterParser::make_SELECTOR(nullptr, loc);
+    auto tok = FilterParser::make_YYerror(loc);
+    drv.tokens.push_back(tok);
+    std::cerr << drv.location << ": '" << YYText()
+              << "' is not a valid selector\n";
+    return tok;
+  }                                                                            
+}
+
+"||"                   { auto tok = FilterParser::make_OR(loc);
+                         drv.tokens.push_back(tok);
+                         return tok;
+                       }
+"&&"                   { auto tok = FilterParser::make_AND(loc);
+                         drv.tokens.push_back(tok);
+                         return tok;
+                       }
+"!"                    { auto tok = FilterParser::make_NOT(loc);
+                         drv.tokens.push_back(tok);
+                         return tok;
+                       }
+"("                    { auto tok = FilterParser::make_LPAREN(loc);
+                         drv.tokens.push_back(tok);
+                         return tok;
+                       }
+")"                    { auto tok = FilterParser::make_RPAREN(loc);
+                         drv.tokens.push_back(tok);
+                         return tok;
+                       }
+[ \t\r]+               { loc.step(); }
+\n+                    { loc.lines(yyleng); loc.step(); }
+<<EOF>>                { auto tok = FilterParser::make_YYEOF(loc);
+                         drv.tokens.push_back(tok);
+                         return tok;
+                       }
 
 %%
 

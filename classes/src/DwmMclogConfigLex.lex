@@ -151,7 +151,7 @@
                                        new std::string(yytext);
                                      return STRING; }
 <x_quoted>["]                      { BEGIN(INITIAL); }
-<INITIAL>[=,;!\[\]\{\}]            { return yytext[0]; }
+<INITIAL>[=,;\[\]\{\}]             { return yytext[0]; }
 <INITIAL>[ \t\n]
 
 %%

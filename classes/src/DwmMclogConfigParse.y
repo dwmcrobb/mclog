@@ -6,7 +6,8 @@
   #include "DwmIpv4Address.hh"
   #include "DwmIpv6Prefix.hh"
 
-  using std::map, std::pair, std::string, Dwm::Ipv4Address, Dwm::Ipv6Address;
+  using std::map, std::pair, std::string, Dwm::Ipv4Address,
+        Dwm::Ipv6Address;
 }
 
 %{
@@ -22,7 +23,7 @@
 
   #include <map>
   #include <string>
-
+  
   #include "DwmIpv4Prefix.hh"
   #include "DwmIpv6Prefix.hh"
   #include "DwmLocalInterfaces.hh"
@@ -445,22 +446,43 @@ SelectorSettings: HOST '=' STRING ';'
   if (! $$->SourceHost(*$3)) {
     mclogcfgerror("bad host expression '%s'", $3->c_str());
     delete $3;
+    delete $$;
     return 1;
   }
   delete $3;
 }
+| HOST NOT '=' STRING ';'
+{
+  $$ = new Dwm::Mclog::MessageSelector();
+  if (! $$->SourceHost(*($4), false)) {
+    mclogcfgerror("bad host expression '%s'", $4->c_str());
+    delete $4;
+    delete $$;
+    return 1;
+  }
+  delete $4;
+}
+
 | FACILITY '=' STRING ';'
 {
   $$ = new Dwm::Mclog::MessageSelector();
   std::set<Dwm::Mclog::Facility>  facilities;
-  Dwm::Mclog::Facilities(*$3, facilities);
+  Dwm::Mclog::Facilities(*($3), facilities);
   $$->Facilities(facilities);
   delete $3;
+}
+| FACILITY NOT '=' STRING ';'
+{
+  $$ = new Dwm::Mclog::MessageSelector();
+  std::set<Dwm::Mclog::Facility>  facilities;
+  Dwm::Mclog::Facilities(*($4), facilities);
+  $$->Facilities(facilities, false);
+  delete $4;
 }
 | MINIMUMSEVERITY '=' STRING ';'
 {
   $$ = new Dwm::Mclog::MessageSelector();
-  assert(false);
+  $$->MinimumSeverity(Dwm::Mclog::SeverityValue(*($3)));
   delete $3;
 }
 | IDENT '=' STRING ';'
@@ -473,6 +495,17 @@ SelectorSettings: HOST '=' STRING ';'
   }
   delete $3;
 }
+| IDENT NOT '=' STRING ';'
+{
+  $$ = new Dwm::Mclog::MessageSelector();
+  if (! $$->Ident(*($4), false)) {
+    mclogcfgerror("bad ident expression '%s'", $4->c_str());
+    delete $4;
+    delete $$;
+    return 1;
+  }
+  delete $4;
+}
 | SelectorSettings HOST '=' STRING ';'
 {
   if (! $$->SourceHost(*$4)) {
@@ -482,6 +515,15 @@ SelectorSettings: HOST '=' STRING ';'
   }
   delete $4;
 }
+| SelectorSettings HOST NOT '=' STRING ';'
+{
+  if (! $$->SourceHost(*$5)) {
+    mclogcfgerror("bad host expression '%s'", $5->c_str());
+    delete $5;
+    return 1;
+  }
+  delete $5;
+}
 | SelectorSettings FACILITY '=' STRING ';'
 {
   std::set<Dwm::Mclog::Facility>  facilities;
@@ -489,9 +531,16 @@ SelectorSettings: HOST '=' STRING ';'
   $$->Facilities(facilities);
   delete $4;
 }
+| SelectorSettings FACILITY NOT '=' STRING ';'
+{
+  std::set<Dwm::Mclog::Facility>  facilities;
+  Dwm::Mclog::Facilities(*($5), facilities);
+  $$->Facilities(facilities, false);
+  delete $5;
+}
 | SelectorSettings MINIMUMSEVERITY '=' STRING ';'
 {
-  assert(false);
+  $$->MinimumSeverity(Dwm::Mclog::SeverityValue(*($4)));
   delete $4;
 }
 | SelectorSettings IDENT '=' STRING ';'
@@ -501,6 +550,16 @@ SelectorSettings: HOST '=' STRING ';'
     delete $4;
     return 1;
   }
+  delete $4;
+}
+| SelectorSettings IDENT NOT '=' STRING ';'
+{
+  if (! $$->Ident(*($5), false)) {
+    mclogcfgerror("bad ident expression '%s'", $5->c_str());
+    delete $5;
+    return 1;
+  }
+  delete $5;
 };
 
 FilterExpression: STRING

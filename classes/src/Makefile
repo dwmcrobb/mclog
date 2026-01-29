@@ -16,7 +16,7 @@ $(my CxxFlags   := ${CXXFLAGS} ${PTHREADCXXFLAGS} $(my Incs))
 $(my Compile    := $(LIBTOOLCOMPILE) $(my CxxFlags))
 
 $(eval TARGETS          $(dwm_ifcwd :=,+=) $(my lib.Lib))
-$(eval CLEANTARGETS     $(dwm_ifcwd :=,+=) $(my lib.Clean))
+$(eval CLEANTARGETS     $(dwm_ifcwd :=,+=) $(my lib.Clean) $(abspath $(my mydir))/DwmMclogFilterParserLocation.hh)
 $(eval LTCLEANTARGETS   $(dwm_ifcwd :=,+=) $(my lib.LtClean))
 $(eval DISTCLEANTARGETS $(dwm_ifcwd :=,+=) $(my lib.Deps))
 $(eval TARTARGETS       $(dwm_ifcwd :=,+=) ${TARDIR}/lib/libDwmMclog.la)
@@ -52,7 +52,7 @@ $(my lib.mydir)/%Parse.cc $(my lib.mydir)/%Parse.hh &: $(my lib.mydir)/%Parse.y
 
 $(my lib.mydir)/%Lex.cc: $(my lib.mydir)/%Lex.lex $(my lib.mydir)/%Parse.hh
 	@dwmgmk_quiet "generating lexer from $(dwm_relpwd $<)" \
-	 flex -d -o $@ $<
+	 flex -f -o $@ $<
 
 ${TARDIR}/lib/%.la: $(my lib.Lib)
 	@dwmgmk_quiet "creating $(dwm_relpwd $@)" ${INSTALL} -c $< $@

@@ -17,6 +17,8 @@
   #include <iostream>
   #include <string>
 
+  #include "DwmMclogMessage.hh"
+  #include "DwmMclogMessageSelector.hh"
   #include "DwmMclogMessageFilter.hh"
     
   namespace Dwm {
@@ -28,33 +30,54 @@
   }
 }
 
-%param {Dwm::Mclog::FilterDriver & drv}
-%locations                                                                                             %define parse.lac full
+%param {Dwm::Mclog::FilterDriver * drv}
+%param {const Dwm::Mclog::Message * msg}
+%param {bool & result}
+%locations
+%define parse.lac full
 
 %code
 {
-    #include "DwmMclogFilterDriver.hh"
+  #include "DwmMclogMessage.hh"
+  #include "DwmMclogMessageSelector.hh"
+  #include "DwmMclogFilterDriver.hh"
 
-    Dwm::Mclog::FilterParser::symbol_type
-    yylex(Dwm::Mclog::FilterDriver & drv)
-    {
-        return drv.scanner.scan(drv);
-    }
+  Dwm::Mclog::FilterParser::symbol_type
+  yylex(Dwm::Mclog::FilterDriver * drv,
+        const Dwm::Mclog::Message * msg,
+        bool & result)
+  {
+      return drv->next_token();
+      //    return drv.scanner.scan(drv);
+  }
 }
 
 %token AND INTEGER LPAREN NOT OR RPAREN
-%token <std::string> STRING
+%token <const Dwm::Mclog::MessageSelector *> SELECTOR
 %type <bool> Expression
 
 %%
 
-%start Result;
+ // %start Result;
 
-Result: Expression { drv.result = $1; };
-
-Expression: STRING
+Result: Expression
 {
-    $$ = (($1).size() == 5);
+  result = $1;
+}
+| YYerror
+{
+  return 1;
+};
+
+Expression: SELECTOR
+{
+  if (nullptr != $1) {
+    $$ = ($1)->Matches(*msg);
+  }
+  else {
+    error(drv->location, "invalid selector");
+    $$ = false;
+  }
 }
 | NOT Expression
 {
@@ -79,10 +102,12 @@ namespace Dwm {
 
   namespace Mclog {
 
+    //---------------------------------------------------------------------
     void FilterParser::error(const location_type & l,
                              const std::string & msg)
     {
-      std::cerr << l << ": " << msg << '\n';
+        std::cerr << l.begin.line << ':' << l.begin.column
+                  << '-' << l.end.column << " : " << msg << '\n';
       return;
     }
 

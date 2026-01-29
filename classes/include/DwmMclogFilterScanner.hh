@@ -41,9 +41,7 @@
 #define _DWMMCLOGFILTERSCANNER_HH_
 
 #ifndef __FLEX_LEXER_H
-// #define yyFlexLexer ExampleFlexLexer
 #include "FlexLexer.h"
-// #undef yyFlexLexer
 #endif
 
 #include "DwmMclogFilterDriver.hh"
@@ -52,10 +50,16 @@ namespace Dwm {
 
   namespace Mclog {
 
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
     class FilterScanner
     : public yyFlexLexer
     {
     public:
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
       FilterParser::symbol_type scan(FilterDriver & drv);
     };
     

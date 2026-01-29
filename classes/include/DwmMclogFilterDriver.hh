@@ -41,15 +41,18 @@
 #define _DWMMCLOGFILTERDRIVER_HH_
 
 #include <string>
+#include <vector>
 
+#include "DwmMclogConfig.hh"
 #include "DwmMclogFilterParse.hh"
 #include "DwmMclogFilterScanner.hh"
 
 // Give Flex the prototype of yylex we want ...
 #undef YY_DECL
-# define YY_DECL \
-  Dwm::Mclog::FilterParser::symbol_type                           \
+# define YY_DECL                                                   \
+  Dwm::Mclog::FilterParser::symbol_type                            \
   Dwm::Mclog::FilterScanner::scan(Dwm::Mclog::FilterDriver & drv)
+
 // ... and declare it for the parser's sake.
 // YY_DECL;
 
@@ -60,18 +63,19 @@ namespace Dwm {
     class FilterDriver
     {
     public:
-      FilterDriver();
+      FilterDriver(const Config & cfg, const std::string & expr);
 
-      int          result;
-      std::string  file;
+      const Config                                           &cfg;
+      std::string                                             expr;
+      Dwm::Mclog::location                                    location;
+      FilterScanner                                           scanner;
+      std::vector<FilterParser::symbol_type>                  tokens;
+      std::vector<FilterParser::symbol_type>::const_iterator  tokenIter;
+      bool                                                    tokenized;
       
-      int parse(const std::string & inputString);
-
-      void scan_begin();
-      void scan_end();
-
-      Dwm::Mclog::location  location;
-      FilterScanner  scanner;
+      FilterParser::symbol_type next_token();
+      
+      bool parse(const Message *msg, bool & result);
     };
     
   }  // namespace Mclog

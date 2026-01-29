@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
 {
   Dwm::Mclog::Config  cfg;
   
-  assert(cfg.Parse("../../etc/mclogd.cfg"));
+  assert(cfg.Parse("inputs/TestConfig1.cfg"));
   assert(cfg.service.keyDirectory == "/usr/local/etc/mclogd");
   assert(cfg.mcast.groupAddr == Dwm::Ipv4Address("239.108.111.103"));
   assert(cfg.mcast.groupAddr6 == Dwm::Ipv6Address("ff02::006d:636c:6f67"));
@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
   assert(false == cfg.loopback.ListenIpv4());
   assert(true == cfg.loopback.ListenIpv6());
   assert(3737 == cfg.loopback.port);
-  assert(2 == cfg.selectors.size());
+  assert(4 == cfg.selectors.size());
   assert(cfg.selectors.begin()->first == "mydaemons");
   assert(cfg.selectors.begin()->second.Facilities().first.size() == 8);
   
