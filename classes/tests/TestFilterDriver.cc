@@ -64,7 +64,7 @@ static void TestPerformance(Dwm::Mclog::FilterDriver & driver,
   Dwm::TimeValue64  endTime(true);
   endTime -= startTime;
   double  elapsed = (double)endTime;
-  std::cout << ((double)i / elapsed) << " evals/sec\n";
+  std::cout << (unsigned long long)((double)i / elapsed) << " evals/sec\n";
   
   assert(i == 200000);
   
