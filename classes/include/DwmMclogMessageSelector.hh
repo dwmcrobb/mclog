@@ -40,7 +40,7 @@
 #ifndef _DWMMCLOGMESSAGESELECTOR_HH_
 #define _DWMMCLOGMESSAGESELECTOR_HH_
 
-#include <regex>
+#include <boost/regex.hpp>
 #include <set>
 #include <utility>
 
@@ -69,10 +69,10 @@ namespace Dwm {
       void Clear();
       
     private:
-      std::pair<std::regex,bool>          _sourceHost;
+      std::pair<boost::regex,bool>        _sourceHost;
       std::pair<std::set<Facility>,bool>  _facilities;
       Severity                            _minimumSeverity;
-      std::pair<std::regex,bool>          _ident;
+      std::pair<boost::regex,bool>        _ident;
     };
     
   }  // namespace Mclog

@@ -47,17 +47,16 @@ namespace Dwm {
     
     //------------------------------------------------------------------------
     MessageSelector::MessageSelector()
-        : _sourceHost(std::regex{".+",regex::ECMAScript|regex::optimize}, true),
+        : _sourceHost(boost::regex{".+"}, true),
           _facilities({}, true), _minimumSeverity(Severity::debug),
-          _ident(std::regex{".*",regex::ECMAScript|regex::optimize}, true)
+          _ident(boost::regex{".*"}, true)
     {}
     
     //------------------------------------------------------------------------
     bool MessageSelector::SourceHost(const string & srcHostExpr, bool match)
     {
       try {
-        _sourceHost.first = regex(srcHostExpr,
-                                  regex::ECMAScript|regex::optimize);
+        _sourceHost.first = boost::regex(srcHostExpr);
         _sourceHost.second = match;
         return true;
       }
@@ -88,7 +87,7 @@ namespace Dwm {
     bool MessageSelector::Ident(const string & identExpr, bool match)
     {
       try {
-        _ident.first = regex(identExpr, regex::ECMAScript|regex::optimize);
+        _ident.first = boost::regex(identExpr);
         _ident.second = match;
         return true;
       }
@@ -103,18 +102,18 @@ namespace Dwm {
     bool MessageSelector::Matches(const Message & msg) const
     {
       bool  rc = false;
-      smatch  hnsm;
+      boost::smatch  hnsm;
       const MessageHeader  & hdr = msg.Header();
-      if (regex_match(hdr.origin().hostname(), hnsm, _sourceHost.first)
+      if (boost::regex_match(hdr.origin().hostname(), hnsm, _sourceHost.first)
           == _sourceHost.second) {
         if (_facilities.first.empty()
             || (_facilities.second
                 == (_facilities.first.find(hdr.facility())
                     != _facilities.first.end()))) {
           if (hdr.severity() <= _minimumSeverity) {
-            smatch  ansm;
+            boost::smatch  ansm;
             rc = (_ident.second
-                  == regex_match(hdr.origin().appname(), ansm, _ident.first));
+                  == boost::regex_match(hdr.origin().appname(), ansm, _ident.first));
           }
         }
       }
@@ -124,12 +123,12 @@ namespace Dwm {
     //------------------------------------------------------------------------
     void MessageSelector::Clear()
     {
-      _sourceHost.first = regex(".+", regex::ECMAScript|regex::optimize);
+      _sourceHost.first = boost::regex(".+");
       _sourceHost.second = true;
       _facilities.first.clear();
       _facilities.second = true;
       _minimumSeverity = Severity::debug;
-      _ident.first = regex(".+", regex::ECMAScript|regex::optimize);
+      _ident.first = boost::regex(".+");
       _ident.second = true;
       return;
     }
