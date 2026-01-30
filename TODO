@@ -1,0 +1,6 @@
+I need configuration knobs for log files:
+  - rollover period
+  - number of rollover files to keep
+  - permissions
+
+I then need the code to use the new knobs.
