@@ -82,11 +82,13 @@ namespace Dwm {
     bool FileLogger::Stop()
     {
       bool  rc = false;
-      _run = false;
+      _run.store(false);
+      Syslog(LOG_INFO, "Stopping FileLogger");
       _inQueue.ConditionSignal();
       if (_thread.joinable()) {
         _thread.join();
         rc = true;
+        Syslog(LOG_INFO, "FileLogger stopped");
       }
       _logs.clear();
       return rc;
@@ -106,7 +108,7 @@ namespace Dwm {
       pthread_setname_np("FileLogger");
 #endif
       std::deque<Message>  msgs;
-      while (_run) {
+      while (_run.load()) {
         _inQueue.ConditionWait();
         _inQueue.Swap(msgs);
         for (const auto & msg : msgs) {
