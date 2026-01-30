@@ -49,6 +49,7 @@ extern "C" {
 #include "DwmMclogMulticastReceiver.hh"
 #include "DwmMclogFileLogger.hh"
 
+static Dwm::Mclog::Config             g_config;
 static Dwm::Mclog::LoopbackReceiver   g_loopbackReceiver;
 static Dwm::Mclog::MulticastSender    g_mcastSender;
 static Dwm::Mclog::MulticastReceiver  g_mcastReceiver;
@@ -62,12 +63,11 @@ static bool Restart(const std::string & configPath)
   bool  rc = false;
   g_loopbackReceiver.Stop();
   
-  Dwm::Mclog::Config  config;
-  if (config.Parse("/usr/local/etc/mclogd.cfg")) {
-    if (g_fileLogger.Restart(config.files)) {
-      if (g_mcastSender.Restart(config)) {
-        if (g_mcastReceiver.Restart(config)) {
-          rc = g_loopbackReceiver.Restart(config);
+  if (g_config.Parse("/usr/local/etc/mclogd.cfg")) {
+    if (g_fileLogger.Restart(g_config)) {
+      if (g_mcastSender.Restart(g_config)) {
+        if (g_mcastReceiver.Restart(g_config)) {
+          rc = g_loopbackReceiver.Restart(g_config);
         }
       }
     }
@@ -194,16 +194,15 @@ int main(int argc, char *argv[])
     Dwm::SysLogger::MinimumPriority("info");
   }
   
-  Dwm::Mclog::Config  config;
-  if (config.Parse(configPath)) {
+  if (g_config.Parse(configPath)) {
     SavePID(pidFile);
-    g_mcastSender.Open(config);
-    g_fileLogger.Start(config.files);
+    g_mcastSender.Open(g_config);
+    g_fileLogger.Start(g_config);
     g_loopbackReceiver.AddSink(&g_mcastSender);
     g_loopbackReceiver.AddSink(&g_fileLogger);
-    g_loopbackReceiver.Start(config);
+    g_loopbackReceiver.Start(g_config);
     g_mcastReceiver.AddSink(&g_fileLogger);
-    g_mcastReceiver.Open(config, false);
+    g_mcastReceiver.Open(g_config, false);
     for (;;) {
       BlockSigHupAndTerm();
       int  sig = WaitSigHupOrTerm();

@@ -59,11 +59,20 @@ namespace Dwm {
     public:
       using Clock = std::chrono::system_clock;
 
+      LogFile() = default;
+      
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
       LogFile(const std::string & path);
 
+      LogFile(LogFile && logFile)
+      {
+        _path = std::move(logFile._path);
+        _ofs = std::move(logFile._ofs);
+        _nextRollTime = logFile._nextRollTime;
+      }
+      
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------

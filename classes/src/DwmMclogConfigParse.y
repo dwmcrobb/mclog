@@ -2,11 +2,12 @@
 {
   #include <string>
   #include <map>
-    
+  #include <vector>
+
   #include "DwmIpv4Address.hh"
   #include "DwmIpv6Prefix.hh"
 
-  using std::map, std::pair, std::string, Dwm::Ipv4Address,
+  using std::map, std::pair, std::string, std::vector, Dwm::Ipv4Address,
         Dwm::Ipv6Address;
 }
 
@@ -23,6 +24,7 @@
 
   #include <map>
   #include <string>
+  #include <vector>
   
   #include "DwmIpv4Prefix.hh"
   #include "DwmIpv6Prefix.hh"
@@ -101,6 +103,7 @@
 %}
 
 %define api.prefix {mclogcfg}
+%header
 
 %union {
   int                                        intVal;
@@ -115,6 +118,8 @@
   Dwm::Mclog::MessageSelector               *msgSelectorVal;
   pair<string,Dwm::Mclog::MessageSelector>  *namedSelectorVal;
   map<string,Dwm::Mclog::MessageSelector>   *selectorsVal;
+  pair<string,string>                       *stringPairVal;
+  vector<pair<string,string>>               *stringPairVecVal;
   bool                                       boolVal;
 }
 
@@ -128,15 +133,17 @@
   YY_DECL;
 }
 
-%token FACILITY FILES GROUPADDR GROUPADDR6 HOST IDENT INTFADDR INTFADDR6
+%token FACILITY FILES FILTER GROUPADDR GROUPADDR6 HOST IDENT INTFADDR INTFADDR6
 %token INTFNAME KEYDIRECTORY LISTENV4 LISTENV6 LOGICALOR LOGICALAND LOOPBACK
-%token LOGDIRECTORY MINIMUMSEVERITY MULTICAST NOT PORT SELECTORS SERVICE
+%token LOGDIRECTORY LOGS MINIMUMSEVERITY MULTICAST NOT OUTFILTER PATH PORT
+%token SELECTORS SERVICE
 
 %token<stringVal>  STRING
 %token<intVal>     INTEGER
 
 %type<uint16Val>          UDP4Port Port
-%type<stringVal>          KeyDirectory LogDirectory IntfName
+%type<stringVal>          Filter IntfName KeyDirectory LogDirectory OutFilter
+%type<stringVal>          Path
 %type<serviceConfigVal>   ServiceSettings
 %type<loopbackConfigVal>  LoopbackSettings
 %type<filesConfigVal>     FilesSettings
@@ -147,6 +154,8 @@
 %type<msgSelectorVal>     SelectorSettings
 %type<namedSelectorVal>   Selector
 %type<selectorsVal>       SelectorList
+%type<stringPairVecVal>   Logs LogList
+%type<stringPairVal>      Log LogSettings
 
 %%
 
@@ -235,22 +244,38 @@ ListenV6: LISTENV6 '=' STRING ';'
 
 Files: FILES '{' FilesSettings '}' ';'
 {
-    if (g_config) {
-        g_config->files = *($3);
-    }
-    delete $3;
+  if (g_config) {
+    g_config->files = *($3);
+  }
+  delete $3;
 };
 
 FilesSettings: LogDirectory
 {
-    $$ = new Dwm::Mclog::FilesConfig();
-    $$->logDirectory = *($1);
-    delete $1;
+  $$ = new Dwm::Mclog::FilesConfig();
+  $$->logDirectory = *($1);
+  delete $1;
+}
+| Logs
+{
+  $$ = new Dwm::Mclog::FilesConfig();
+  $$->logs = *($1);
+  delete $1;
+}
+| FilesSettings LogDirectory
+{
+  $$->logDirectory = *($2);
+  delete $2;
+}
+| FilesSettings Logs
+{
+  $$->logs = *($2);
+  delete $2;
 };
 
 LogDirectory: LOGDIRECTORY '=' STRING ';'
 {
-    $$ = $3;
+  $$ = $3;
 };
 
 Multicast: MULTICAST '{' MulticastSettings '}' ';'
@@ -296,6 +321,12 @@ MulticastSettings: GroupAddr
   $$ = new Dwm::Mclog::MulticastConfig();
   $$->dstPort = $1;
 }
+| OutFilter
+{
+    $$ = new Dwm::Mclog::MulticastConfig();
+    $$->outFilter = *($1);
+    delete $1;
+}
 | MulticastSettings GroupAddr
 {
   $$->groupAddr = *($2);
@@ -314,6 +345,11 @@ MulticastSettings: GroupAddr
 | MulticastSettings Port
 {
   $$->dstPort = $2;
+}
+| MulticastSettings OutFilter
+{
+    $$->outFilter = *($2);
+    delete $2;
 }
 | MulticastSettings IntfAddr6
 {
@@ -562,16 +598,65 @@ SelectorSettings: HOST '=' STRING ';'
   delete $5;
 };
 
-FilterExpression: STRING
-{}
-| NOT FilterExpression
-{}
-| FilterExpression LOGICALOR FilterExpression
-{}
-| FilterExpression LOGICALAND FilterExpression
-{}
-| '(' FilterExpression ')'
-{};
+OutFilter: OUTFILTER '=' STRING ';'
+{
+  $$ = $3;
+};
+
+Logs: LOGS '{' LogList '}'
+{
+  $$ = $3;
+};
+
+LogList: Log
+{
+  $$ = new std::vector<std::pair<std::string,std::string>>();
+  $$->push_back(*($1));
+  delete $1;
+}
+| LogList ',' Log
+{
+  $$->push_back(*($3));
+  delete $3;
+};
+
+Log: '{' LogSettings '}'
+{
+  $$ = $2;
+};
+
+LogSettings: Filter 
+{
+  $$ = new std::pair<std::string,std::string>();
+  $$->first = *($1);
+  delete $1;
+}
+| Path
+{
+  $$ = new std::pair<std::string,std::string>();
+  $$->first = *($1);
+  delete $1;
+}
+| LogSettings Filter
+{
+  $$->first = *($2);
+  delete $2;
+}
+| LogSettings Path
+{
+  $$->second = *($2);
+  delete $2;
+};
+            
+Filter: FILTER '=' STRING ';'
+{
+  $$ = $3;
+};
+
+Path: PATH '=' STRING ';'
+{
+  $$ = $3;
+};
 
 %%
 
@@ -604,6 +689,8 @@ namespace Dwm {
       groupAddr = Ipv4Address();
       intfAddr = Ipv4Address();
       dstPort = 0;
+      outFilter.clear();
+      
       return;
     }
 
@@ -613,6 +700,16 @@ namespace Dwm {
       keyDirectory.clear();
       return;
     }
+
+    //-----------------------------------------------------------------------
+    //!  
+    //-----------------------------------------------------------------------
+    void FilesConfig::Clear()
+    {
+        logDirectory.clear();
+        logs.clear();
+        return;
+    }
     
     //------------------------------------------------------------------------
     void Config::Clear()
@@ -620,6 +717,8 @@ namespace Dwm {
       loopback.Clear();
       mcast.Clear();
       service.Clear();
+      files.Clear();
+      
       return;
     }
 

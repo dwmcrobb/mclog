@@ -67,6 +67,7 @@ namespace Dwm {
       Ipv4Address  intfAddr;
       Ipv6Address  intfAddr6;
       uint16_t     dstPort;
+      std::string  outFilter;
     };
 
     //------------------------------------------------------------------------
@@ -116,7 +117,9 @@ namespace Dwm {
       FilesConfig & operator = (const FilesConfig &) = default;
       void Clear();
       
-      std::string  logDirectory;
+      std::string                                      logDirectory;
+      std::vector<std::pair<std::string,std::string>>  logs;
+      
     };
     
     //------------------------------------------------------------------------

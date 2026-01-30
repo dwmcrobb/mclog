@@ -37,6 +37,8 @@
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
+#include <boost/regex.hpp>
+
 #include "DwmMclogLogFiles.hh"
 
 namespace Dwm {
@@ -44,7 +46,14 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  
+    LogFiles::LogFiles(LogFiles && logFiles)
+        : _logDir(std::move(logFiles._logDir)),
+          _pathPattern(std::move(logFiles._pathPattern)),
+          _paths(std::move(logFiles._paths)),
+          _logFiles(std::move(logFiles._logFiles)),
+          _mtx()
+    {}
+
     //------------------------------------------------------------------------
     const std::string & LogFiles::LogDirectory() const
     {
@@ -53,8 +62,6 @@ namespace Dwm {
     }
     
     //------------------------------------------------------------------------
-    //!  
-    //------------------------------------------------------------------------
     const std::string & LogFiles::LogDirectory(const std::string & logDir)
     {
       std::lock_guard  lck(_mtx);
@@ -62,7 +69,32 @@ namespace Dwm {
         logFile.second.Close();
       }
       _logFiles.clear();
+      _paths.clear();
       return _logDir = logDir;
+    }
+
+    //------------------------------------------------------------------------
+    const std::string & LogFiles::PathPattern() const
+    {
+      std::lock_guard  lck(_mtx);
+      return _pathPattern;
+    }
+    
+    //------------------------------------------------------------------------
+    const std::string & LogFiles::PathPattern(const std::string & pathPattern)
+    {
+      std::lock_guard  lck(_mtx);
+      for (auto & logFile : _logFiles) {
+        logFile.second.Close();
+      }
+      _logFiles.clear();
+      _paths.clear();
+      if (pathPattern.empty()) {
+        return _pathPattern = "%H/%I";
+      }
+      else {
+        return _pathPattern = pathPattern;
+      }
     }
     
     //------------------------------------------------------------------------
@@ -70,10 +102,9 @@ namespace Dwm {
     {
       bool  rc = false;
       std::lock_guard  lck(_mtx);
+
+      std::string  key = LogPath(msg);
       
-      std::string  key(_logDir
-                       + '/' + msg.Header().origin().hostname()
-                       + '/' + msg.Header().origin().appname());
       auto  it = _logFiles.find(key);
       if (it != _logFiles.end()) {
         rc = it->second.Log(msg);
@@ -84,6 +115,60 @@ namespace Dwm {
           rc = nit->second.Log(msg);
         }
       }
+      return rc;
+    }
+
+    //------------------------------------------------------------------------
+    std::tuple<std::string,std::string,Facility>
+    LogFiles::GetPathKey(const Message & msg) const
+    {
+      return std::make_tuple(msg.Header().origin().hostname(),
+                             msg.Header().origin().appname(),
+                             msg.Header().facility());
+    }
+    
+    //------------------------------------------------------------------------
+    std::string LogFiles::LogPath(const Message & msg)
+    {
+      static const boost::regex  rgx("(\%H)|(\%I)|(\%F)");
+
+      auto  pathKey = GetPathKey(msg);
+      auto  it = _paths.find(pathKey);
+      if (it != _paths.end()) {
+        return it->second;
+      }
+      
+      std::string  rc;
+      if (! _pathPattern.empty()) {
+        if (_pathPattern.find_first_of('%') == std::string::npos) {
+          if ('/' == _pathPattern[0]) {
+            rc = _pathPattern;
+          }
+          else {
+            rc = (_logDir + '/' + _pathPattern);
+          }
+        }
+        else {
+          std::string   replacement("(?1"
+                                    + msg.Header().origin().hostname()
+                                    + ")(?2"
+                                    + msg.Header().origin().appname()
+                                    + ")(?3"
+                                    + FacilityName(msg.Header().facility())
+                                    + ")");
+          rc = regex_replace(_pathPattern, rgx, replacement,
+                             boost::match_default | boost::format_all);
+          if ('/' != rc[0]) {
+            rc = _logDir + '/' + rc;
+          }
+        }
+      }
+      else {
+        rc = "logs/" + msg.Header().origin().hostname() + '/'
+          + msg.Header().origin().appname();
+      }
+      _paths[pathKey] = rc;
+      
       return rc;
     }
 

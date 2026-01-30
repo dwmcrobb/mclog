@@ -54,13 +54,24 @@ int main(int argc, char *argv[])
   assert(cfg.mcast.intfAddr6 == Dwm::Ipv6Address("fd60:3019:f4a:6aaf::39"));
   assert(cfg.mcast.intfName == "en0");
   assert(cfg.mcast.dstPort == 3456);
+  assert(cfg.mcast.outFilter == "mydaemons || myapps");
+  
   assert(cfg.files.logDirectory == "/usr/local/var/logs");
   assert(false == cfg.loopback.ListenIpv4());
   assert(true == cfg.loopback.ListenIpv6());
   assert(3737 == cfg.loopback.port);
-  assert(4 == cfg.selectors.size());
-  assert(cfg.selectors.begin()->first == "mydaemons");
-  assert(cfg.selectors.begin()->second.Facilities().first.size() == 8);
+  assert(5 == cfg.selectors.size());
+  assert(cfg.selectors.begin()->first == "myapps");
+
+  auto it = cfg.selectors.find("mydaemons");
+  assert(it != cfg.selectors.end());
+  assert(it->second.Facilities().first.size() == 8);
+
+  assert(2 == cfg.files.logs.size());
+  assert(cfg.files.logs[0].first == "mydaemons");
+  assert(cfg.files.logs[0].second == "%H/%I");
+  assert(cfg.files.logs[1].first == "myapps");
+  assert(cfg.files.logs[1].second == "%H/myapps");
   
   return 0;
 }

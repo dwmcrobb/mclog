@@ -72,6 +72,7 @@
   static const std::map<std::string,int>  g_configKeywords = {
     { "facility",           FACILITY        },
     { "files",              FILES           },
+    { "filter",             FILTER          }, 
     { "groupAddr",          GROUPADDR       },
     { "groupAddr6",         GROUPADDR6      },
     { "host",               HOST            },
@@ -83,9 +84,12 @@
     { "listenV4",           LISTENV4        },
     { "listenV6",           LISTENV6        },
     { "logDirectory",       LOGDIRECTORY    },
+    { "logs",               LOGS            },
     { "loopback",           LOOPBACK        },
     { "minimumSeverity",    MINIMUMSEVERITY },
     { "multicast",          MULTICAST       },
+    { "outFilter",          OUTFILTER       },
+    { "path",               PATH            },
     { "port",               PORT            },
     { "selectors",          SELECTORS       },
     { "service",            SERVICE         }

@@ -42,6 +42,7 @@
 
 #include <map>
 #include <mutex>
+#include <tuple>
 
 #include "DwmMclogLogFile.hh"
 
@@ -55,18 +56,37 @@ namespace Dwm {
     class LogFiles
     {
     public:
+      using PathKey = std::tuple<std::string,std::string,Facility>;
+      
       LogFiles()
-          : _logDir(), _logFiles(), _mtx()
+          : _logDir(), _pathPattern("%H/%I"), _paths(), _logFiles(), _mtx()
       {}
 
+      LogFiles(LogFiles && logFiles);
+      
       const std::string & LogDirectory() const;
       
       const std::string & LogDirectory(const std::string & logDir);
-        
-      bool Log(const Message & msg);
+
+      const std::string & PathPattern() const;
+
+      const std::string & PathPattern(const std::string & pathPattern);
       
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      bool Log(const Message & msg);
+
+      bool Log(const std::string & fmtstr, const Message & msg);
+
+      PathKey GetPathKey(const Message & msg) const;
+
+      std::string LogPath(const Message & msg);
+            
     private:
       std::string                    _logDir;
+      std::string                    _pathPattern;
+      std::map<PathKey,std::string>  _paths;
       std::map<std::string,LogFile>  _logFiles;
       mutable std::mutex             _mtx;
     };

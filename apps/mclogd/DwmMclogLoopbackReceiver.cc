@@ -222,23 +222,26 @@ namespace Dwm {
       }
 
       if (DesiredSocketsOpen()) {
-        fd_set   fds;
-        sockaddr_in  fromAddr;
+        fd_set        fds;
+        int           maxfd;
+        sockaddr_in   fromAddr;
         sockaddr_in6  fromAddr6;
         
         auto  reset_fds = [&] () -> void
         {
           FD_ZERO(&fds);
-          if (0 <= _ifd)  { FD_SET(_ifd, &fds);  }
-          if (0 <= _ifd6) { FD_SET(_ifd6, &fds); }
+          maxfd = 0;
+          if (0 <= _ifd)  { FD_SET(_ifd, &fds); maxfd = std::max({_ifd, maxfd}); }
+          if (0 <= _ifd6) { FD_SET(_ifd6, &fds); maxfd = std::max({_ifd6, maxfd}); }
           FD_SET(_stopfds[0], &fds);
+          maxfd = std::max({_stopfds[0], maxfd});
+        
         };
         char     buf[1500];
         Message  msg;
         while (_run) {
           reset_fds();
-          int selectrc = select(std::max({_ifd, _ifd6, _stopfds[0]}) + 1,
-                                &fds, nullptr, nullptr, nullptr);
+          int selectrc = select(maxfd, &fds, nullptr, nullptr, nullptr);
           if (selectrc > 0) {
             if ((0 <= _ifd) && FD_ISSET(_ifd, &fds)) {
               MessagePacket  pkt(buf, sizeof(buf));

@@ -47,19 +47,19 @@
 #include "DwmMclogFilterParse.hh"
 #include "DwmMclogFilterScanner.hh"
 
-// Give Flex the prototype of yylex we want ...
+// Define the prototype of yylex we want ...
 #undef YY_DECL
 # define YY_DECL                                                   \
   Dwm::Mclog::FilterParser::symbol_type                            \
   Dwm::Mclog::FilterScanner::scan(Dwm::Mclog::FilterDriver & drv)
 
-// ... and declare it for the parser's sake.
-// YY_DECL;
-
 namespace Dwm {
 
   namespace Mclog {
 
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
     class FilterDriver
     {
     public:

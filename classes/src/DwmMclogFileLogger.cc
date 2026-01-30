@@ -45,15 +45,23 @@ namespace Dwm {
 
     //------------------------------------------------------------------------
     FileLogger::FileLogger()
-        : _thread(), _inQueue(), _run(false), _logFiles()
+        : _thread(), _inQueue(), _run(false), _logs()
     {}
     
     //------------------------------------------------------------------------
-    bool FileLogger::Start(const FilesConfig & filesConfig)
+    bool FileLogger::Start(const Config & cfg)
     {
+      using namespace std;
+      
       bool  rc = false;
       _run = true;
-      _logFiles.LogDirectory(filesConfig.logDirectory);
+      for (const auto & logcfg : cfg.files.logs) {
+        auto  log =
+          make_pair(make_unique<FilterDriver>(cfg,logcfg.first),LogFiles());
+        log.second.LogDirectory(cfg.files.logDirectory);
+        log.second.PathPattern(logcfg.second);
+        _logs.emplace_back(std::move(log));
+      }
       _thread = std::thread(&FileLogger::Run, this);
 #if (defined(__FreeBSD__) || defined(__linux__))
       pthread_setname_np(_thread.native_handle(), "FileLogger");
@@ -63,11 +71,11 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
-    bool FileLogger::Restart(const FilesConfig & filesConfig)
+    bool FileLogger::Restart(const Config & config)
     {
       bool  rc = false;
       Stop();
-      return Start(filesConfig);
+      return Start(config);
     }
 
     //------------------------------------------------------------------------
@@ -80,6 +88,7 @@ namespace Dwm {
         _thread.join();
         rc = true;
       }
+      _logs.clear();
       return rc;
     }
 
@@ -101,7 +110,14 @@ namespace Dwm {
         _inQueue.ConditionWait();
         _inQueue.Swap(msgs);
         for (const auto & msg : msgs) {
-          _logFiles.Log(msg);
+          for (auto & log : _logs) {
+            bool  filterResult = false;
+            if (log.first->parse(&msg, filterResult)) {
+              if (filterResult) {
+                log.second.Log(msg);
+              }
+            }
+          }
         }
         msgs.clear();
       }

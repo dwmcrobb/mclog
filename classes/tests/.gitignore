@@ -3,4 +3,5 @@
 TestConfig
 TestFilterDriver
 TestFuzzer
+TestLogFiles
 TestLogger

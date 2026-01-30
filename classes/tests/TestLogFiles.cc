@@ -32,56 +32,44 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file DwmMclogFileLogger.hh
+//!  @file TestLogFiles.cc
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-#ifndef _DWMMCLOGFILELOGGER_HH_
-#define _DWMMCLOGFILELOGGER_HH_
-
-#include <memory>
-#include <thread>
-
-#include "DwmThreadQueue.hh"
-#include "DwmMclogConfig.hh"
-#include "DwmMclogFilterDriver.hh"
 #include "DwmMclogLogFiles.hh"
-#include "DwmMclogMessageSink.hh"
 
-namespace Dwm {
+//----------------------------------------------------------------------------
+//!  
+//----------------------------------------------------------------------------
+static Dwm::Mclog::Message MakeMessage(const char *host,
+                                       const char *appname,
+                                       Dwm::Mclog::Facility facility,
+                                       Dwm::Mclog::Severity severity,
+                                       const std::string & msg)
+{
+  Dwm::Mclog::MessageOrigin  origin(host, appname, getpid());
+  Dwm::Mclog::MessageHeader  header(facility, severity, origin);
+  return Dwm::Mclog::Message(header, msg);
+}
 
-  namespace Mclog {
+//----------------------------------------------------------------------------
+//!  
+//----------------------------------------------------------------------------
+int main(int argc, char *argv[])
+{
+  Dwm::Mclog::LogFiles   logFiles;
+  logFiles.LogDirectory("/tmp");
 
-    //------------------------------------------------------------------------
-    //!  
-    //------------------------------------------------------------------------
-    class FileLogger
-      : public MessageSink
-    {
-    public:
-      using FilteredLog = std::pair<std::unique_ptr<FilterDriver>,LogFiles>;
-      
-      FileLogger();
-      bool Start(const Config & config);
-      bool Restart(const Config & config);
-      bool Stop();
-      Thread::Queue<Message> *InputQueue()
-      { return &_inQueue; }
-      bool PushBack(const Message & msg) override;
-      
-    private:
-      std::thread               _thread;
-      Thread::Queue<Message>    _inQueue;
-      std::atomic<bool>         _run;
-      std::vector<FilteredLog>  _logs;
-      // LogFiles                  _logFiles;
-      
-      void Run();
-    };
-    
-  }  // namespace Mclog
-
-}  // namespace Dwm
-
-#endif  // _DWMMCLOGFILELOGGER_HH_
+  auto  msg = MakeMessage("test.rfdm.com", "TestLogFiles",
+                          Dwm::Mclog::Facility::user,
+                          Dwm::Mclog::Severity::info,
+                          "hello");
+  assert(logFiles.LogPath(msg) == "/tmp/test.rfdm.com/TestLogFiles");
+  logFiles.LogDirectory("/var/log");
+  assert(logFiles.LogPath(msg) == "/var/log/test.rfdm.com/TestLogFiles");
+  logFiles.PathPattern("%I/%H");
+  assert(logFiles.LogPath(msg) == "/var/log/TestLogFiles/test.rfdm.com");
+  
+  return 0;
+}

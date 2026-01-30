@@ -41,17 +41,17 @@
 #define _DWMMCLOGMULTICASTSENDER_HH_
 
 #include <chrono>
+#include <memory>
 #include <span>
 
 #include "DwmIpv4Address.hh"
 #include "DwmThreadQueue.hh"
 #include "DwmCredenceKeyStash.hh"
 #include "DwmCredenceKnownKeys.hh"
-#include "DwmMclogMessageSelector.hh"
+#include "DwmMclogFilterDriver.hh"
 #include "DwmMclogMessageSink.hh"
 #include "DwmMclogMessagePacket.hh"
 #include "DwmMclogKeyRequestListener.hh"
-#include "DwmMclogConfig.hh"
 
 namespace Dwm {
 
@@ -117,7 +117,8 @@ namespace Dwm {
       std::string                   _key;
       Clock::time_point             _nextSendTime;
       KeyRequestListener            _keyRequestListener;
-      std::vector<MessageSelector>  _msgSelectors;
+      // std::vector<MessageSelector>  _msgSelectors;
+      std::unique_ptr<FilterDriver>  _filterDriver;
       
       bool DesiredSocketsOpen() const;
       bool OpenSocket();

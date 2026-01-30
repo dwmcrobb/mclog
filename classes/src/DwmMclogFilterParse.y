@@ -5,8 +5,9 @@
 %define api.token.raw
 %define api.namespace {Dwm::Mclog}
 %define api.parser.class {FilterParser}
-%define api.location.file "DwmMclogFilterParserLocation.hh"
-%define api.location.include {"DwmMclogFilterParserLocation.hh"}
+%define api.location.file none
+ // %define api.location.file "DwmMclogFilterParserLocation.hh"
+ // %define api.location.include {"DwmMclogFilterParserLocation.hh"}
  // %code requires {#include "DwmMclogFilterParserLocation.hh"}
 %define api.value.type variant
 %define parse.assert

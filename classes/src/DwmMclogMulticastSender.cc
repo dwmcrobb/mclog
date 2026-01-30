@@ -58,7 +58,7 @@ namespace Dwm {
     MulticastSender::MulticastSender()
         : _fd(-1), _fd6(-1), _run(false), _thread(), _outQueue(), _config(),
           _dstEndpoint(), _dstEndpoint6(), _key(), _keyRequestListener(),
-          _msgSelectors()
+          _filterDriver(nullptr)
     {
       Credence::KXKeyPair  key1;
       Credence::KXKeyPair  key2;
@@ -70,6 +70,7 @@ namespace Dwm {
     MulticastSender::~MulticastSender()
     {
       Close();
+      _filterDriver = nullptr;
     }
 
     //------------------------------------------------------------------------
@@ -203,7 +204,13 @@ namespace Dwm {
       _config = config;
       _dstEndpoint = UdpEndpoint(config.mcast.groupAddr, config.mcast.dstPort);
       _dstEndpoint6 = UdpEndpoint(config.mcast.groupAddr6, config.mcast.dstPort);
-
+      if (! config.mcast.outFilter.empty()) {
+        _filterDriver = std::make_unique<FilterDriver>(_config, config.mcast.outFilter);
+      }
+      else {
+        _filterDriver = nullptr;
+      }
+      
       if (_config.mcast.ShouldSendIpv4()) {
         if (0 > _fd) {
           if (! OpenSocket()) {
@@ -271,15 +278,15 @@ namespace Dwm {
     //------------------------------------------------------------------------
     bool MulticastSender::PushBack(const Message & msg)
     {
-      if (_msgSelectors.empty()) {
+      if (nullptr == _filterDriver) {
         return _outQueue.PushBack(msg);
       }
       else {
-        auto  it = std::find_if(_msgSelectors.cbegin(), _msgSelectors.cend(),
-                                [&] (const auto & selector)
-                                { return selector.Matches(msg); });
-        if (it != _msgSelectors.cend()) {
-          return _outQueue.PushBack(msg);
+        bool  filterPassed = false;
+        if (_filterDriver->parse(&msg, filterPassed)) {
+          if (filterPassed) {
+            return _outQueue.PushBack(msg);
+          }
         }
       }
       return false;
