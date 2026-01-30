@@ -12,7 +12,7 @@ shlib_version := $(shell $(my mydir)/../../getvers.sh -s)
 $(dwm_setltlibvars lib,../lib/libDwmMclog.la,../obj,deps,.+\.(cc|lex|y)$$)
 
 $(my Link       := ${LIBTOOL} --mode=link --tag=CXX $(CXX))
-$(my Incs       := -I$(my myincdir) -I$(abspath $(my mydir)) ${DWMINCS})
+$(my Incs       := -I$(my myincdir) ${DWMINCS})
 $(my CxxFlags   := ${CXXFLAGS} ${PTHREADCXXFLAGS} $(my Incs))
 $(my Compile    := $(LIBTOOLCOMPILE) $(my CxxFlags))
 
@@ -24,9 +24,10 @@ $(eval TARTARGETS       $(dwm_ifcwd :=,+=) ${TARDIR}/lib/libDwmMclog.la)
 
 $(dwm_include $(abspath $(my mydir)/../../Makefile.rules))
 
-#  dependency rule
+# generate dependency rule
 $(eval $(dwm_cppdeps $(my mydir)/deps,\
-$(abspath $(my mydir)/../obj),$(my mydir)/%.cc,\
+$(abspath $(my mydir)/../obj),$(my mydir)/%.cc \
+$(my myincdir)/DwmMclogConfigParse.hh $(my myincdir)/DwmMclogFilterParse.hh,\
 ${CXX} -MM $(my CxxFlags) $<,.o .lo))
 
 #  only include dependency makefiles if target is not a 'clean' target
