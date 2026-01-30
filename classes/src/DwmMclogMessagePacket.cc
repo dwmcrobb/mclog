@@ -96,8 +96,8 @@ namespace Dwm {
                       sizeof(dstSock));
         }
         if (rc != len) {
-          FSyslog(LOG_ERR, "sendto() failed: {} ({})",
-                  strerror(errno), errno);
+          FSyslog(LOG_ERR, "sendto({}) failed: {} ({})",
+                  dst, strerror(errno), errno);
         }
       }
       else {
