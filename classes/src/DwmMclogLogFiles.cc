@@ -137,26 +137,27 @@ namespace Dwm {
       if (it != _paths.end()) {
         return it->second;
       }
-      
+
+      std::string  pathPattern = _pathPattern;
+      const auto & hdr = msg.Header();
+      const auto & origin = hdr.origin();
       std::string  rc;
-      if (! _pathPattern.empty()) {
-        if (_pathPattern.find_first_of('%') == std::string::npos) {
-          if ('/' == _pathPattern[0]) {
-            rc = _pathPattern;
+      
+      if (! pathPattern.empty()) {
+        if (pathPattern.find_first_of('%') == std::string::npos) {
+          if ('/' == pathPattern[0]) {
+            rc = pathPattern;
           }
           else {
-            rc = (_logDir + '/' + _pathPattern);
+            rc = (_logDir + '/' + pathPattern);
           }
         }
         else {
-          std::string   replacement("(?1"
-                                    + msg.Header().origin().hostname()
-                                    + ")(?2"
-                                    + msg.Header().origin().appname()
-                                    + ")(?3"
-                                    + FacilityName(msg.Header().facility())
-                                    + ")");
-          rc = regex_replace(_pathPattern, rgx, replacement,
+          std::string  replacement("(?1" + origin.hostname()
+                                   + ")(?2" + origin.appname()
+                                   + ")(?3" + FacilityName(hdr.facility())
+                                   + ")");
+          rc = regex_replace(pathPattern, rgx, replacement,
                              boost::match_default | boost::format_all);
           if ('/' != rc[0]) {
             rc = _logDir + '/' + rc;
@@ -164,11 +165,9 @@ namespace Dwm {
         }
       }
       else {
-        rc = "logs/" + msg.Header().origin().hostname() + '/'
-          + msg.Header().origin().appname();
+        rc = "logs/" + origin.hostname() + '/' + origin.appname();
       }
       _paths[pathKey] = rc;
-      
       return rc;
     }
 
