@@ -118,8 +118,8 @@
   Dwm::Mclog::MessageSelector               *msgSelectorVal;
   pair<string,Dwm::Mclog::MessageSelector>  *namedSelectorVal;
   map<string,Dwm::Mclog::MessageSelector>   *selectorsVal;
-  pair<string,string>                       *stringPairVal;
-  vector<pair<string,string>>               *stringPairVecVal;
+  Dwm::Mclog::LogFileConfig                 *logFileVal;
+  vector<Dwm::Mclog::LogFileConfig>         *logFilesVal;
   bool                                       boolVal;
 }
 
@@ -134,16 +134,17 @@
 }
 
 %token FACILITY FILES FILTER GROUPADDR GROUPADDR6 HOST IDENT INTFADDR INTFADDR6
-%token INTFNAME KEYDIRECTORY LISTENV4 LISTENV6 LOGICALOR LOGICALAND LOOPBACK
-%token LOGDIRECTORY LOGS MINIMUMSEVERITY MULTICAST NOT OUTFILTER PATH PORT
-%token SELECTORS SERVICE
+%token INTFNAME KEEP KEYDIRECTORY LISTENV4 LISTENV6 LOGICALOR LOGICALAND
+%token LOOPBACK LOGDIRECTORY LOGS MINIMUMSEVERITY MULTICAST NOT OUTFILTER PATH
+%token PERMS PORT SELECTORS SERVICE
 
 %token<stringVal>  STRING
 %token<intVal>     INTEGER
 
 %type<uint16Val>          UDP4Port Port
-%type<stringVal>          Filter IntfName KeyDirectory LogDirectory OutFilter
-%type<stringVal>          Path
+%type<stringVal>          Filter IntfName KeyDirectory LogDirectory
+%type<intVal>             Keep Permissions
+%type<stringVal>          OutFilter Path
 %type<serviceConfigVal>   ServiceSettings
 %type<loopbackConfigVal>  LoopbackSettings
 %type<filesConfigVal>     FilesSettings
@@ -154,8 +155,8 @@
 %type<msgSelectorVal>     SelectorSettings
 %type<namedSelectorVal>   Selector
 %type<selectorsVal>       SelectorList
-%type<stringPairVecVal>   Logs LogList
-%type<stringPairVal>      Log LogSettings
+%type<logFilesVal>        Logs LogList
+%type<logFileVal>         Log LogSettings
 
 %%
 
@@ -610,7 +611,7 @@ Logs: LOGS '{' LogList '}'
 
 LogList: Log
 {
-  $$ = new std::vector<std::pair<std::string,std::string>>();
+  $$ = new std::vector<Dwm::Mclog::LogFileConfig>();
   $$->push_back(*($1));
   delete $1;
 }
@@ -627,33 +628,85 @@ Log: '{' LogSettings '}'
 
 LogSettings: Filter 
 {
-  $$ = new std::pair<std::string,std::string>();
-  $$->first = *($1);
+    $$ = new Dwm::Mclog::LogFileConfig();
+  $$->filter = *($1);
   delete $1;
 }
 | Path
 {
-  $$ = new std::pair<std::string,std::string>();
-  $$->first = *($1);
+    $$ = new Dwm::Mclog::LogFileConfig();
+  $$->pathPattern = *($1);
   delete $1;
+}
+| Permissions
+{
+  $$ = new Dwm::Mclog::LogFileConfig();
+  $$->permissions = 0644;
+  if (0 == ($1 & 07133)) {
+    $$->permissions = $1;
+  }
+  else {
+    mclogcfgerror("invalid perms '%o', using 0644", $1);
+  }
+}
+| Keep
+{
+  $$ = new Dwm::Mclog::LogFileConfig();
+  $$->keep = 7;
+  if (0 <= $1) {
+    $$->keep = $1;
+  }
+  else {
+    mclogcfgerror("invalid keep '%d', using 7", $1);
+  }
 }
 | LogSettings Filter
 {
-  $$->first = *($2);
+  $$->filter = *($2);
   delete $2;
 }
 | LogSettings Path
 {
-  $$->second = *($2);
+  $$->pathPattern = *($2);
   delete $2;
+}
+| LogSettings Permissions
+{
+  $$->permissions = 0644;
+  if (0 == ($2 & 07133)) {
+    $$->permissions = $2;
+  }
+  else {
+    mclogcfgerror("invalid perms '%o', using 0644", $2);
+  }
+}
+| LogSettings Keep
+{
+  $$->keep = 7;
+  if (0 <= $2) {
+    $$->keep = $2;
+  }
+  else {
+    mclogcfgerror("invalid keep '%d', using 7", $2);
+  }
 };
-            
+
 Filter: FILTER '=' STRING ';'
 {
   $$ = $3;
 };
 
 Path: PATH '=' STRING ';'
+{
+  $$ = $3;
+};
+
+Permissions: PERMS '=' INTEGER ';'
+{
+  $$ = $3;
+};
+
+Keep: KEEP '=' INTEGER ';'
 {
   $$ = $3;
 };
@@ -701,8 +754,21 @@ namespace Dwm {
       return;
     }
 
+    //------------------------------------------------------------------------
+    LogFileConfig::LogFileConfig()
+        : filter(), pathPattern("%H/%I"), permissions(0644), keep(7)
+    {
+    }
+
     //-----------------------------------------------------------------------
-    //!  
+    void LogFileConfig::Clear()
+    {
+      filter.clear();
+      pathPattern = "%H/%I";
+      permissions = 0644;
+      keep = 7;
+    }
+    
     //-----------------------------------------------------------------------
     void FilesConfig::Clear()
     {

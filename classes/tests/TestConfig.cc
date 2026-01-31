@@ -68,10 +68,10 @@ int main(int argc, char *argv[])
   assert(it->second.Facilities().first.size() == 8);
 
   assert(2 == cfg.files.logs.size());
-  assert(cfg.files.logs[0].first == "mydaemons");
-  assert(cfg.files.logs[0].second == "%H/%I");
-  assert(cfg.files.logs[1].first == "myapps");
-  assert(cfg.files.logs[1].second == "%H/myapps");
+  assert(cfg.files.logs[0].filter == "mydaemons");
+  assert(cfg.files.logs[0].pathPattern == "%H/%I");
+  assert(cfg.files.logs[1].filter == "myapps");
+  assert(cfg.files.logs[1].pathPattern == "%H/myapps");
   
   return 0;
 }

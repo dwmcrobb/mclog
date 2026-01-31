@@ -59,10 +59,13 @@ namespace Dwm {
       using PathKey = std::tuple<std::string,std::string,Facility>;
       
       LogFiles()
-          : _logDir(), _pathPattern("%H/%I"), _paths(), _logFiles(), _mtx()
+          : _logDir(), _pathPattern("%H/%I"), _permissions(0644), _keep(7),
+            _paths(), _logFiles(), _mtx()
       {}
 
       LogFiles(LogFiles && logFiles);
+
+      ~LogFiles();
       
       const std::string & LogDirectory() const;
       
@@ -71,6 +74,14 @@ namespace Dwm {
       const std::string & PathPattern() const;
 
       const std::string & PathPattern(const std::string & pathPattern);
+
+      mode_t Permissions() const;
+
+      mode_t Permissions(mode_t permissions);
+
+      uint32_t Keep() const;
+
+      uint32_t Keep(uint32_t keep);
       
       //----------------------------------------------------------------------
       //!  
@@ -86,6 +97,8 @@ namespace Dwm {
     private:
       std::string                    _logDir;
       std::string                    _pathPattern;
+      mode_t                         _permissions;
+      uint32_t                       _keep;
       std::map<PathKey,std::string>  _paths;
       std::map<std::string,LogFile>  _logFiles;
       mutable std::mutex             _mtx;

@@ -80,6 +80,7 @@
     { "intfAddr",           INTFADDR        },
     { "intfAddr6",          INTFADDR6       },
     { "intfName",           INTFNAME        },
+    { "keep",               KEEP            },
     { "keyDirectory",       KEYDIRECTORY    },
     { "listenV4",           LISTENV4        },
     { "listenV6",           LISTENV6        },
@@ -90,6 +91,7 @@
     { "multicast",          MULTICAST       },
     { "outFilter",          OUTFILTER       },
     { "path",               PATH            },
+    { "perms",              PERMS           },
     { "port",               PORT            },
     { "selectors",          SELECTORS       },
     { "service",            SERVICE         }
@@ -131,8 +133,10 @@
 %%
 
 <INITIAL>#.*\n
-<INITIAL>[^ \t\n\[\]{}=,;!\|\&"]+    { if (IsNumber(yytext)) {
-                                       mclogcfglval.intVal = atoi(yytext);
+<INITIAL>[^ \t\n\[\]{}=,;!\|\&"]+  {
+                                     if (IsNumber(yytext)) {
+                                       mclogcfglval.intVal =
+                                         std::stol(yytext, nullptr, 0);
                                        return INTEGER;
                                      }
                                      else {

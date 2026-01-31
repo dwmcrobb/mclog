@@ -113,9 +113,15 @@ namespace Dwm {
     class LogFileConfig
     {
     public:
+      LogFileConfig();
+      LogFileConfig(const LogFileConfig &) = default;
+      LogFileConfig & operator = (const LogFileConfig &) = default;
+      void Clear();
+      
       std::string  filter;        // filter expression
       std::string  pathPattern;   // path pattern (can contain %H, %I, %F)
       mode_t       permissions;   // file permissions (octal)
+      uint32_t     keep;          // number of log files to keep when rolling
     };
     
     //------------------------------------------------------------------------
@@ -129,9 +135,8 @@ namespace Dwm {
       FilesConfig & operator = (const FilesConfig &) = default;
       void Clear();
       
-      std::string                                      logDirectory;
-      std::vector<std::pair<std::string,std::string>>  logs;
-      
+      std::string                 logDirectory;
+      std::vector<LogFileConfig>  logs;
     };
     
     //------------------------------------------------------------------------

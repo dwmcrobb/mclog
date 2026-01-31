@@ -57,9 +57,11 @@ namespace Dwm {
       _run = true;
       for (const auto & logcfg : cfg.files.logs) {
         auto  log =
-          make_pair(make_unique<FilterDriver>(cfg,logcfg.first),LogFiles());
+          make_pair(make_unique<FilterDriver>(cfg,logcfg.filter),LogFiles());
         log.second.LogDirectory(cfg.files.logDirectory);
-        log.second.PathPattern(logcfg.second);
+        log.second.PathPattern(logcfg.pathPattern);
+        log.second.Permissions(logcfg.permissions);
+        log.second.Keep(logcfg.keep);
         _logs.emplace_back(std::move(log));
       }
       _thread = std::thread(&FileLogger::Run, this);

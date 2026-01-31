@@ -52,8 +52,10 @@ namespace Dwm {
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    LogFile::LogFile(const std::string & path)
-        : _path(path), _ofs(), _nextRollTime(NextMidnight())
+    LogFile::LogFile(const std::string & path, mode_t permissions,
+                     uint32_t keep)
+        : _path(path), _permissions(permissions), _keep(keep),
+          _ofs(), _nextRollTime(NextMidnight())
     {}
 
     //------------------------------------------------------------------------
@@ -63,8 +65,7 @@ namespace Dwm {
     {
       struct stat  statbuf;
       if (0 == stat(_path.string().c_str(), &statbuf)) {
-        if (Clock::to_time_t(NextMidnight() - std::chrono::hours(24))
-            > statbuf.st_mtime) {
+        if (Clock::to_time_t(LastMidnight()) > statbuf.st_mtime) {
           return true;
         }
       }
@@ -92,6 +93,15 @@ namespace Dwm {
         if (static_cast<bool>(_ofs)) {
           rc = true;
           FSyslog(LOG_INFO, "LogFile '{}' opened", _path.string());
+          if (0 == chmod(_path.string().c_str(), _permissions)) {
+            FSyslog(LOG_INFO, "LogFile '{}' permissions set to {:#04o}",
+                    _path.string(), _permissions);
+          }
+          else {
+            FSyslog(LOG_WARNING,
+                    "Failed to set {:#04o} permissions on LogFile '{}': {}",
+                    _permissions, _path.string(), strerror(errno));
+          }
         }
         else if (! fs::exists(_path.parent_path())) {
           if (fs::create_directories(_path.parent_path())) {
@@ -99,6 +109,15 @@ namespace Dwm {
             rc = static_cast<bool>(_ofs);
             if (rc) {
               FSyslog(LOG_INFO, "LogFile '{}' opened", _path.string());
+              if (0 == chmod(_path.string().c_str(), _permissions)) {
+                FSyslog(LOG_INFO, "LogFile '{}' permissions set to {:#04o}",
+                        _path.string(), _permissions);
+              }
+              else {
+                FSyslog(LOG_WARNING, "Failed to set {:#04o} permissions on"
+                        " LogFile '{}': {}", _permissions, _path.string(),
+                        strerror(errno));
+              }
             }
             else {
               FSyslog(LOG_ERR, "Failed to open LogFile '{}'", _path.string());
@@ -124,6 +143,10 @@ namespace Dwm {
     {
       if (_ofs.is_open()) {
         _ofs.close();
+        FSyslog(LOG_INFO, "Closed LogFile '{}'", _path.string());
+      }
+      else {
+        FSyslog(LOG_DEBUG, "LogFile '{}' already closed", _path.string());
       }
       return;
     }
@@ -168,20 +191,32 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
+    std::chrono::system_clock::time_point LogFile::LastMidnight() const
+    {
+      time_t  now = time((time_t *)0);
+      tm      tms;
+      localtime_r(&now, &tms);
+      tms.tm_sec = 0;
+      tms.tm_min = 0;
+      tms.tm_hour = 0;
+      return std::chrono::system_clock::from_time_t(mktime(&tms));
+    }
+    
+    //------------------------------------------------------------------------
     bool LogFile::RollCriteriaMet() const
     {
       return (Clock::now() >= _nextRollTime);
     }
 
     //------------------------------------------------------------------------
-    void LogFile::RollArchives(size_t numToKeep) const
+    void LogFile::RollArchives() const
     {
       namespace fs = std::filesystem;
       
       std::vector<LogFile::Archive>  archives;
       GetArchives(archives);
       for (const auto & archive : archives) {
-        if ((archive.Num() + 1) >= numToKeep) {
+        if ((archive.Num() + 1) >= _keep) {
           fs::remove(archive.String());
         }
         else {
@@ -208,7 +243,7 @@ namespace Dwm {
     //------------------------------------------------------------------------
     void LogFile::Roll()
     {
-      RollArchives(7);
+      RollArchives();
       RollCurrent();
       _nextRollTime = NextMidnight();
       return;

@@ -49,11 +49,24 @@ namespace Dwm {
     LogFiles::LogFiles(LogFiles && logFiles)
         : _logDir(std::move(logFiles._logDir)),
           _pathPattern(std::move(logFiles._pathPattern)),
+          _permissions(logFiles._permissions),
+          _keep(logFiles._keep),
           _paths(std::move(logFiles._paths)),
           _logFiles(std::move(logFiles._logFiles)),
           _mtx()
     {}
 
+    //------------------------------------------------------------------------
+    LogFiles::~LogFiles()
+    {
+      std::lock_guard  lck(_mtx);
+      for (auto & logFile : _logFiles) {
+        logFile.second.Close();
+      }
+      _logFiles.clear();
+      _paths.clear();
+    }
+    
     //------------------------------------------------------------------------
     const std::string & LogFiles::LogDirectory() const
     {
@@ -90,11 +103,50 @@ namespace Dwm {
       _logFiles.clear();
       _paths.clear();
       if (pathPattern.empty()) {
-        return _pathPattern = "%H/%I";
+        return _pathPattern = "%H/%I";   // default
       }
       else {
         return _pathPattern = pathPattern;
       }
+    }
+
+    //------------------------------------------------------------------------
+    mode_t LogFiles::Permissions() const
+    {
+      std::lock_guard  lck(_mtx);
+      return _permissions;
+    }
+      
+    //------------------------------------------------------------------------
+    mode_t LogFiles::Permissions(mode_t permissions)
+    {
+      std::lock_guard  lck(_mtx);
+      for (auto & logFile : _logFiles) {
+        logFile.second.Close();
+      }
+      _logFiles.clear();
+      _paths.clear();
+      
+      return _permissions = permissions;
+    }
+
+    //------------------------------------------------------------------------
+    uint32_t LogFiles::Keep() const
+    {
+      std::lock_guard  lck(_mtx);
+      return _keep;
+    }
+
+    //------------------------------------------------------------------------
+    uint32_t LogFiles::Keep(uint32_t keep)
+    {
+      std::lock_guard  lck(_mtx);
+      for (auto & logFile : _logFiles) {
+        logFile.second.Close();
+      }
+      _logFiles.clear();
+      _paths.clear();
+      return _keep = keep;
     }
     
     //------------------------------------------------------------------------
@@ -110,7 +162,7 @@ namespace Dwm {
         rc = it->second.Log(msg);
       }
       else {
-        auto [nit, dontCare] = _logFiles.insert({key,LogFile(key)});
+        auto [nit, dontCare] = _logFiles.insert({key,LogFile(key,_permissions,_keep)});
         if (nit->second.Open()) {
           rc = nit->second.Log(msg);
         }
