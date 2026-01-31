@@ -75,7 +75,6 @@ namespace Dwm {
       Thread::Queue<Message>    _inQueue;
       std::atomic<bool>         _run;
       std::vector<FilteredLog>  _logs;
-      // LogFiles                  _logFiles;
       
       void Run();
     };
