@@ -61,13 +61,13 @@ namespace Dwm {
       bool ShouldSendIpv6() const;
       void Clear();
       
-      Ipv4Address  groupAddr;
-      Ipv6Address  groupAddr6;
-      std::string  intfName;
-      Ipv4Address  intfAddr;
-      Ipv6Address  intfAddr6;
-      uint16_t     dstPort;
-      std::string  outFilter;
+      Ipv4Address  groupAddr;   // ipv4 group address
+      Ipv6Address  groupAddr6;  // ipv6 group address
+      std::string  intfName;    // interface name (e.g. "eth0")
+      Ipv4Address  intfAddr;    // interface ipv4 address
+      Ipv6Address  intfAddr6;   // interface ipv6 address
+      uint16_t     dstPort;     // destination port
+      std::string  outFilter;   // output filter expression
     };
 
     //------------------------------------------------------------------------
@@ -87,9 +87,9 @@ namespace Dwm {
       bool ListenIpv6() const  { return (listenIpv6 && (port != 0)); }
       void Clear() { listenIpv4 = false; listenIpv6 = false; port = 3737; }
 
-      bool         listenIpv4;
-      bool         listenIpv6;
-      uint16_t     port;
+      bool         listenIpv4;  // listen on 127.0.0.1?
+      bool         listenIpv6;  // listen on ::1?
+      uint16_t     port;        // listen port
     };
 
     //------------------------------------------------------------------------
@@ -103,9 +103,21 @@ namespace Dwm {
       ServiceConfig & operator = (const ServiceConfig &) = default;
       void Clear();
       
-      std::string  keyDirectory;
+      std::string  keyDirectory;  // directory where Credence keys are stored
     };
 
+    //------------------------------------------------------------------------
+    //!  NOT YET USED, NOT COMPLETE (needs rollover time/period), but
+    //!  should replace pair<string,string> in FilesConfig.logs vector.
+    //------------------------------------------------------------------------
+    class LogFileConfig
+    {
+    public:
+      std::string  filter;        // filter expression
+      std::string  pathPattern;   // path pattern (can contain %H, %I, %F)
+      mode_t       permissions;   // file permissions (octal)
+    };
+    
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
