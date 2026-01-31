@@ -10,6 +10,6 @@ Add validation of messages on loopback interface?
   - header.origin.hostname should be local hostname (or just overwrite
     it?)
   - Check processid?  Unfortunately this would involve a system call,
-    for example kill(pid,0, and is probably not something I want to do
+    for example kill(pid,0).  Probably not something I want to do
     for every message.
   
