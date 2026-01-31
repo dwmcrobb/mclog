@@ -61,7 +61,6 @@ int main(int argc, char *argv[])
   for (;;) {
     MCLOG(Dwm::Mclog::Severity::info, "{} hello there info.", i++);
     MCLOG(Dwm::Mclog::Severity::debug, "{} hello there debug.", i++);
-    ++i;
     usleep(100000);
   }
 }
