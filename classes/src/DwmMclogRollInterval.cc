@@ -53,21 +53,22 @@ namespace Dwm {
       RollPeriod  rp;
       int tm::*   field;
       int         amount;
+      time_t      secs;
     };
 
     //------------------------------------------------------------------------
     static const vector<IncrementInfo>  g_incrementInfo = {
-      { RollPeriod::minutes_5,  &tm::tm_min,  5  },
-      { RollPeriod::minutes_15, &tm::tm_min,  15 },
-      { RollPeriod::minutes_30, &tm::tm_min,  30 },
-      { RollPeriod::hours_1,    &tm::tm_hour, 1  },
-      { RollPeriod::hours_2,    &tm::tm_hour, 2  },
-      { RollPeriod::hours_4,    &tm::tm_hour, 4  },
-      { RollPeriod::hours_6,    &tm::tm_hour, 6  },
-      { RollPeriod::hours_8,    &tm::tm_hour, 8  },
-      { RollPeriod::hours_12,   &tm::tm_hour, 12 },
-      { RollPeriod::days_1,     &tm::tm_mday, 1  },
-      { RollPeriod::days_7,     &tm::tm_mday, 7  }
+      { RollPeriod::minutes_5,  &tm::tm_min,  5,  300    },
+      { RollPeriod::minutes_15, &tm::tm_min,  15, 900    },
+      { RollPeriod::minutes_30, &tm::tm_min,  30, 1800   },
+      { RollPeriod::hours_1,    &tm::tm_hour, 1,  3600   },
+      { RollPeriod::hours_2,    &tm::tm_hour, 2,  7200   },
+      { RollPeriod::hours_4,    &tm::tm_hour, 4,  14400  },
+      { RollPeriod::hours_6,    &tm::tm_hour, 6,  21600  },
+      { RollPeriod::hours_8,    &tm::tm_hour, 8,  28800  },
+      { RollPeriod::hours_12,   &tm::tm_hour, 12, 43200  },
+      { RollPeriod::days_1,     &tm::tm_mday, 1,  86400  },
+      { RollPeriod::days_7,     &tm::tm_mday, 7,  604800 }
     };
       
     //------------------------------------------------------------------------
@@ -94,6 +95,18 @@ namespace Dwm {
       return 1;
     }
 
+    //------------------------------------------------------------------------
+    static time_t IncrementSeconds(RollPeriod rp)
+    {
+      auto it = std::find_if(g_incrementInfo.cbegin(), g_incrementInfo.cend(),
+                             [&] (const auto & incInfo)
+                             { return (incInfo.rp == rp); });
+      if (it != g_incrementInfo.cend()) {
+        return it->secs;
+      }
+      return 1;
+    }
+    
     //------------------------------------------------------------------------
     static time_t NextMark(RollPeriod rp)
     {
@@ -133,10 +146,56 @@ namespace Dwm {
 
     //------------------------------------------------------------------------
     RollInterval::RollInterval(RollPeriod rp)
+        : _rp(rp)
     {
-      _fieldToIncrement = FieldToIncrement(rp);
-      _incrementAmount = IncrementAmount(rp);
-      _endTime = NextMark(rp);
+      _fieldToIncrement = FieldToIncrement(_rp);
+      _incrementAmount = IncrementAmount(_rp);
+      _endTime = NextMark(_rp);
+    }
+
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    void RollInterval::SetToCurrent()
+    {
+      _endTime = NextMark(_rp);
+      return;
+    }
+
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    time_t RollInterval::StartTime() const
+    {
+      return _endTime - IncrementSeconds(_rp);
+    }
+    
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    time_t RollInterval::EndTime() const
+    {
+      return _endTime;
+    }
+    
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    std::ostream & operator << (std::ostream & os, const RollInterval & ri)
+    {
+      tm  tms;
+      time_t  t = ri.StartTime();
+      localtime_r(&t, &tms);
+      char  buf[24];
+      memset(buf, 0, sizeof(buf));
+      strftime(buf, sizeof(buf), "%Y/%m/%d %H:%M:%S", &tms);
+      os << buf << " - ";
+      t = ri._endTime;
+      localtime_r(&t, &tms);
+      memset(buf, 0, sizeof(buf));
+      strftime(buf, sizeof(buf), "%Y/%m/%d %H:%M:%S", &tms);
+      os << buf;
+      return os;
     }
     
   }  // namespace Mclog

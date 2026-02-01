@@ -50,7 +50,7 @@ namespace Dwm {
         : _logDir(std::move(logFiles._logDir)),
           _pathPattern(std::move(logFiles._pathPattern)),
           _permissions(logFiles._permissions),
-          _keep(logFiles._keep),
+          _rollPeriod(logFiles._rollPeriod), _keep(logFiles._keep),
           _paths(std::move(logFiles._paths)),
           _logFiles(std::move(logFiles._logFiles)),
           _mtx()
@@ -131,6 +131,25 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
+    RollPeriod LogFiles::Period() const
+    {
+      std::lock_guard  lck(_mtx);
+      return _rollPeriod;
+    }
+
+    //------------------------------------------------------------------------
+    RollPeriod LogFiles::Period(const RollPeriod & period)
+    {
+      std::lock_guard  lck(_mtx);
+      for (auto & logFile : _logFiles) {
+        logFile.second.Close();
+      }
+      _logFiles.clear();
+      _paths.clear();
+      return _rollPeriod = period;
+    }
+      
+    //------------------------------------------------------------------------
     uint32_t LogFiles::Keep() const
     {
       std::lock_guard  lck(_mtx);
@@ -162,7 +181,8 @@ namespace Dwm {
         rc = it->second.Log(msg);
       }
       else {
-        auto [nit, dontCare] = _logFiles.insert({key,LogFile(key,_permissions,_keep)});
+        auto [nit, dontCare] =
+          _logFiles.insert({key,LogFile(key,_permissions,_rollPeriod,_keep)});
         if (nit->second.Open()) {
           rc = nit->second.Log(msg);
         }

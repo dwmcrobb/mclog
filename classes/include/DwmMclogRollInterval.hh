@@ -41,6 +41,7 @@
 #define _DWMMCLOGROLLINTERVAL_HH_
 
 #include <ctime>
+#include <iostream>
 
 #include "DwmMclogRollPeriod.hh"
 
@@ -63,9 +64,13 @@ namespace Dwm {
       
       time_t StartTime() const;
       time_t EndTime() const;
-      void Increment();
+      void SetToCurrent();
 
+      friend std::ostream &
+      operator << (std::ostream & os, const RollInterval & ri);
+      
     private:
+      RollPeriod  _rp;
       int tm::*   _fieldToIncrement;
       int         _incrementAmount;
       time_t      _endTime;

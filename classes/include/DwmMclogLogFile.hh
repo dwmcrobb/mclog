@@ -46,6 +46,7 @@
 #include <string>
 
 #include "DwmMclogMessage.hh"
+#include "DwmMclogRollInterval.hh"
 
 namespace Dwm {
 
@@ -65,7 +66,7 @@ namespace Dwm {
       //!  
       //----------------------------------------------------------------------
       LogFile(const std::string & path, mode_t permissions = 0644,
-              uint32_t keep = 7);
+              RollPeriod period = RollPeriod::days_1, uint32_t keep = 7);
 
       //----------------------------------------------------------------------
       //!  
@@ -76,7 +77,7 @@ namespace Dwm {
         _permissions = logFile._permissions;
         _keep = logFile._keep;
         _ofs = std::move(logFile._ofs);
-        _nextRollTime = logFile._nextRollTime;
+        _rollInterval = logFile._rollInterval;
       }
       
       //----------------------------------------------------------------------
@@ -99,7 +100,7 @@ namespace Dwm {
       mode_t                 _permissions;
       uint32_t               _keep;
       std::ofstream          _ofs;
-      Clock::time_point      _nextRollTime;
+      RollInterval           _rollInterval;
 
       //----------------------------------------------------------------------
       //!  
@@ -120,8 +121,8 @@ namespace Dwm {
         std::filesystem::path  _base;
       };
 
-      Clock::time_point LastMidnight() const;
-      Clock::time_point NextMidnight() const;
+      // Clock::time_point LastMidnight() const;
+      // Clock::time_point NextMidnight() const;
       bool NeedRollBeforeOpen() const;
       bool RollCriteriaMet() const;
       void RollArchives() const;

@@ -91,6 +91,7 @@
     { "multicast",          MULTICAST       },
     { "outFilter",          OUTFILTER       },
     { "path",               PATH            },
+    { "period",             PERIOD          },
     { "perms",              PERMS           },
     { "port",               PORT            },
     { "selectors",          SELECTORS       },

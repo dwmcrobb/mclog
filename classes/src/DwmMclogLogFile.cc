@@ -53,9 +53,9 @@ namespace Dwm {
     //!  
     //------------------------------------------------------------------------
     LogFile::LogFile(const std::string & path, mode_t permissions,
-                     uint32_t keep)
+                     RollPeriod period, uint32_t keep)
         : _path(path), _permissions(permissions), _keep(keep),
-          _ofs(), _nextRollTime(NextMidnight())
+          _ofs(), _rollInterval(period)
     {}
 
     //------------------------------------------------------------------------
@@ -65,7 +65,7 @@ namespace Dwm {
     {
       struct stat  statbuf;
       if (0 == stat(_path.string().c_str(), &statbuf)) {
-        if (Clock::to_time_t(LastMidnight()) > statbuf.st_mtime) {
+        if (_rollInterval.StartTime() > statbuf.st_mtime) {
           return true;
         }
       }
@@ -175,6 +175,7 @@ namespace Dwm {
       return rc;
     }
 
+#if 0
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
@@ -201,11 +202,13 @@ namespace Dwm {
       tms.tm_hour = 0;
       return std::chrono::system_clock::from_time_t(mktime(&tms));
     }
+
+#endif
     
     //------------------------------------------------------------------------
     bool LogFile::RollCriteriaMet() const
     {
-      return (Clock::now() >= _nextRollTime);
+      return (time((time_t *)0) >= _rollInterval.EndTime());
     }
 
     //------------------------------------------------------------------------
@@ -245,7 +248,7 @@ namespace Dwm {
     {
       RollArchives();
       RollCurrent();
-      _nextRollTime = NextMidnight();
+      _rollInterval.SetToCurrent();
       return;
     }
 

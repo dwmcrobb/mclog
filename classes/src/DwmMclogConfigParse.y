@@ -120,6 +120,7 @@
   map<string,Dwm::Mclog::MessageSelector>   *selectorsVal;
   Dwm::Mclog::LogFileConfig                 *logFileVal;
   vector<Dwm::Mclog::LogFileConfig>         *logFilesVal;
+  Dwm::Mclog::RollPeriod                     rollPeriodVal;
   bool                                       boolVal;
 }
 
@@ -136,7 +137,7 @@
 %token FACILITY FILES FILTER GROUPADDR GROUPADDR6 HOST IDENT INTFADDR INTFADDR6
 %token INTFNAME KEEP KEYDIRECTORY LISTENV4 LISTENV6 LOGICALOR LOGICALAND
 %token LOOPBACK LOGDIRECTORY LOGS MINIMUMSEVERITY MULTICAST NOT OUTFILTER PATH
-%token PERMS PORT SELECTORS SERVICE
+%token PERIOD PERMS PORT SELECTORS SERVICE
 
 %token<stringVal>  STRING
 %token<intVal>     INTEGER
@@ -144,6 +145,7 @@
 %type<uint16Val>          UDP4Port Port
 %type<stringVal>          Filter IntfName KeyDirectory LogDirectory
 %type<intVal>             Keep Permissions
+%type<rollPeriodVal>      RollPeriod
 %type<stringVal>          OutFilter Path
 %type<serviceConfigVal>   ServiceSettings
 %type<loopbackConfigVal>  LoopbackSettings
@@ -649,6 +651,11 @@ LogSettings: Filter
     mclogcfgerror("invalid perms '%o', using 0644", $1);
   }
 }
+| RollPeriod
+{
+  $$ = new Dwm::Mclog::LogFileConfig();
+  $$->period = $1;
+}
 | Keep
 {
   $$ = new Dwm::Mclog::LogFileConfig();
@@ -680,6 +687,10 @@ LogSettings: Filter
     mclogcfgerror("invalid perms '%o', using 0644", $2);
   }
 }
+| LogSettings RollPeriod
+{
+  $$->period = $2;
+}
 | LogSettings Keep
 {
   $$->keep = 7;
@@ -704,6 +715,12 @@ Path: PATH '=' STRING ';'
 Permissions: PERMS '=' INTEGER ';'
 {
   $$ = $3;
+};
+
+RollPeriod: PERIOD '=' STRING ';'
+{
+    $$ = Dwm::Mclog::GetRollPeriod(*($3));
+  delete $3;
 };
 
 Keep: KEEP '=' INTEGER ';'
@@ -756,7 +773,8 @@ namespace Dwm {
 
     //------------------------------------------------------------------------
     LogFileConfig::LogFileConfig()
-        : filter(), pathPattern("%H/%I"), permissions(0644), keep(7)
+        : filter(), pathPattern("%H/%I"), permissions(0644),
+          period(RollPeriod::days_1), keep(7)
     {
     }
 
@@ -766,6 +784,7 @@ namespace Dwm {
       filter.clear();
       pathPattern = "%H/%I";
       permissions = 0644;
+      period = RollPeriod::days_1;
       keep = 7;
     }
     

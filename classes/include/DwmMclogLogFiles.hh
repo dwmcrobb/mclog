@@ -62,7 +62,8 @@ namespace Dwm {
       //!  
       //----------------------------------------------------------------------
       LogFiles()
-          : _logDir(), _pathPattern("%H/%I"), _permissions(0644), _keep(7),
+          : _logDir(), _pathPattern("%H/%I"), _permissions(0644),
+            _rollPeriod(RollPeriod::days_1), _keep(7),
             _paths(), _logFiles(), _mtx()
       {}
 
@@ -109,6 +110,16 @@ namespace Dwm {
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
+      RollPeriod Period() const;
+
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      RollPeriod Period(const RollPeriod & period);
+      
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
       uint32_t Keep() const;
 
       //----------------------------------------------------------------------
@@ -126,11 +137,12 @@ namespace Dwm {
       PathKey GetPathKey(const Message & msg) const;
 
       std::string LogPath(const Message & msg);
-            
+      
     private:
       std::string                    _logDir;
       std::string                    _pathPattern;
       mode_t                         _permissions;
+      RollPeriod                     _rollPeriod;
       uint32_t                       _keep;
       std::map<PathKey,std::string>  _paths;
       std::map<std::string,LogFile>  _logFiles;

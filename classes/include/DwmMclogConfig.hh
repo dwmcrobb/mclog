@@ -42,6 +42,7 @@
 
 #include "DwmIpv4Address.hh"
 #include "DwmIpv6Address.hh"
+#include "DwmMclogRollPeriod.hh"
 #include "DwmMclogMessageSelector.hh"
 
 namespace Dwm {
@@ -121,6 +122,7 @@ namespace Dwm {
       std::string  filter;        // filter expression
       std::string  pathPattern;   // path pattern (can contain %H, %I, %F)
       mode_t       permissions;   // file permissions (octal)
+      RollPeriod   period;        // time between rollovers
       uint32_t     keep;          // number of log files to keep when rolling
     };
     

@@ -61,6 +61,7 @@ namespace Dwm {
         log.second.LogDirectory(cfg.files.logDirectory);
         log.second.PathPattern(logcfg.pathPattern);
         log.second.Permissions(logcfg.permissions);
+        log.second.Period(logcfg.period);
         log.second.Keep(logcfg.keep);
         _logs.emplace_back(std::move(log));
       }
