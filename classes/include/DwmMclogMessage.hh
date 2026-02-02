@@ -49,6 +49,7 @@ extern "C" {
 #include "DwmMclogFacility.hh"
 #include "DwmMclogMessageOrigin.hh"
 #include "DwmMclogSeverity.hh"
+#include "DwmMclogVersion.hh"
 
 namespace Dwm {
 
