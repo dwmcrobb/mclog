@@ -1,0 +1,17 @@
+[Unit]
+Description=mclogd
+DefaultDependencies=no
+After=rc-local.service
+
+[Service]
+ExecStart=/usr/local/sbin/mclogd -c /usr/local/etc/mclogd.cfg -p /run/mclogd.pid
+KillMode=process
+PIDFile=/run/mclogd.pid
+Restart=on-failure
+# StandardInput=tty
+# StandardOutput=tty
+Type=forking
+
+[Install]
+WantedBy=multi-user.target
+Alias=mclogd.service
