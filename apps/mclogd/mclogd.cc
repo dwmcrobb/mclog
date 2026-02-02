@@ -43,6 +43,7 @@ extern "C" {
 }
 
 #include "DwmDaemonUtils.hh"
+#include "DwmSignal.hh"
 #include "DwmSysLogger.hh"
 #include "DwmMclogLoopbackReceiver.hh"
 #include "DwmMclogMulticastSender.hh"
@@ -101,7 +102,8 @@ static int WaitSigHupOrTerm()
   sigaddset(&sigSet, SIGINT);
   int  signum;
   sigwait(&sigSet, &signum);
-  FSyslog(LOG_INFO, "Got signal {}", signum);
+  Dwm::Signal  sig(signum);
+  FSyslog(LOG_INFO, "Got signal {}", sig.Name());
   
   return signum;
 }
