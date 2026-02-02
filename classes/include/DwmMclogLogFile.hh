@@ -121,10 +121,8 @@ namespace Dwm {
         std::filesystem::path  _base;
       };
 
-      // Clock::time_point LastMidnight() const;
-      // Clock::time_point NextMidnight() const;
       bool NeedRollBeforeOpen() const;
-      bool RollCriteriaMet() const;
+      bool RollCriteriaMet(const Message & msg) const;
       void RollArchives() const;
       void RollCurrent();
       void Roll();

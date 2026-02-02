@@ -159,7 +159,7 @@ namespace Dwm {
       bool  rc = false;
       if (_ofs.is_open()) {
         if (_ofs << msg << std::flush) {
-          if (RollCriteriaMet()) {
+          if (RollCriteriaMet(msg)) {
             Close();
             Roll();
             rc = Open();
@@ -175,40 +175,13 @@ namespace Dwm {
       return rc;
     }
 
-#if 0
     //------------------------------------------------------------------------
-    //!  
-    //------------------------------------------------------------------------
-    std::chrono::system_clock::time_point LogFile::NextMidnight() const
+    bool LogFile::RollCriteriaMet(const Message & msg) const
     {
-      time_t  now = time((time_t *)0);
-      tm      tms;
-      localtime_r(&now, &tms);
-      ++tms.tm_mday;
-      tms.tm_sec = 0;
-      tms.tm_min = 0;
-      tms.tm_hour = 0;
-      return std::chrono::system_clock::from_time_t(mktime(&tms));
-    }
-
-    //------------------------------------------------------------------------
-    std::chrono::system_clock::time_point LogFile::LastMidnight() const
-    {
-      time_t  now = time((time_t *)0);
-      tm      tms;
-      localtime_r(&now, &tms);
-      tms.tm_sec = 0;
-      tms.tm_min = 0;
-      tms.tm_hour = 0;
-      return std::chrono::system_clock::from_time_t(mktime(&tms));
-    }
-
-#endif
-    
-    //------------------------------------------------------------------------
-    bool LogFile::RollCriteriaMet() const
-    {
-      return (time((time_t *)0) >= _rollInterval.EndTime());
+      if (msg.Header().timestamp().Secs() >= _rollInterval.EndTime()) {
+        return (time((time_t *)0) >= _rollInterval.EndTime());
+      }
+      return false;
     }
 
     //------------------------------------------------------------------------
@@ -246,6 +219,7 @@ namespace Dwm {
     //------------------------------------------------------------------------
     void LogFile::Roll()
     {
+      FSyslog(LOG_INFO, "Rolling log file '{}'", _path.string());
       RollArchives();
       RollCurrent();
       _rollInterval.SetToCurrent();
