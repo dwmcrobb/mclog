@@ -135,6 +135,12 @@ namespace Dwm {
         sockAddr.sin_len = sizeof(sockAddr);
 #endif
         if (0 == bind(_ifd, (sockaddr *)&sockAddr, sizeof(sockAddr))) {
+          int  sockRecvBuf = 0;
+          socklen_t  sockRecvBufLen = sizeof(sockRecvBuf);
+          getsockopt(_ifd, SOL_SOCKET, SO_RCVBUF,
+                     &sockRecvBuf, &sockRecvBufLen);
+          FSyslog(LOG_INFO, "LoopbackReceiver socket fd {} bound to {},"
+                  " rcvbuf {}", _ifd, sockAddr, sockRecvBuf);
           rc = true;
         }
         else {
@@ -169,6 +175,12 @@ namespace Dwm {
         sockAddr.sin6_len = sizeof(sockAddr);
 #endif
         if (0 == bind(_ifd6, (sockaddr *)&sockAddr, sizeof(sockAddr))) {
+          int  sockRecvBuf = 0;
+          socklen_t  sockRecvBufLen = sizeof(sockRecvBuf);
+          getsockopt(_ifd6, SOL_SOCKET, SO_RCVBUF,
+                     &sockRecvBuf, &sockRecvBufLen);
+          FSyslog(LOG_INFO, "LoopbackReceiver socket fd {} bound to {},"
+                  " rcvbuf {}", _ifd6, sockAddr, sockRecvBuf);
           rc = true;
         }
         else {
@@ -200,7 +212,7 @@ namespace Dwm {
         (_config.loopback.ListenIpv6() ? (0 <= _ifd6) : (0 > _ifd6));
       if (! v6ok) {
         FSyslog(LOG_ERR, "LoopbackReceiver ipv6 socket not in desired state"
-                " (_ifd6 =- {})!", _ifd6);
+                " (_ifd6 == {})!", _ifd6);
       }
       return (v4ok && v6ok);
     }
@@ -234,8 +246,7 @@ namespace Dwm {
           if (0 <= _ifd)  { FD_SET(_ifd, &fds); maxfd = std::max({_ifd, maxfd}); }
           if (0 <= _ifd6) { FD_SET(_ifd6, &fds); maxfd = std::max({_ifd6, maxfd}); }
           FD_SET(_stopfds[0], &fds);
-          maxfd = std::max({_stopfds[0], maxfd});
-        
+          maxfd = std::max({_stopfds[0], maxfd}) + 1;
         };
         char     buf[1500];
         Message  msg;
@@ -257,7 +268,7 @@ namespace Dwm {
             else if ((0 <= _ifd6) && FD_ISSET(_ifd6, &fds)) {
               MessagePacket  pkt(buf, sizeof(buf));
               socklen_t      fromAddrLen = sizeof(fromAddr6);
-              if (pkt.RecvFrom(_ifd, &fromAddr6) > 0) {
+              if (pkt.RecvFrom(_ifd6, &fromAddr6) > 0) {
                 while (msg.Read(pkt.Payload())) {
                   for (auto sink : _sinks) {
                     sink->PushBack(msg);
