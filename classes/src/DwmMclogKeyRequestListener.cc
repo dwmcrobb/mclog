@@ -139,7 +139,7 @@ namespace Dwm {
             if (FD_ISSET(_stopfds[0], &fds)) {
               break;
             }
-            if (FD_ISSET(_fd, &fds)) {
+            if ((0 <= _fd) && FD_ISSET(_fd, &fds)) {
               struct sockaddr_in  clientAddr;
               socklen_t           clientAddrLen = sizeof(clientAddr);
               char  buf[1500];
@@ -164,7 +164,7 @@ namespace Dwm {
                 FSyslog(LOG_ERR, "recvfrom({}) failed: {}", _fd, strerror(errno));
               }
             }
-            if (FD_ISSET(_fd6, &fds)) {
+            if ((0 <= _fd6) && FD_ISSET(_fd6, &fds)) {
               struct sockaddr_in6  clientAddr;
               socklen_t            clientAddrLen = sizeof(clientAddr);
               char  buf[1500];
