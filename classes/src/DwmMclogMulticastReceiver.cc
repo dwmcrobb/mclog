@@ -355,7 +355,7 @@ namespace Dwm {
             if (FD_ISSET(_stopfds[0], &fds)) {
               break;
             }
-            if (FD_ISSET(_fd, &fds)) {
+            if ((0 <= _fd) && FD_ISSET(_fd, &fds)) {
               char  buf[1500];
               socklen_t  fromAddrLen = sizeof(fromAddr);
               ssize_t  recvrc = recvfrom(_fd, buf, sizeof(buf), 0,
@@ -369,7 +369,7 @@ namespace Dwm {
                 _sources.ProcessPacket(endPoint, buf, recvrc);
               }
             }
-            if (FD_ISSET(_fd6, &fds)) {
+            if ((0 <= _fd6) && FD_ISSET(_fd6, &fds)) {
               char  buf[1500];
               socklen_t  fromAddrLen = sizeof(fromAddr6);
               ssize_t  recvrc = recvfrom(_fd6, buf, sizeof(buf), 0,
