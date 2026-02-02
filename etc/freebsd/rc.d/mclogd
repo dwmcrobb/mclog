@@ -1,0 +1,29 @@
+#!/bin/sh
+
+# PROVIDE: mclogd
+# REQUIRE: FILESYSTEMS disks mountd resolv
+
+. /etc/rc.subr
+
+name="mclogd"
+rcvar=mclogd_enable
+
+load_rc_config mclogd
+
+: ${mclogd_enable:="NO"}
+
+required_files="${mclogd_config:=/usr/local/etc/mclogd.cfg} /usr/local/etc/mclogd/id_ed25519 /usr/local/etc/mclogd/known_keys"
+
+pidfile=${mclogd_pidfile:="/var/run/mclogd.pid"}
+
+command="/usr/local/sbin/mclogd"
+command_args="-c ${mclogd_config} -p ${pidfile}"
+
+start_precmd=mclogd_precmd
+
+mclogd_precmd()
+{
+    export PATH="${PATH}:/usr/local/sbin"
+}
+
+run_rc_command "$1"
