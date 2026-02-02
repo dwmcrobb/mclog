@@ -37,6 +37,8 @@
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
+#include <algorithm>
+#include <cstring>
 #include <vector>
 
 #include "DwmMclogRollInterval.hh"
