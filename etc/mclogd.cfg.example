@@ -1,0 +1,104 @@
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+service {
+    keyDirectory = "/usr/local/etc/mclogd";
+};
+
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+loopback {
+    listenV4 = false;
+    listenV6 = true;
+    port = 3737;
+};
+
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+selectors {
+    myapps = {
+        minimumSeverity = "debug";
+        ident = "TestLogger|mcblock|mccurtain|mcrover|mctally|qmcrover";
+    },
+    mydaemons = {
+        host = ".+\.(mcplex\.net|rfdm\.com)";
+        facility = "local[0-7]";
+        minimumSeverity = "info";
+        ident = "dwmrdapd|mc(block|curtain|rover|tally|weather)d";
+    },
+    notmydaemons = {
+        ident = "sshd";
+    }
+};
+
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+multicast {
+    #--------------------------------------------------------------------------
+    #  For IPv4, we need the interface address and the multicast group address.
+    #--------------------------------------------------------------------------
+    intfAddr = "192.168.168.42";
+    groupAddr = "239.108.111.103";
+    
+    #--------------------------------------------------------------------------
+    #  For IPv6, we need the interface address, the multicast group address
+    #  and the interface name.
+    #--------------------------------------------------------------------------
+    intfAddr6 = "fd60:3019:f4a:6aaf::39";
+    groupAddr6 = "ff02::006d:636c:6f67";
+    intfName = "en0";
+    
+    #--------------------------------------------------------------------------
+    #  We use the same destination port for IPv4 and IPv6.
+    #--------------------------------------------------------------------------
+    port = 3456;
+
+    outFilter = "mydaemons";
+};
+
+#------------------------------------------------------------------------------
+#  File logger configuration
+#------------------------------------------------------------------------------
+files {
+    logDirectory = "/usr/local/var/logs";
+
+    #-----------------------------------------------------------------------
+    #  Where we'll store logs.  Each entry has a filter and a file path
+    #  pattern.  The file path pattern is relative to logDirectory, unless
+    #  it starts with '/', in which case it's absolute.  There are 3
+    #  substitutions that may be used to construct a path, and they are
+    #  based on the message contents:
+    #     %H will be replaced by the hostname of the message origin.
+    #     %I will be replaced by the message's identity (program name).
+    #     %F will be replaced by the message's facility ('user', 'daemon',
+    #     'local0', et. al.
+    #
+    #  If no 'path' is specified, "%H/%I" will be used.
+    #
+    #  'perms' is an octal value used to set log file permissions.  The
+    #  default is 0644.  Legal values are 0600, 0640, 0644 and 0x604 (the
+    #  last being very odd).
+    #
+    #  'period' is the log rollover period.  The default is 1d.  Legal
+    #  values:
+    #      5m          (5 minutes)
+    #      15m         (15 minutes)
+    #      30m         (30 minutes)
+    #      1h          (1 hour)
+    #      2h          (2 hours)
+    #      4h          (4 hours)
+    #      6h          (6 hours)
+    #      8h          (8 hours)
+    #      12h         (12 hours)
+    #      1d          (1 day)
+    #      7d          (7 days)
+    #
+    #  'keep' is the number of log files to keep during rollover.  The
+    #  default is 7.
+    #-----------------------------------------------------------------------
+    logs {
+        { filter="mydaemons"; path="%H/%I"; perms=0644; period = 1d;
+          keep=7; },
+        { filter="myapps";    path="%H/myapps"; perms=0600; period = 1d;
+          keep=7; }
+    }    
+};
