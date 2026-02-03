@@ -155,6 +155,10 @@
 <INITIAL>[\|]{2,2}                 { return LOGICALOR; }
 <INITIAL>[\&]{2,2}                 { return LOGICALAND; }
 <INITIAL>[!]                       { return NOT; }
+<INITIAL>["]["]                    { mclogcfglval.stringVal =
+                                       new std::string("");
+                                     return STRING;
+                                   }
 <INITIAL>["]                       { BEGIN(x_quoted); }
 <x_quoted>[^"]+                    { mclogcfglval.stringVal =
                                        new std::string(yytext);
