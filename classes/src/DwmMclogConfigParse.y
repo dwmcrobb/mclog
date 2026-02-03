@@ -671,7 +671,7 @@ Log: '{' LogSettings '}'
 
 LogSettings: Filter 
 {
-    $$ = new Dwm::Mclog::LogFileConfig();
+  $$ = new Dwm::Mclog::LogFileConfig();
   $$->filter = *($1);
   delete $1;
 }
@@ -776,12 +776,15 @@ namespace Dwm {
   namespace Mclog {
 
     //---------------------------------------------------------------------
-    //!  
+    MulticastConfig::MulticastConfig()
+    {
+      Init();
+    }
+    
     //---------------------------------------------------------------------
     bool MulticastConfig::ShouldSendIpv4() const
     {
-      return ((groupAddr != Ipv4Address())
-              && (intfAddr != Ipv4Address())
+      return ((intfAddr != Ipv4Address())
               && (dstPort != 0));
     }
     
@@ -789,38 +792,35 @@ namespace Dwm {
     bool MulticastConfig::ShouldSendIpv6() const
     {
       return ((! intfName.empty())
-              && (groupAddr6 != Ipv6Address())
               && (intfAddr6 != Ipv6Address())
               && (dstPort != 0));
     }
 
-    //------------------------------------------------------------------------
-    void MulticastConfig::Clear()
+    //-----------------------------------------------------------------------
+    void MulticastConfig::Init()
     {
-      groupAddr = Ipv4Address();
+      groupAddr = Ipv4Address("239.108.111.103");
       intfAddr = Ipv4Address();
-      dstPort = 0;
+      groupAddr6 = Ipv6Address("ff02::006d:636c:6f67");
+      intfAddr6 = Ipv6Address();
+      dstPort = 3737;
+      intfName.clear();
       outFilter.clear();
-      
-      return;
     }
-
+    
     //------------------------------------------------------------------------
-    void ServiceConfig::Clear()
+    void ServiceConfig::Init()
     {
-      keyDirectory.clear();
+      keyDirectory = "/usr/local/etc/mclogd";
       return;
     }
 
     //------------------------------------------------------------------------
     LogFileConfig::LogFileConfig()
-        : filter(), pathPattern("%H/%I"), permissions(0644),
-          period(RollPeriod::days_1), keep(7)
-    {
-    }
+    { Init(); }
 
     //-----------------------------------------------------------------------
-    void LogFileConfig::Clear()
+    void LogFileConfig::Init()
     {
       filter.clear();
       pathPattern = "%H/%I";
@@ -830,20 +830,20 @@ namespace Dwm {
     }
     
     //-----------------------------------------------------------------------
-    void FilesConfig::Clear()
+    void FilesConfig::Init()
     {
-        logDirectory.clear();
+        logDirectory = "/usr/local/var/mclog";
         logs.clear();
         return;
     }
     
     //------------------------------------------------------------------------
-    void Config::Clear()
+    void Config::Init()
     {
-      loopback.Clear();
-      mcast.Clear();
-      service.Clear();
-      files.Clear();
+      loopback.Init();
+      mcast.Init();
+      service.Init();
+      files.Init();
       
       return;
     }
@@ -860,7 +860,7 @@ namespace Dwm {
     bool Config::Parse(const string & path)
     {
       bool  rc = false;
-      Clear();
+      Init();
       
       mclogcfgin = fopen(path.c_str(), "r");
       if (mclogcfgin) {

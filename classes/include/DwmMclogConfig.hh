@@ -55,12 +55,12 @@ namespace Dwm {
     class MulticastConfig
     {
     public:
-      MulticastConfig() = default;
+      MulticastConfig();
       MulticastConfig(const MulticastConfig &) = default;
       MulticastConfig & operator = (const MulticastConfig &) = default;
       bool ShouldSendIpv4() const;
       bool ShouldSendIpv6() const;
-      void Clear();
+      void Init();
       
       Ipv4Address  groupAddr;   // ipv4 group address
       Ipv6Address  groupAddr6;  // ipv6 group address
@@ -77,19 +77,15 @@ namespace Dwm {
     class LoopbackConfig
     {
     public:
-      LoopbackConfig()
-          : listenIpv4(true), listenIpv6(false), port(3737)
-      {}
-      
+      LoopbackConfig()  { Init(); }
       LoopbackConfig(const LoopbackConfig &) = default;
       LoopbackConfig & operator = (const LoopbackConfig &) = default;
-
       bool ListenIpv4() const  { return (listenIpv4 && (port != 0)); }
       bool ListenIpv6() const  { return (listenIpv6 && (port != 0)); }
-      void Clear() { listenIpv4 = false; listenIpv6 = false; port = 3737; }
+      void Init() { listenIpv4 = false; listenIpv6 = false; port = 3737; }
 
-      bool         listenIpv4;  // listen on 127.0.0.1?
-      bool         listenIpv6;  // listen on ::1?
+      bool         listenIpv4;  // listen on 127.0.0.1 ?
+      bool         listenIpv6;  // listen on ::1 ?
       uint16_t     port;        // listen port
     };
 
@@ -99,10 +95,10 @@ namespace Dwm {
     class ServiceConfig
     {
     public:
-      ServiceConfig() = default;
+      ServiceConfig()  { Init(); }
       ServiceConfig(const ServiceConfig &) = default;
       ServiceConfig & operator = (const ServiceConfig &) = default;
-      void Clear();
+      void Init();
       
       std::string  keyDirectory;  // directory where Credence keys are stored
     };
@@ -117,7 +113,7 @@ namespace Dwm {
       LogFileConfig();
       LogFileConfig(const LogFileConfig &) = default;
       LogFileConfig & operator = (const LogFileConfig &) = default;
-      void Clear();
+      void Init();
       
       std::string  filter;        // filter expression
       std::string  pathPattern;   // path pattern (can contain %H, %I, %F)
@@ -132,10 +128,10 @@ namespace Dwm {
     class FilesConfig
     {
     public:
-      FilesConfig() = default;
+      FilesConfig()  { Init(); }
       FilesConfig(const FilesConfig &) = default;
       FilesConfig & operator = (const FilesConfig &) = default;
-      void Clear();
+      void Init();
       
       std::string                 logDirectory;
       std::vector<LogFileConfig>  logs;
@@ -147,14 +143,13 @@ namespace Dwm {
     class Config
     {
     public:
-      Config() = default;
+      Config() { Init(); }
       Config(const Config &) = default;
       Config & operator = (const Config &) = default;
-      
       bool Parse(const std::string & path);
       bool ShouldSendIpv4() const;
       bool ShouldSendIpv6() const;
-      void Clear();
+      void Init();
 
       LoopbackConfig                         loopback;
       MulticastConfig                        mcast;
