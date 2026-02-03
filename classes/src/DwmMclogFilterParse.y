@@ -99,7 +99,11 @@
 
  // %start Result;
 
-Result: Expression
+Result:
+{
+    result = true;
+}
+| Expression
 {
   result = $1;
 }
