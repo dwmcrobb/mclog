@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogLogger.hh
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::Logger class declaration
 //---------------------------------------------------------------------------
 
 #ifndef _DWMMCLOGLOGGER_HH_
@@ -109,13 +109,14 @@ namespace Dwm {
           std::source_location loc = std::source_location::current());
       
     private:
-      static MessageOrigin  _origin;
-      static Facility       _facility;
-      static int            _options;
-      static int            _ofd;
-      static UdpEndpoint    _dstAddr;
-      static sockaddr_un    _dstUnixAddr;
-      static std::mutex     _ofdmtx;
+      static MessageOrigin           _origin;
+      static Facility                _facility;
+      static int                     _options;
+      static int                     _ofd;
+      static UdpEndpoint             _dstAddr;
+      static sockaddr_un             _dstUnixAddr;
+      static std::mutex              _ofdmtx;
+      static std::mutex              _cerrmtx;
       static Thread::Queue<Message>  _msgs;
       static std::thread             _thread;
       static std::atomic<bool>       _run;

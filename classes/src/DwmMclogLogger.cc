@@ -78,7 +78,8 @@ namespace Dwm {
     int            Logger::_options = 0;
     int            Logger::_ofd = -1;
     std::mutex     Logger::_ofdmtx;
-
+    std::mutex     Logger::_cerrmtx;
+    
     Thread::Queue<Message>     Logger::_msgs;
     std::thread                Logger::_thread;
     std::atomic<bool>          Logger::_run{false};
@@ -285,6 +286,7 @@ namespace Dwm {
     }
 #endif
     
+    //------------------------------------------------------------------------
     bool Logger::Log(Severity severity, std::string && msg,
                      std::source_location loc)
     {
@@ -300,6 +302,7 @@ namespace Dwm {
           + std::to_string(loc.line()) + '}';
         Message  logmsg(hdr, msg);
         if (_options & logStderr) {
+          std::lock_guard  lck(_cerrmtx);
           std::cerr << logmsg;
         }
         if (_options & logSyslog) {
