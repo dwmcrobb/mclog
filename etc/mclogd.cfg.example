@@ -71,7 +71,9 @@ files {
 
     #-----------------------------------------------------------------------
     #  Where we'll store logs.  Each entry has a filter and a file path
-    #  pattern.  The file path pattern is relative to logDirectory, unless
+    #  pattern.
+    #
+    #  The file path pattern is relative to logDirectory, unless
     #  it starts with '/', in which case it's absolute.  There are 3
     #  substitutions that may be used to construct a path, and they are
     #  based on the message contents:
@@ -81,6 +83,11 @@ files {
     #     'local0', et. al.
     #
     #  If no 'path' is specified, "%H/%I" will be used.
+    #
+    #  'filter' is a logical expression with selector names as operands
+    #  and '(', ')', '!', '||' and '&&' as operators.  An empty filter,
+    #  e.g. 'filter = "", will match all messages.  No filter will also
+    #  match all messages.
     #
     #  'perms' is an octal value used to set log file permissions.  The
     #  default is 0644.  Legal values are 0600, 0640, 0644 and 0x604 (the
