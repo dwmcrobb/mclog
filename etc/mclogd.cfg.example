@@ -5,14 +5,22 @@ service {
 };
 
 #------------------------------------------------------------------------------
+#  mclogd will listen on the loopback interface (127.0.0.1 and/or ::1) as
+#  configured.  Today, nothing uses the IPv6 since the Logger class connects
+#  via IPv4, but mclogd can listen on ::1 if configured (for future use).
+#  Note that unless your host has no IPv4 stack, it is wise to only enable
+#  IPv4 here; it is less overhead.
 #------------------------------------------------------------------------------
 loopback {
-    listenV4 = false;
-    listenV6 = true;
-    port = 3737;
+   listenV4 = true;    # listen on 127.0.0.1?
+   listenV6 = false;   # listen on ::1?
+   port = 3737;        # port on which to listen (default 3737)
 };
 
 #------------------------------------------------------------------------------
+#  Selectors are the operands for filters.  They evaluate to true or false
+#  for a given message, based on the match of host, facility, severity
+#  and ident.
 #------------------------------------------------------------------------------
 selectors {
     myapps = {
