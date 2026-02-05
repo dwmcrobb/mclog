@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogUdpEndpoint.cc
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::UdpEndpoint implementation
 //---------------------------------------------------------------------------
 
 #include "DwmMclogUdpEndpoint.hh"
