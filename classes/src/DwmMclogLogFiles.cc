@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogLogFiles.cc
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::LogFiles implementation
 //---------------------------------------------------------------------------
 
 #include <boost/regex.hpp>
