@@ -78,9 +78,7 @@ namespace Dwm {
       using Clock = std::chrono::system_clock;
       
       static bool Open(const char *ident, int logopt, Facility facility);
-#if 0
-      static bool OpenUnix(const char *ident, int logopt, Facility facility);
-#endif
+
       static bool LogLocations()
       { return _logLocations; }
       
@@ -128,8 +126,6 @@ namespace Dwm {
       static bool OpenSocket();
       static bool SendMessage(const Message & msg);
       static bool SendPacket(MessagePacket & pkt);
-      static bool OpenUnixSocket();
-      static bool SendMessageUnix(const Message & msg);
       static void Run();
       
 #if DWM_MCLOG_HAVE_STD_FORMAT
