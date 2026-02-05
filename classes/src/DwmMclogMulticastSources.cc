@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogMulticastSources.cc
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::MulticastSources implementation
 //---------------------------------------------------------------------------
 
 #include "DwmMclogMulticastSources.hh"
@@ -44,14 +44,10 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  
-    //------------------------------------------------------------------------
     MulticastSources::MulticastSources()
         : _sources(), _sinks(nullptr)
     {}
     
-    //------------------------------------------------------------------------
-    //!  
     //------------------------------------------------------------------------
     MulticastSources::MulticastSources(const std::string *keyDir,
                                        std::vector<MessageSink *> *sinks)
