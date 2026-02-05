@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogFilterDriver.cc
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::FilterDriver implementation
 //---------------------------------------------------------------------------
 
 #include <sstream>
