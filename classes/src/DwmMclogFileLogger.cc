@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogFileLogger.cc
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::FileLogger implementation
 //---------------------------------------------------------------------------
 
 #include "DwmMclogFileLogger.hh"
