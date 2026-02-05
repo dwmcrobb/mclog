@@ -35,7 +35,7 @@
   //-------------------------------------------------------------------------
   //!  @file DwmMclogConfigParse.y
   //!  @author Daniel W. McRobb
-  //!  @brief mclog configuration parser
+  //!  @brief mclogd configuration parser
   //-------------------------------------------------------------------------
 %}
 
@@ -78,6 +78,7 @@
   string                 g_configPath;
   Dwm::Mclog::Config    *g_config = nullptr;
 
+  //-------------------------------------------------------------------------
   static bool IsValidIpv4MulticastAddr(const Dwm::Ipv4Address & addr)
   {
     if (addr != Dwm::Ipv4Address()) {
@@ -87,6 +88,7 @@
     return false;
   }
 
+  //-------------------------------------------------------------------------
   static bool IsValidIpv4IntfAddr(const Dwm::Ipv4Address & addr)
   {
     std::map<std::string,Dwm::LocalInterface>  intfs;
@@ -108,6 +110,7 @@
     return (it != intfs.end());
   }
   
+  //-------------------------------------------------------------------------
   static bool IsValidIpv6MulticastAddr(const Dwm::Ipv6Address & addr)
   {
     if (addr != Dwm::Ipv6Address()) {
@@ -117,6 +120,7 @@
     return false;
   }
 
+  //-------------------------------------------------------------------------
   static bool IsValidIpv6IntfAddr(const Dwm::Ipv6Address & addr)
   {
     bool  rc = false;
