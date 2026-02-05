@@ -1,5 +1,5 @@
 //===========================================================================
-//  Copyright (c) Daniel W. McRobb 2025
+//  Copyright (c) Daniel W. McRobb 2025, 2026
 //  All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogMessagePacket.cc
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::MessagePacket implementation
 //---------------------------------------------------------------------------
 
 extern "C" {
