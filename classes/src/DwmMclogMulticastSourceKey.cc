@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogMulticastSourceKey.cc
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::MulticastSourceKey implementation
 //---------------------------------------------------------------------------
 
 #include "DwmMclogMulticastSourceKey.hh"
