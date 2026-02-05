@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogKeyRequester.cc
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::KeyRequester implementation
 //---------------------------------------------------------------------------
 
 extern "C" {
@@ -170,12 +170,8 @@ namespace Dwm {
     //------------------------------------------------------------------------
     MulticastSourceKey KeyRequester::GetKey()
     {
-      if (_servEndpoint.Addr().Family() == PF_INET) {
-        return GetKey4();
-      }
-      else {
-        return GetKey6();
-      }
+      if (_servEndpoint.Addr().Family() == PF_INET)  { return GetKey4(); }
+      else                                           { return GetKey6(); }
     }
 
   }  // namespace Mclog
