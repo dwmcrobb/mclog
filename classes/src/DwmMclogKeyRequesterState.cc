@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogKeyRequesterState.cc
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::KeyRequesterState implementation
 //---------------------------------------------------------------------------
 
 #include <vector>
