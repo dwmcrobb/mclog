@@ -1,6 +1,14 @@
 #------------------------------------------------------------------------------
+#
 #------------------------------------------------------------------------------
 service {
+    #--------------------------------------------------------------------------
+    #  Directory containing our credence(1) key files (id_ed25519 and
+    #  id_ed25519.pub) and known_keys file.  The known_keys file contains
+    #  the public keys of those multicast listeners to whom we will give
+    #  tne multicast encryption key on request, if they can prove their
+    #  identity (via signature challenge).
+    #--------------------------------------------------------------------------
     keyDirectory = "/usr/local/etc/mclogd";
 };
 
@@ -20,7 +28,15 @@ loopback {
 #------------------------------------------------------------------------------
 #  Selectors are the operands for filters.  They evaluate to true or false
 #  for a given message, based on the match of host, facility, severity
-#  and ident.
+#  and ident.  'host', 'facility' and 'ident' values are all used as
+#  regular expressions, and both operators '=' and '!=' are permissible
+#  operators.  'minimumSeverity' only accepts the '=' operator, and
+#  must be one of "debug", "info", "notice", "warning", "err", "crit", "alert"
+#  or "emerg" (the same as syslog(3)).
+#
+#  The fields in each selector are logically ANDED (&&).  We don't need
+#  logical 'OR' (||) here because selectors are just the operands for filter
+#  expressions used elsewhere.
 #------------------------------------------------------------------------------
 selectors {
     myapps = {
@@ -39,6 +55,10 @@ selectors {
 };
 
 #------------------------------------------------------------------------------
+#  Note that if neither IPv4 nor IPv6 multicast are configured, mclogd will
+#  not start the sender and receiver threads for multicast.  This is
+#  intentional, just to reduce the overhead in cases where all we want is
+#  reception on the loopback address and log file output.
 #------------------------------------------------------------------------------
 multicast {
     #--------------------------------------------------------------------------
@@ -71,7 +91,10 @@ files {
 
     #-----------------------------------------------------------------------
     #  Where we'll store logs.  Each entry has a filter and a file path
-    #  pattern.
+    #  pattern.  If no logs are configured, mclogd will not start the file
+    #  logger thread and hence will not write to log files.  This is
+    #  intentional, allowing a configuration where the only output is
+    #  multicast.
     #
     #  The file path pattern is relative to logDirectory, unless
     #  it starts with '/', in which case it's absolute.  There are 3
