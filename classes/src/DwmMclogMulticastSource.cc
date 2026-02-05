@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogMulticastSource.cc
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::MulticastSource implementation
 //---------------------------------------------------------------------------
 
 #include "DwmMclogMessagePacket.hh"
