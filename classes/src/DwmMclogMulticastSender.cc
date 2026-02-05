@@ -210,6 +210,10 @@ namespace Dwm {
       else {
         _filterDriver = nullptr;
       }
+
+      if (! _config.mcast.ShouldRunSender()) {
+        return true;
+      }
       
       if (_config.mcast.ShouldSendIpv4()) {
         if (0 > _fd) {
@@ -278,6 +282,10 @@ namespace Dwm {
     //------------------------------------------------------------------------
     bool MulticastSender::PushBack(const Message & msg)
     {
+      if (! _run) {
+        return true;
+      }
+      
       if (nullptr == _filterDriver) {
         return _outQueue.PushBack(msg);
       }

@@ -103,7 +103,7 @@ static int WaitSigHupOrTerm()
   int  signum;
   sigwait(&sigSet, &signum);
   Dwm::Signal  sig(signum);
-  FSyslog(LOG_INFO, "Got signal {}", sig.Name());
+  FSyslog(LOG_INFO, "Received {}", sig.Name());
   
   return signum;
 }

@@ -647,7 +647,7 @@ OutFilter: OUTFILTER '=' STRING ';'
   $$ = $3;
 };
 
-Logs: LOGS '{' LogList '}'
+Logs: LOGS '{' LogList '}' ';'
 {
   $$ = $3;
 };
@@ -797,6 +797,12 @@ namespace Dwm {
     }
 
     //-----------------------------------------------------------------------
+    bool MulticastConfig::ShouldRunSender() const
+    {
+      return (ShouldSendIpv4() || ShouldSendIpv6());
+    }
+    
+    //-----------------------------------------------------------------------
     void MulticastConfig::Init()
     {
       groupAddr = Ipv4Address("239.108.111.103");
@@ -871,18 +877,6 @@ namespace Dwm {
       }
       else {
         FSyslog(LOG_ERR, "Failed to open config file {}", path);
-      }
-      if (rc) {
-        if ((ShouldSendIpv4() || ShouldSendIpv6())
-            && (! service.keyDirectory.empty())) {
-          FSyslog(LOG_INFO, "Config loaded from {}", path);
-        }
-        else {
-          rc = false;
-        }
-      }
-      else {
-        FSyslog(LOG_ERR, "Failed to load config from {}", path);
       }
       return rc;
     }

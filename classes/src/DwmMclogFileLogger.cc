@@ -52,9 +52,13 @@ namespace Dwm {
     bool FileLogger::Start(const Config & cfg)
     {
       using namespace std;
+
+      if (cfg.files.logs.empty()) {
+        return true;
+      }
       
       bool  rc = false;
-      _run = true;
+      _run.store(true);
       for (const auto & logcfg : cfg.files.logs) {
         auto  log =
           make_pair(make_unique<FilterDriver>(cfg,logcfg.filter),LogFiles());
@@ -100,7 +104,10 @@ namespace Dwm {
     //------------------------------------------------------------------------
     bool FileLogger::PushBack(const Message & msg)
     {
-      return _inQueue.PushBack(msg);
+      if (_run) {
+        return _inQueue.PushBack(msg);
+      }
+      return true;
     }
     
     //------------------------------------------------------------------------

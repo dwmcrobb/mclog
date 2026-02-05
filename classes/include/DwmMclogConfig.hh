@@ -60,6 +60,7 @@ namespace Dwm {
       MulticastConfig & operator = (const MulticastConfig &) = default;
       bool ShouldSendIpv4() const;
       bool ShouldSendIpv6() const;
+      bool ShouldRunSender() const;
       void Init();
       
       Ipv4Address  groupAddr;   // ipv4 group address

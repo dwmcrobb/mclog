@@ -1,0 +1,114 @@
+\documentclass[letterpaper,openany]{book}
+%% \documentclass[border=2mm]{standalone}
+
+\input{preamble.tex}
+
+\usepackage{luamplib}
+\mplibtextextlabel{enable}
+
+\begin{document}
+
+\begin{mplibcode}
+  input metaobj
+  s := 4.5cm; m := -3cm; % locates upper and lower boxes
+  beginfig(1);
+  % Central box
+  newBox.msrmt("Measurement") "filled(true)", "fillcolor(.8white)", 
+  "dx(.6s)", "framestyle(dashed evenly)";
+  msrmt.c = (s, .5m); drawObj(msrmt);
+  % Upper and lower boxes
+  newBox.syst("System") "dx(2mm)", "dy(3mm)"; 
+  newBox.model("Model") "dx(2mm)", "dy(3mm)";
+  syst.c = (s, 0); model.c = (s, m);
+  drawObj(syst); drawBox(model);
+  % Empty circle
+  ep := .5(xpart syst.w); t := xpart syst.e + ep; u := xpart syst.w - ep;
+  newCircle.circ("") "circmargin(1.5mm)";
+  circ.c = (t, m);
+  drawObj(circ);
+  % Connections
+  drawarrow origin -- syst.w;
+  drawarrow (u, 0) -- (u, m) -- model.w;
+  drawarrow syst.e -- (t+ep, 0);
+  drawarrow (t, 0) -- circ.n;
+  drawarrow model.e -- circ.w;
+  drawarrow circ.e -- (t+ep, m);
+  % The spring (and its label)
+  newEmptyBox.upper(0, 0); upper.c = (s, -.75m);
+  picture lab; lab = textext("$d'$");
+  nczigzag(upper)(syst) "coilwidth(2.5mm)", "coilarmA(0mm)", 
+  "coilarmB(3mm)", "linearc(.4mm)", "labpic(lab)", "labdir(rt)";
+  % Other labels  
+  label.top("$u'$", (u, 0)); label.urt("$u$", (u, m));
+  label.top("$t'$", (t, 0));
+  label.top("$y$", .5(model.e+circ.w));
+  label.rt("$t$", (t, ypart(.5(msrmt.s+circ.n))));
+  label.top("$\epsilon$", .5[(t,m), (t+ep, m)]);
+  labeloffset := .5bp;
+  label.llft("\tiny$+$", circ.sw);
+  label.urt("\tiny$-$", circ.ne);
+  labeloffset := 3bp;
+  endfig; 
+\end{mplibcode}
+
+\noindent\begin{tikzpicture}[
+  start chain = mcastin going below,
+  start chain = loopbackin going right,
+  node distance = 0pt,
+  mcastinsocket node/.style = {align=center, on chain=mcastin},
+  loopbackinsocket node/.style = {align=center, on chain=loopbackin, rotate=270}
+]
+\node[mcastinsocket node] {IPv4 multicast};
+\node[mcastinsocket node] {IPv6 multicast};
+\node[loopbackinsocket node] {IPv4 loopback};
+\node[loopbackinsocket node] {IPv6 loopback};
+
+\end{tikzpicture}
+
+\begin{center}
+\noindent\begin{tikzpicture}[
+    start chain = A going right,
+    node distance = 0pt, % Ensure no gap between bit nodes
+    byte node/.style = {draw=lightgray, minimum height=20pt, minimum width=(\textwidth)/56, text width=\dimexpr(\textwidth)/56\relax, text height=16pt, text depth=4pt, font=\ttfamily, anchor=south, align=center, inner sep=0pt, outer sep=0pt, on chain=A}
+  ]
+  \def\mybytestring{{@},{(},{\#},{)},{ },D,w,m,W,h,a,t,{ },1,.,0,.,0,{ },C,o,p,y,r,i,g,h,t,{ },D,a,n,i,e,l,{ },M,c,R,o,b,b,{ },2,0,2,5,{ },m,c,p,l,e,x,.,n,e,t}
+  % Draw the byte nodes and indices
+  \setcounter{lastbyte}{0}
+  \foreach \byte [count=\i] in \mybytestring {
+    \node[byte node, fill=white] (byte-\i) {\byte};
+    \stepcounter{lastbyte}
+  }
+  \node[byte node, fill=lightgray!50] (termnull) {$\emptyset$};
+  
+  % and a label for the byte nodes
+  \ifnum \value{lastbyte} > 0
+    \draw [decorate, decoration={brace, amplitude=10pt}] (byte-1.north west) -- (byte-\thelastbyte.north east)
+    node [above=8pt, midway, font=\scriptsize] {\texttt{view()}};
+    \draw [decorate, decoration={brace, mirror, amplitude=10pt}] (byte-1.south west) -- (byte-4.south east)
+    node [below=8pt, midway, font=\scriptsize] {\texttt{nth(0)}};
+    \draw [decorate, decoration={brace, mirror, amplitude=10pt}] (byte-6.south west) -- (byte-12.south east)
+    node [below=8pt, midway, font=\scriptsize] {\texttt{nth(1)}};
+    \draw [decorate, decoration={brace, mirror, amplitude=10pt}] (byte-14.south west) -- (byte-18.south east)
+    node [below=8pt, midway, font=\scriptsize] {\texttt{nth(2)}};
+    \draw [decorate, decoration={brace, mirror, amplitude=10pt}] (byte-20.south west) -- (byte-47.south east)
+    node [below=8pt, midway, font=\scriptsize] {\texttt{nth(3)}};
+    \draw [decorate, decoration={brace, mirror, amplitude=10pt}] (byte-49.south west) -- (byte-58.south east)
+    node [below=8pt, midway, font=\scriptsize] {\texttt{nth(4)}};
+
+  \draw [decorate, decoration={brace, mirror, amplitude=10pt}] (byte-5.south west) -- (byte-5.south east) 
+  node [below=8pt, midway, rotate=270, anchor=east, xshift=3em, yshift=.5pt, font=\scriptsize] {delim};
+  \draw [decorate, decoration={brace, mirror, amplitude=10pt}] (byte-13.south west) -- (byte-13.south east) 
+  node [below=8pt, midway, rotate=270, anchor=east, xshift=3em, yshift=.5pt, font=\scriptsize] {delim};
+  \draw [decorate, decoration={brace, mirror, amplitude=10pt}] (byte-19.south west) -- (byte-19.south east) 
+  node [below=8pt, midway, rotate=270, anchor=east, xshift=3em, yshift=.5pt, font=\scriptsize] {delim};
+  \draw [decorate, decoration={brace, mirror, amplitude=10pt}] (byte-48.south west) -- (byte-48.south east) 
+  node [below=8pt, midway, rotate=270, anchor=east, xshift=3em, yshift=.5pt, font=\scriptsize] {delim};
+
+  \fi
+\end{tikzpicture}
+\captionof{figure}{\texttt{Dwm::What::SegmentedLiteral} layout}
+\end{center}
+
+
+\include{InputsOutputs.tex}
+\end{document}

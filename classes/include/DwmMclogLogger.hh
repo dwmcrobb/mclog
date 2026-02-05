@@ -40,10 +40,6 @@
 #ifndef _DWMMCLOGLOGGER_HH_
 #define _DWMMCLOGLOGGER_HH_
 
-extern "C" {
-  #include <sys/un.h>
-}
-
 #include <memory>
 #include <mutex>
 #include <source_location>
@@ -82,7 +78,14 @@ namespace Dwm {
       using Clock = std::chrono::system_clock;
       
       static bool Open(const char *ident, int logopt, Facility facility);
+#if 0
       static bool OpenUnix(const char *ident, int logopt, Facility facility);
+#endif
+      static bool LogLocations()
+      { return _logLocations; }
+      
+      static bool LogLocations(bool logLocations)
+      { return _logLocations = logLocations; }
       
       static bool Close();
 
@@ -111,10 +114,10 @@ namespace Dwm {
     private:
       static MessageOrigin           _origin;
       static Facility                _facility;
+      static std::atomic<bool>       _logLocations;
       static int                     _options;
       static int                     _ofd;
       static UdpEndpoint             _dstAddr;
-      static sockaddr_un             _dstUnixAddr;
       static std::mutex              _ofdmtx;
       static std::mutex              _cerrmtx;
       static Thread::Queue<Message>  _msgs;

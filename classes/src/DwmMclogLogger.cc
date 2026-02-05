@@ -70,15 +70,15 @@ namespace Dwm {
 
     //------------------------------------------------------------------------
     UdpEndpoint    Logger::_dstAddr;
-    sockaddr_un    Logger::_dstUnixAddr;
     
     //------------------------------------------------------------------------
-    MessageOrigin  Logger::_origin("","",0);
-    Facility       Logger::_facility = Facility::user;
-    int            Logger::_options = 0;
-    int            Logger::_ofd = -1;
-    std::mutex     Logger::_ofdmtx;
-    std::mutex     Logger::_cerrmtx;
+    MessageOrigin      Logger::_origin("","",0);
+    Facility           Logger::_facility = Facility::user;
+    std::atomic<bool>  Logger::_logLocations{false};
+    int                Logger::_options = 0;
+    int                Logger::_ofd = -1;
+    std::mutex         Logger::_ofdmtx;
+    std::mutex         Logger::_cerrmtx;
     
     Thread::Queue<Message>     Logger::_msgs;
     std::thread                Logger::_thread;
@@ -107,19 +107,6 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
-    bool Logger::OpenUnixSocket()
-    {
-      bool  rc = false;
-      if (0 > _ofd) {
-        _ofd = socket(PF_UNIX, SOCK_DGRAM, 0);
-        if (0 <= _ofd) {
-          rc = true;
-        }
-      }
-      return rc;
-    }
-    
-    //------------------------------------------------------------------------
     bool Logger::Open(const char *ident, int logopt, Facility facility)
     {
       bool  rc = false;
@@ -146,35 +133,6 @@ namespace Dwm {
         return true;
       }
       return false;
-    }
-
-    //------------------------------------------------------------------------
-    bool Logger::OpenUnix(const char *ident, int logopt, Facility facility)
-    {
-      bool  rc = false;
-
-      memset(&_dstUnixAddr, 0, sizeof(_dstUnixAddr));
-      _dstUnixAddr.sun_family = PF_UNIX;
-      strcpy(_dstUnixAddr.sun_path, "/usr/local/var/run/mclogd.sck");
-#ifndef __linux__
-      _dstUnixAddr.sun_len = SUN_LEN(&_dstUnixAddr);
-#endif
-
-      char  hn[255];
-      memset(hn, 0, sizeof(hn));
-      gethostname(hn, sizeof(hn));
-
-      _origin.hostname(hn);
-      _origin.appname(ident);
-      _origin.processid(getpid());
-
-      std::lock_guard  lck(_ofdmtx);
-      _options = logopt;
-
-      if (_options & logSyslog) {
-        Dwm::SysLogger::Open(ident, logopt, (int)facility);
-      }
-      return OpenUnixSocket();
     }
 
     //------------------------------------------------------------------------
@@ -209,82 +167,6 @@ namespace Dwm {
       pkt.Reset();
       return (0 < sendrc);
     }
-
-#if 0
-    //------------------------------------------------------------------------
-    bool Logger::SendMessage(const Message & msg)
-    {
-      bool  rc = false;
-      if (0 <= _ofd) {
-        char  buf[1200];
-        std::spanstream  sps{std::span{buf,sizeof(buf)}};
-        if (msg.Write(sps)) {
-          ssize_t  sendrc = ::sendto(_ofd, buf, sps.tellp(), 0,
-                                     (sockaddr *)&_dstAddr, sizeof(_dstAddr));
-          if (sendrc == sps.tellp()) {
-            rc = true;
-          }
-          else {
-            FSyslog(LOG_ERR, "sendto({},{}) failed: {}",
-                    _ofd, _dstAddr, strerror(errno));
-          }
-        }
-      }
-      return rc;
-    }
-
-    //------------------------------------------------------------------------
-    bool Logger::SendMessageUnix(const Message & msg)
-    {
-      bool  rc = false;
-      if (0 <= _ofd) {
-        char  buf[1200];
-        std::spanstream  sps{std::span{buf,sizeof(buf)}};
-        if (msg.Write(sps)) {
-          ssize_t  sendrc = ::sendto(_ofd, buf, sps.tellp(), 0,
-                                     (sockaddr *)&_dstUnixAddr,
-                                     SUN_LEN(&_dstUnixAddr));
-          if (sendrc == sps.tellp()) {
-            rc = true;
-          }
-          else {
-            FSyslog(LOG_ERR, "sendto({},{}) failed: {}",
-                    _ofd, _dstUnixAddr, strerror(errno));
-          }
-        }
-      }
-      return rc;
-    }
-#endif
-    
-#if 0
-    //------------------------------------------------------------------------
-    bool Logger::Log(Severity severity, std::string_view msg,
-                     std::source_location loc)
-    {
-      //  NOTE: the performance of this function is likely abysmal; we
-      //  have too many allocations.
-      namespace fs = std::filesystem;
-      bool  rc = false;
-      
-      if (_origin.processid()) {
-        MessageHeader  hdr(_facility, severity, _origin);
-        fs::path  locFile(loc.file_name());
-        std::string  msgstr(msg.data(), msg.size());
-        msgstr += " {" + locFile.filename().string() + ':'
-          + std::to_string(loc.line()) + '}';
-        Message  logmsg(hdr, msgstr);
-        if (_options & logStderr) {
-          std::cerr << logmsg;
-        }
-        if (_options & logSyslog) {
-          Syslog((int)(severity)|(int)(_facility), msgstr.c_str());
-        }
-        rc = _msgs.PushBack(std::move(logmsg));
-      }
-      return rc;
-    }
-#endif
     
     //------------------------------------------------------------------------
     bool Logger::Log(Severity severity, std::string && msg,
@@ -297,9 +179,11 @@ namespace Dwm {
       
       if (_origin.processid()) {
         MessageHeader  hdr(_facility, severity, _origin);
-        fs::path  locFile(loc.file_name());
-        msg += " {" + locFile.filename().string() + ':'
-          + std::to_string(loc.line()) + '}';
+        if (_logLocations) {
+          fs::path       locFile(loc.file_name());
+          msg += " {" + locFile.filename().string() + ':'
+            + std::to_string(loc.line()) + '}';
+        }
         Message  logmsg(hdr, msg);
         if (_options & logStderr) {
           std::lock_guard  lck(_cerrmtx);

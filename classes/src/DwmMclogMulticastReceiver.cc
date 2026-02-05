@@ -203,6 +203,10 @@ namespace Dwm {
       bool shouldJoin6 = ((! _config.mcast.intfName.empty())
                           && (_config.mcast.groupAddr6 != Ipv6Address())
                           && (_config.mcast.intfAddr6 != Ipv6Address()));
+      if (! (shouldJoin4 || shouldJoin6)) {
+        return true;
+      }
+      
       if (shouldJoin4) {
         if (0 > _fd) {
           _fd = socket(PF_INET, SOCK_DGRAM, 0);

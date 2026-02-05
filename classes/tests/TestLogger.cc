@@ -50,13 +50,10 @@ extern "C" {
 int main(int argc, char *argv[])
 {
   using Dwm::Mclog::Logger;
-#if 1
   assert(Logger::Open("TestLogger", Dwm::Mclog::Logger::logStderr,
                       Dwm::Mclog::Facility::user));
-#else
-  assert(Logger::OpenUnix("TestLogger", Dwm::Mclog::Logger::logStderr,
-                          Dwm::Mclog::Facility::user));
-#endif
+  Logger::LogLocations(true);
+  
   uint64_t  i = 0;
   for (;;) {
     MCLOG(Dwm::Mclog::Severity::info, "{} hello there info.", i++);
