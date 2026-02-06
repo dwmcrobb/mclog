@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogConfig.hh
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::Config class declaration
 //---------------------------------------------------------------------------
 
 #ifndef _DWMMCLOGCONFIG_HH_
@@ -50,7 +50,7 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  
+    //!  Encapsulate multicast configuration ('multicast' in config file)
     //------------------------------------------------------------------------
     class MulticastConfig
     {
@@ -73,7 +73,7 @@ namespace Dwm {
     };
 
     //------------------------------------------------------------------------
-    //!  
+    //!  Encapsulate loopback configuration ('loopback' in config file)
     //------------------------------------------------------------------------
     class LoopbackConfig
     {
@@ -91,7 +91,7 @@ namespace Dwm {
     };
 
     //------------------------------------------------------------------------
-    //!  
+    //!  Encapsulates service configuration ('service' in config file)
     //------------------------------------------------------------------------
     class ServiceConfig
     {
@@ -105,8 +105,7 @@ namespace Dwm {
     };
 
     //------------------------------------------------------------------------
-    //!  NOT YET USED, NOT COMPLETE (needs rollover time/period), but
-    //!  should replace pair<string,string> in FilesConfig.logs vector.
+    //!  Log file configuration (each entry in 'logs' in config file)
     //------------------------------------------------------------------------
     class LogFileConfig
     {
@@ -124,7 +123,7 @@ namespace Dwm {
     };
     
     //------------------------------------------------------------------------
-    //!  
+    //!  Log files configuration ('files' in config file)
     //------------------------------------------------------------------------
     class FilesConfig
     {
@@ -139,7 +138,7 @@ namespace Dwm {
     };
     
     //------------------------------------------------------------------------
-    //!  
+    //!  Encapsulates mclogd configuration.
     //------------------------------------------------------------------------
     class Config
     {
