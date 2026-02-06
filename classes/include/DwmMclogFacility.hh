@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogFacility.hh
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::Facility declaration and related functions
 //---------------------------------------------------------------------------
 
 #ifndef _DWMMCLOGFACILITY_HH_
@@ -50,7 +50,10 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  
+    //!  Encapsulates a log facility.  These mirror syslog facilities.  In
+    //!  today's world, they're kind of antiquated (for example, 'uucp' and
+    //!  'news' are almost dodo birds, and the original 'ftp' should never
+    //!  be seen on a host whose security matters).
     //------------------------------------------------------------------------
     enum class Facility : uint8_t {
       kernel   = (0<<3),
@@ -76,14 +79,25 @@ namespace Dwm {
     };
 
     //------------------------------------------------------------------------
-    //!  
+    //!  Prints the name of the given @c facility to the given ostream @c os.
     //------------------------------------------------------------------------
     std::ostream & operator << (std::ostream & os, const Facility & facility);
 
+    //------------------------------------------------------------------------
+    //!  Returns a string representation of the given @c facility.
+    //------------------------------------------------------------------------
     std::string FacilityName(Facility facility);
 
+    //------------------------------------------------------------------------
+    //!  Returns the Facility named @c facilityName.  If none exists, returns
+    //!  local7.
+    //------------------------------------------------------------------------
     Facility FacilityValue(const std::string & facilityName);
     
+    //------------------------------------------------------------------------
+    //!  Populates @c facilities with all facilities whose name matches
+    //!  @c rgxstr (an ECMAScript regular expression).
+    //------------------------------------------------------------------------
     void Facilities(const std::string & rgxstr,
                     std::set<Facility> & facilities);
     
