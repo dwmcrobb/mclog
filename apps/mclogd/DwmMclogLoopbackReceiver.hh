@@ -75,6 +75,7 @@ namespace Dwm {
 
       bool OpenIpv4Socket();
       bool OpenIpv6Socket();
+      void SetRcvBuf(int fd);
       bool DesiredSocketsOpen() const;
       void Run();
     };

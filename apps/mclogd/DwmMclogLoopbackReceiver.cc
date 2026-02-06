@@ -118,6 +118,37 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
+    void LoopbackReceiver::SetRcvBuf(int fd)
+    {
+      if (0 <= fd) {
+        std::vector<int>  bufsizes {
+          1048576, 786432, 524288, 393216, 262144, 196608, 131072
+        };
+        int        bufsz;
+        socklen_t  bufszlen = sizeof(bufsz);
+        if (0 == getsockopt(fd, SOL_SOCKET, SO_RCVBUF, &bufsz, &bufszlen)) {
+          for (int sz : bufsizes) {
+            if (0 == setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &sz, sizeof(bufsz))) {
+              bufsz = sz;
+              break;
+            }
+          }
+          setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &bufsz, sizeof(bufsz));
+          FSyslog(LOG_INFO, "LoopbackReceiver fd {} rcvbuf {}", fd, bufsz);
+        }
+        else {
+          FSyslog(LOG_ERR, "LoopbackReceiver getsockopt({},SOL_SOCKET,"
+                  " SO_RCVBUF) failed: {}", fd, strerror(errno));
+        }
+      }
+      else {
+        FSyslog(LOG_ERR, "LoopbackReceiver::SetRcvBuf() called with invalid"
+                " fd {}", fd);
+      }
+      return;
+    }
+    
+    //------------------------------------------------------------------------
     bool LoopbackReceiver::OpenIpv4Socket()
     {
       bool  rc = false;
@@ -135,12 +166,7 @@ namespace Dwm {
         sockAddr.sin_len = sizeof(sockAddr);
 #endif
         if (0 == bind(_ifd, (sockaddr *)&sockAddr, sizeof(sockAddr))) {
-          int  sockRecvBuf = 0;
-          socklen_t  sockRecvBufLen = sizeof(sockRecvBuf);
-          getsockopt(_ifd, SOL_SOCKET, SO_RCVBUF,
-                     &sockRecvBuf, &sockRecvBufLen);
-          FSyslog(LOG_INFO, "LoopbackReceiver socket fd {} bound to {},"
-                  " rcvbuf {}", _ifd, sockAddr, sockRecvBuf);
+          SetRcvBuf(_ifd);
           rc = true;
         }
         else {
@@ -175,12 +201,7 @@ namespace Dwm {
         sockAddr.sin6_len = sizeof(sockAddr);
 #endif
         if (0 == bind(_ifd6, (sockaddr *)&sockAddr, sizeof(sockAddr))) {
-          int  sockRecvBuf = 0;
-          socklen_t  sockRecvBufLen = sizeof(sockRecvBuf);
-          getsockopt(_ifd6, SOL_SOCKET, SO_RCVBUF,
-                     &sockRecvBuf, &sockRecvBufLen);
-          FSyslog(LOG_INFO, "LoopbackReceiver socket fd {} bound to {},"
-                  " rcvbuf {}", _ifd6, sockAddr, sockRecvBuf);
+          SetRcvBuf(_ifd6);
           rc = true;
         }
         else {
