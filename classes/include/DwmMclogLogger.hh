@@ -124,6 +124,7 @@ namespace Dwm {
       static Clock::time_point       _nextSendTime;
       
       static bool OpenSocket();
+      static void SetSndBuf(int fd);
       static bool SendMessage(const Message & msg);
       static bool SendPacket(MessagePacket & pkt);
       static void Run();

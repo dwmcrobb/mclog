@@ -84,7 +84,44 @@ namespace Dwm {
     std::thread                Logger::_thread;
     std::atomic<bool>          Logger::_run{false};
     Logger::Clock::time_point  Logger::_nextSendTime;
-    
+
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    void Logger::SetSndBuf(int fd)
+    {
+      if (0 <= fd) {
+        std::vector<int>  trySizes{131072, 98304, 65536, 32768};
+        int  defaultsz;
+        int  foundsz = 0;
+        socklen_t  len = sizeof(defaultsz);
+        if (0 == getsockopt(fd, SOL_SOCKET, SO_SNDBUF, &defaultsz, &len)) {
+          for (int trysz : trySizes) {
+            if (0 == setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &trysz, sizeof(trysz))) {
+              foundsz = trysz;
+              break;
+            }
+          }
+        }
+        if (foundsz > defaultsz) {
+          FSyslog(LOG_INFO, "Logger fd {} sndbuf {}", fd, foundsz);
+          return;
+        }
+        if (0 == setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &defaultsz,
+                            sizeof(defaultsz))) {
+          FSyslog(LOG_INFO, "Logger fd {} sndbuf {}", fd, defaultsz);
+        }
+        else {
+          FSyslog(LOG_ERR, "Logger setsockopt({},SOL_SOCKET, SO_SNDBUF,"
+                  " {}) failed: {}", fd, defaultsz, strerror(errno));
+        }
+      }
+      else {
+        FSyslog(LOG_ERR, "Logger::SetSndBuf() invalid fd {}", fd);
+      }
+      return;
+    }
+      
     //------------------------------------------------------------------------
     bool Logger::OpenSocket()
     {
@@ -92,6 +129,7 @@ namespace Dwm {
       if (0 > _ofd) {
         _ofd = socket(PF_INET, SOCK_DGRAM, 0);
         if (0 <= _ofd) {
+          SetSndBuf(_ofd);
           rc = true;
         }
         else {
