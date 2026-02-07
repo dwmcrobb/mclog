@@ -281,7 +281,7 @@ namespace Dwm {
               if (pkt.RecvFrom(_ifd, &fromAddr) > 0) {
                 while (msg.Read(pkt.Payload())) {
                   for (auto sink : _sinks) {
-                    sink->PushBack(msg);
+                    sink->Process(msg);
                   }
                 }
               }
@@ -292,7 +292,7 @@ namespace Dwm {
               if (pkt.RecvFrom(_ifd6, &fromAddr6) > 0) {
                 while (msg.Read(pkt.Payload())) {
                   for (auto sink : _sinks) {
-                    sink->PushBack(msg);
+                    sink->Process(msg);
                   }
                 }
               }

@@ -273,7 +273,7 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
-    bool MulticastSender::PushBack(const Message & msg)
+    bool MulticastSender::Process(const Message & msg)
     {
       if (! _run) {
         return true;

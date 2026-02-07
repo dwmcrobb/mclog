@@ -277,7 +277,7 @@ namespace Dwm {
               while (msg.Read(pkt.Payload())) {
                 if (nullptr != _sinks) {
                   for (auto sink : *_sinks) {
-                    sink->PushBack(msg);
+                    sink->Process(msg);
                   }
                 }
               }
@@ -326,7 +326,7 @@ namespace Dwm {
             rc = true;
             if (nullptr != _sinks) {
               for (auto sink : *_sinks) {
-                sink->PushBack(msg);
+                sink->Process(msg);
               }
             }
           }

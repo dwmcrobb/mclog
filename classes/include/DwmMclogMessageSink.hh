@@ -53,7 +53,7 @@ namespace Dwm {
     {
     public:
       virtual ~MessageSink() { }
-      virtual bool PushBack(const Message & msg)
+      virtual bool Process(const Message & msg)
       { return true; }
     };
     

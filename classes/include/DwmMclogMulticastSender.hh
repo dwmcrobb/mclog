@@ -97,7 +97,7 @@ namespace Dwm {
       Thread::Queue<Message> *OutputQueue()
       { return &_outQueue; }
 
-      bool PushBack(const Message & msg) override;
+      bool Process(const Message & msg) override;
       
       //----------------------------------------------------------------------
       //!  

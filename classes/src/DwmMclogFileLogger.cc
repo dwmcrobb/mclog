@@ -102,7 +102,7 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
-    bool FileLogger::PushBack(const Message & msg)
+    bool FileLogger::Process(const Message & msg)
     {
       if (_run) {
         return _inQueue.PushBack(msg);

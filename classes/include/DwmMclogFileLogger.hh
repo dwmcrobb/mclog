@@ -88,7 +88,7 @@ namespace Dwm {
       //!  Enqueues the given Message @c msg.  Returns true on success, false
       //!  on failure.
       //----------------------------------------------------------------------
-      bool PushBack(const Message & msg) override;
+      bool Process(const Message & msg) override;
       
     private:
       std::thread               _thread;
