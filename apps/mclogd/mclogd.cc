@@ -45,6 +45,7 @@ extern "C" {
 #include "DwmDaemonUtils.hh"
 #include "DwmSignal.hh"
 #include "DwmSysLogger.hh"
+#include "DwmMclogLogger.hh"
 #include "DwmMclogLoopbackReceiver.hh"
 #include "DwmMclogMulticastSender.hh"
 #include "DwmMclogMulticastReceiver.hh"
@@ -195,6 +196,10 @@ int main(int argc, char *argv[])
   if (! debug) {
     Dwm::SysLogger::MinimumPriority("info");
   }
+
+  Dwm::Mclog::logger.Open("mclogd", Dwm::Mclog::Logger::logSyslog
+                          | Dwm::Mclog::Logger::logStderr,
+                          Dwm::Mclog::Facility::local0);
   
   if (g_config.Parse(configPath)) {
     SavePID(pidFile);

@@ -1,5 +1,5 @@
 //===========================================================================
-//  Copyright (c) Daniel W. McRobb 2025, 2026
+//  Copyright (c) Daniel W. McRobb 2026
 //  All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
@@ -32,78 +32,73 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file DwmMclogMessage.cc
+//!  @file DwmMclogTimestamp.cc
 //!  @author Daniel W. McRobb
-//!  @brief Dwm::Mclog::Message implementation
+//!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-#include <algorithm>
-#include <array>
-#include <iomanip>
-#include <iterator>
+extern "C" {
+  #include <sys/time.h>
+  #include <time.h>
+}
 
-#include "DwmIOUtils.hh"
-#include "DwmStreamIO.hh"
-#include "DwmMclogMessage.hh"
+#include <iomanip>
+
+#include "DwmEncodedUnsigned.hh"
+#include "DwmMclogTimestamp.hh"
 
 namespace Dwm {
 
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    Message::Message()
-        : _header(), _message()
-    {}
-
-    //------------------------------------------------------------------------
-    //!  
-    //------------------------------------------------------------------------
-    Message::Message(const MessageHeader & header, std::string && message)
-        : _header(header), _message(message)
-    {}
-
-    //------------------------------------------------------------------------
-    //!  
-    //------------------------------------------------------------------------
-    Message::Message(const MessageHeader & header, const std::string & message)
-        : _header(header), _message(message)
-    {}
-
-    //------------------------------------------------------------------------
-    std::istream & Message::Read(std::istream & is)
+    Timestamp::Timestamp()
     {
-      if (_header.Read(is)) {
-        StreamIO::Read(is, _message);
+      timeval  tv;
+      gettimeofday(&tv, nullptr);
+      _usecs = tv.tv_sec;
+      _usecs *= 1000000ull;
+      _usecs += tv.tv_usec;
+    }
+
+    //------------------------------------------------------------------------
+    std::istream & Timestamp::Read(std::istream & is)
+    {
+      _usecs = 0;
+      EncodedU64  eu64;
+      if (eu64.Read(is)) {
+        _usecs = eu64;
       }
       return is;
     }
-     
+    
     //------------------------------------------------------------------------
-    //!  
-    //------------------------------------------------------------------------
-    std::ostream & Message::Write(std::ostream & os) const
+    std::ostream & Timestamp::Write(std::ostream & os) const
     {
-      if (_header.Write(os)) {
-        StreamIO::Write(os, _message);
-      }
-      return os;
+      EncodedU64  eu64 = _usecs;
+      return eu64.Write(os);
     }
 
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    uint64_t Message::StreamedLength() const
+    uint64_t Timestamp::StreamedLength() const
     {
-      return (_header.StreamedLength()
-              + IOUtils::StreamedLength(_message));
+      return EncodedU64(_usecs).StreamedLength();
     }
-    
+
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    std::ostream & operator << (std::ostream & os, const Message & msg)
+    std::ostream & operator << (std::ostream & os, const Timestamp & ts)
     {
-      os << msg._header << ' ' << msg._message << '\n';
+      time_t  t = ts.Secs();
+      tm      ltm;
+      localtime_r(&t, &ltm);
+      char  buf[32];
+      memset(buf, 0, sizeof(buf));
+      strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &ltm);
+      os << buf << "." << std::setfill('0') << std::setw(6) << ts.Usecs();
       return os;
     }
     

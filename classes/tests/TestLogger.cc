@@ -46,18 +46,23 @@ extern "C" {
 #include <iostream>
 
 #include "DwmMclogLogger.hh"
+#include "DwmSysLogger.hh"
 
 int main(int argc, char *argv[])
 {
-  using Dwm::Mclog::Logger;
-  assert(Logger::Open("TestLogger", Dwm::Mclog::Logger::logStderr,
+  Dwm::SysLogger::Open("TestLogger", LOG_PERROR|LOG_PID, LOG_USER);
+  
+  using Dwm::Mclog::logger;
+  assert(logger.Open("TestLogger", Dwm::Mclog::Logger::logStderr,
                       Dwm::Mclog::Facility::user));
-  Logger::LogLocations(true);
+  logger.LogLocations(true);
   
   uint64_t  i = 0;
   for (;;) {
-    MCLOG(Dwm::Mclog::Severity::info, "{} hello there info.", i++);
-    MCLOG(Dwm::Mclog::Severity::debug, "{} hello there debug.", i++);
-    usleep(100000);
+    for (int j = 0; j < 10; ++j) {
+      MCLOG(Dwm::Mclog::Severity::info, "{} hello there info.", i++);
+      MCLOG(Dwm::Mclog::Severity::debug, "{} hello there debug.", i++);
+    }
+    sleep(1);
   }
 }

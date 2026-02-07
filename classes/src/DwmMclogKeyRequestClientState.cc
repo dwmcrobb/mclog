@@ -49,6 +49,7 @@
 #include "DwmCredenceUtils.hh"
 #include "DwmCredenceXChaCha20Poly1305.hh"
 #include "DwmMclogKeyRequestClientState.hh"
+#include "DwmMclogLogger.hh"
 #include "DwmMclogMessagePacket.hh"
 
 namespace Dwm {
@@ -114,18 +115,18 @@ namespace Dwm {
             ChangeState(&KeyRequestClientState::KXKeySent, src);
           }
           else {
-            FSyslog(LOG_ERR, "sendto({},{},...) failed: {}",
-                    fd, src, strerror(errno));
+            MCLOG(Severity::err, "sendto({},{},...) failed: {}",
+                  fd, src, strerror(errno));
             ChangeState(&KeyRequestClientState::Failure, src);
           }
         }
         else {
-          FSyslog(LOG_ERR, "Incorrect key length from {}", src);
+          MCLOG(Severity::err, "Incorrect key length from {}", src);
           ChangeState(&KeyRequestClientState::Failure, src);
         }
       }
       else {
-        Syslog(LOG_ERR, "Failed to read client public key");
+        MCLOG(Severity::err, "Failed to read client public key");
         ChangeState(&KeyRequestClientState::Failure, src);
       }
       return rc;
@@ -169,19 +170,20 @@ namespace Dwm {
         if (Credence::Signer::Open(signedMsg, key, origMsg)) {
           if (origMsg == _keyPair.PublicKey()) {
             rc = true;
-            FSyslog(LOG_INFO, "KeyRequestClient {} authenticated", id);
+            MCLOG(Severity::info, "KeyRequestClient {} authenticated", id);
           }
           else {
-            FSyslog(LOG_ERR, "Signed message content mismatch from id '{}'",
-                    id);
+            MCLOG(Severity::err,
+                  "Signed message content mismatch from id '{}'", id);
           }
         }
         else {
-          FSyslog(LOG_ERR, "Failed to open signed message from id '{}'", id);
+          MCLOG(Severity::err, "Failed to open signed message from id '{}'",
+                id);
         }
       }
       else {
-        FSyslog(LOG_WARNING, "Unknown KeyRequestClient id '{}'", id);
+        MCLOG(Severity::warning, "Unknown KeyRequestClient id '{}'", id);
       }
       return rc;
     }
@@ -192,7 +194,7 @@ namespace Dwm {
     {
       if (buflen < MessagePacket::k_minPacketLen) {
         ChangeState(&KeyRequestClientState::Failure, src);
-        FSyslog(LOG_ERR, "Short packet from {}", src);
+        MCLOG(Severity::err, "Short packet from {}", src);
         return false;
       }
       
@@ -210,21 +212,21 @@ namespace Dwm {
               }
             }
             else {
-              FSyslog(LOG_ERR, "Invalid id '{}'", _theirId);
+              MCLOG(Severity::err, "Invalid id '{}'", _theirId);
               ChangeState(&KeyRequestClientState::Failure, src);
             }
           }
           else {
-            FSyslog(LOG_ERR, "Failed to read signed message from id '{}'",
+            MCLOG(Severity::err, "Failed to read signed message from id '{}'",
                     _theirId);
           }
         }
         else {
-          Syslog(LOG_ERR, "Failed to read _theirId");
+          MCLOG(Severity::err, "Failed to read _theirId");
         }
       }
       else {
-        Syslog(LOG_ERR, "Failed to decrypt packet");
+        MCLOG(Severity::err, "Failed to decrypt packet");
       }
       return rc;
     }
@@ -251,7 +253,7 @@ namespace Dwm {
       std::string  prevStateName = StateName();
       _state = newState;
       _lastStateChangeTime = time((time_t *)0);
-      FSyslog(LOG_INFO, "KeyRequestClient {} state changed from {} to {}",
+      MCLOG(Severity::info, "KeyRequestClient {} state changed from {} to {}",
               src, prevStateName, StateName());
       return;
     }

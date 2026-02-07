@@ -62,13 +62,31 @@ namespace Dwm {
     {
       if (&origin != this) {
         std::lock_guard  lck(_mtx);
-        _hostname = origin.hostname();
-        _appname = origin.appname();
-        _procid = origin.processid();
+        _hostname = origin._hostname;
+        _appname = origin._appname;
+        _procid = origin._procid;
       }
       return *this;
     }
 
+    //------------------------------------------------------------------------
+    MessageOrigin::MessageOrigin(MessageOrigin && origin)
+        : _mtx(), _hostname(std::move(origin._hostname)),
+          _appname(std::move(origin._appname)), _procid(origin._procid)
+    {}
+
+    //------------------------------------------------------------------------
+    MessageOrigin & MessageOrigin::operator = (MessageOrigin && origin)
+    {
+      if (&origin != this) {
+        std::lock_guard  lck(_mtx);
+        _hostname = std::move(origin._hostname);
+        _appname = std::move(origin._appname);
+        _procid = origin._procid;
+      }
+      return *this;
+    }
+    
     //------------------------------------------------------------------------
     static bool IsValidHostname(const std::string & hn)
     {

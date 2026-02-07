@@ -62,6 +62,10 @@ namespace Dwm {
 
       MessageOrigin & operator = (const MessageOrigin & origin);
 
+      MessageOrigin(MessageOrigin && origin);
+
+      MessageOrigin & operator = (MessageOrigin && origin);
+      
       MessageOrigin(const char *hostname, const char *appname, pid_t pid);
 
       const std::string & hostname() const

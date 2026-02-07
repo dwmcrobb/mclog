@@ -1,5 +1,5 @@
 //===========================================================================
-//  Copyright (c) Daniel W. McRobb 2025, 2026
+//  Copyright (c) Daniel W. McRobb 2026
 //  All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
@@ -32,142 +32,92 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file DwmMclogLogger.hh
+//!  @file DwmMclogTimestamp.hh
 //!  @author Daniel W. McRobb
-//!  @brief Dwm::Mclog::Logger class declaration
+//!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-#ifndef _DWMMCLOGLOGGER_HH_
-#define _DWMMCLOGLOGGER_HH_
+#ifndef _DWMMCLOGTIMESTAMP_HH_
+#define _DWMMCLOGTIMESTAMP_HH_
 
-#include <memory>
-#include <mutex>
-#include <source_location>
-
-#if __has_include(<format>)
-#  include <format>
-#  define DWM_MCLOG_HAVE_STD_FORMAT 1
-namespace FMT = std;
-#endif
-
-#ifndef DWM_MCLOG_HAVE_STD_FORMAT
-#  if __has_include(<fmt/format.h>)
-#    include <fmt/format.h>
-#    define DWM_MCLOG_HAVE_LIBFMT 1
-namespace FMT = fmt;
-#  endif
-#endif
-
-#include "DwmIpv4Address.hh"
-#include "DwmThreadQueue.hh"
-#include "DwmMclogMessage.hh"
-#include "DwmMclogMessagePacket.hh"
+#include <cstdint>
+#include <iostream>
 
 namespace Dwm {
 
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  
+    //!  Encapsulates a timestamp, microseconds since the UNIX epoch.
     //------------------------------------------------------------------------
-    class Logger
+    class Timestamp
     {
     public:
-      static const int  logStderr = 0x20;
-      static const int  logSyslog = 0x40;
-
-      using Clock = std::chrono::system_clock;
-
       //----------------------------------------------------------------------
-      //!  Singleton: can't copy construct, copy assign, move construct or
-      //!  move assign.
+      //!  Default constructor
       //----------------------------------------------------------------------
-      Logger(const Logger &) = delete;
-      Logger(Logger &&) = delete;
-      Logger & operator = (const Logger &) = delete;
-      Logger & operator = (Logger &&) = delete;
-
-      //----------------------------------------------------------------------
-      //!  
-      //----------------------------------------------------------------------
-      static Logger & Instance()
-      {
-        static Logger  loggerInstance;
-        return loggerInstance;
-      }
+      Timestamp();
       
       //----------------------------------------------------------------------
-      //!  
+      //!  Copy constructor
       //----------------------------------------------------------------------
-      bool Open(const char *ident, int logopt, Facility facility);
+      Timestamp(const Timestamp &) = default;
+      
+      //----------------------------------------------------------------------
+      //!  Move constructor
+      //----------------------------------------------------------------------
+      Timestamp(Timestamp &&) = default;
+      
+      //----------------------------------------------------------------------
+      //!  Copy assignment
+      //----------------------------------------------------------------------
+      Timestamp & operator = (const Timestamp &) = default;
+      
+      //----------------------------------------------------------------------
+      //!  Move assignment
+      //----------------------------------------------------------------------
+      Timestamp & operator = (Timestamp &&) = default;
+      
+      //----------------------------------------------------------------------
+      //!  Reads the timestamp from the given istream @c is.  Returns @c is
+      //----------------------------------------------------------------------
+      std::istream & Read(std::istream & is);
 
       //----------------------------------------------------------------------
-      //!  
+      //!  Writes the timestamp to the given ostream @c os.  Returns @c os
       //----------------------------------------------------------------------
-      bool LogLocations()
-      { return _logLocations; }
-      
-      //----------------------------------------------------------------------
-      //!  
-      //----------------------------------------------------------------------
-      bool LogLocations(bool logLocations)
-      { return _logLocations = logLocations; }
-      
-      //----------------------------------------------------------------------
-      //!  
-      //----------------------------------------------------------------------
-      bool Close();
+      std::ostream & Write(std::ostream & os) const;
 
       //----------------------------------------------------------------------
-      //!  
+      //!  Returns the number of bytes that would be written if we called the
+      //!  Write() member.
       //----------------------------------------------------------------------
-      template <typename ...Args>
-      bool Log(std::source_location loc, Severity severity,
-               FMT::format_string<Args...> fm, Args &&...args)
-      { return Log(severity, Format(fm, std::forward<Args>(args)...), loc); }
+      uint64_t StreamedLength() const;
       
       //----------------------------------------------------------------------
-      //!  
+      //!  Returns the timestamps seconds.
       //----------------------------------------------------------------------
-      bool Log(Severity severity, std::string && msg,
-               std::source_location loc = std::source_location::current());
+      uint64_t Secs() const
+      { return _usecs / 1000000ull; }
+
+      //----------------------------------------------------------------------
+      //!  Returns the timestamp residual microseconds.
+      //----------------------------------------------------------------------
+      uint64_t Usecs() const
+      { return _usecs % 1000000ull; }
+
+      //----------------------------------------------------------------------
+      //!  Print a timestamp to an ostream in human-readable form.
+      //----------------------------------------------------------------------
+      friend std::ostream &
+      operator << (std::ostream & os, const Timestamp & ts);
       
     private:
-      MessageOrigin           _origin;
-      Facility                _facility;
-      std::atomic<bool>       _logLocations;
-      int                     _options;
-      int                     _ofd;
-      std::mutex              _ofdmtx;
-      std::mutex              _cerrmtx;
-      Thread::Queue<Message>  _msgs;
-      std::thread             _thread;
-      std::atomic<bool>       _run;
-      Clock::time_point       _nextSendTime;
-
-      Logger();
-      ~Logger();
-      bool OpenSocket();
-      void SetSndBuf(int fd);
-      bool SendMessage(const Message & msg);
-      bool SendPacket(MessagePacket & pkt);
-      void Run();
-      
-      template <typename ...Args>
-      std::string Format(FMT::format_string<Args...> fm, Args &&...args)
-      { return FMT::format(fm, std::forward<Args>(args)...); }
+      uint64_t  _usecs;
     };
-
-    inline Logger & logger = Logger::Instance();
     
   }  // namespace Mclog
 
 }  // namespace Dwm
 
-//----------------------------------------------------------------------------
-//!  
-//----------------------------------------------------------------------------
-#define MCLOG(...)                                                    \
-  Dwm::Mclog::logger.Log(std::source_location::current(),__VA_ARGS__)
-
-#endif  // _DWMMCLOGLOGGER_HH_
+#endif  // _DWMMCLOGTIMESTAMP_HH_

@@ -63,28 +63,21 @@ extern "C" {
 
 #include "DwmFormatters.hh"
 #include "DwmMclogLogger.hh"
+#include "DwmMclogUdpEndpoint.hh"
 
 namespace Dwm {
 
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    UdpEndpoint    Logger::_dstAddr;
-    
+    //!  
     //------------------------------------------------------------------------
-    MessageOrigin      Logger::_origin("","",0);
-    Facility           Logger::_facility = Facility::user;
-    std::atomic<bool>  Logger::_logLocations{false};
-    int                Logger::_options = 0;
-    int                Logger::_ofd = -1;
-    std::mutex         Logger::_ofdmtx;
-    std::mutex         Logger::_cerrmtx;
+    Logger::Logger()
+        : _origin("","",0), _facility(Facility::user), _logLocations(false),
+          _options(0), _ofd(-1), _ofdmtx(), _cerrmtx(), _msgs(), _thread(),
+          _run(false), _nextSendTime()
+    {}
     
-    Thread::Queue<Message>     Logger::_msgs;
-    std::thread                Logger::_thread;
-    std::atomic<bool>          Logger::_run{false};
-    Logger::Clock::time_point  Logger::_nextSendTime;
-
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
@@ -97,7 +90,8 @@ namespace Dwm {
         socklen_t  len = sizeof(defaultsz);
         if (0 == getsockopt(fd, SOL_SOCKET, SO_SNDBUF, &defaultsz, &len)) {
           for (int trysz : trySizes) {
-            if (0 == setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &trysz, sizeof(trysz))) {
+            if (0 == setsockopt(fd, SOL_SOCKET, SO_SNDBUF,
+                                &trysz, sizeof(trysz))) {
               foundsz = trysz;
               break;
             }
@@ -148,9 +142,6 @@ namespace Dwm {
     bool Logger::Open(const char *ident, int logopt, Facility facility)
     {
       bool  rc = false;
-
-      _dstAddr = UdpEndpoint(Ipv4Address("127.0.0.1"), 3737);
-
       char  hn[255];
       memset(hn, 0, sizeof(hn));
       gethostname(hn, sizeof(hn));
@@ -158,7 +149,8 @@ namespace Dwm {
       _origin.hostname(hn);
       _origin.appname(ident);
       _origin.processid(getpid());
-
+      _facility = facility;
+      
       std::lock_guard  lck(_ofdmtx);
       _options = logopt;
 
@@ -167,7 +159,10 @@ namespace Dwm {
       }
       if (OpenSocket()) {
         _run = true;
-        _thread = std::thread(&Logger::Run);
+        _thread = std::thread(&Logger::Run, this);
+#if (defined(__FreeBSD__) || defined(__linux__))
+        pthread_setname_np(_thread.native_handle(), "Logger");
+#endif
         return true;
       }
       return false;
@@ -201,8 +196,10 @@ namespace Dwm {
     //------------------------------------------------------------------------
     bool Logger::SendPacket(MessagePacket & pkt)
     {
-      ssize_t  sendrc = pkt.SendTo(_ofd, _dstAddr);
+      static const  UdpEndpoint  dstAddr4(Ipv4Address("127.0.0.1"), 3737);
+      ssize_t  sendrc = pkt.SendTo(_ofd, dstAddr4);
       pkt.Reset();
+      std::cerr << "Logger::SendPacket sendrc: " << sendrc << '\n';
       return (0 < sendrc);
     }
     
@@ -241,7 +238,11 @@ namespace Dwm {
       char           buf[1200];
       MessagePacket  pkt(buf, sizeof(buf));
       Message        msg;
-      
+
+#if (__APPLE__)
+      pthread_setname_np("Logger");
+#endif
+
       while (_run) {
         if (_msgs.ConditionTimedWait(std::chrono::seconds(1))) {
           auto  now = Clock::now();
@@ -265,8 +266,25 @@ namespace Dwm {
           }
         }
       }
+      bool  msgRemaining = false;
+      while (_msgs.PopFront(msg)) {
+        if (! pkt.Add(msg)) {
+          SendPacket(pkt);
+          pkt.Add(msg);
+        }
+      }
+      if (pkt.HasPayload()) {
+        SendPacket(pkt);
+      }
+        
       Syslog(LOG_INFO, "Logger thread done");
       return;
+    }
+
+    //------------------------------------------------------------------------
+    Logger::~Logger()
+    {
+      Close();
     }
     
   }  // namespace Mclog

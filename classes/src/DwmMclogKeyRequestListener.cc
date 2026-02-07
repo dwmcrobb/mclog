@@ -44,7 +44,7 @@ extern "C" {
 #include <cassert>
 #include <iostream>
 
-#include "DwmSysLogger.hh"
+#include "DwmMclogLogger.hh"
 #include "DwmMclogKeyRequestListener.hh"
 
 namespace Dwm {
@@ -120,7 +120,7 @@ namespace Dwm {
     //------------------------------------------------------------------------
     void KeyRequestListener::Run()
     {
-      Syslog(LOG_INFO, "KeyRequestListener thread started");
+      MCLOG(Severity::info, "KeyRequestListener thread started");
 #if (__APPLE__)
       pthread_setname_np("KeyRequestListener");
 #endif 
@@ -153,13 +153,13 @@ namespace Dwm {
                   if (clientit->second.Success()) {
                     _clientsDone.push_back(*clientit);
                     _clients.erase(clientit);
-                    FSyslog(LOG_DEBUG, "_clientsDone.size(): {}",
-                            _clientsDone.size());
+                    MCLOG(Severity::debug, "_clientsDone.size(): {}",
+                          _clientsDone.size());
                   }
                 }
               }
               else {
-                FSyslog(LOG_ERR, "recvfrom({}) failed: {}", _fd, strerror(errno));
+                MCLOG(Severity::err, "recvfrom({}) failed: {}", _fd, strerror(errno));
               }
             }
             if ((0 <= _fd6) && FD_ISSET(_fd6, &fds)) {
@@ -178,14 +178,14 @@ namespace Dwm {
                   if (clientit->second.Success()) {
                     _clientsDone.push_back(*clientit);
                     _clients.erase(clientit);
-                    FSyslog(LOG_DEBUG, "_clientsDone.size(): {}",
-                            _clientsDone.size());
+                    MCLOG(Severity::debug, "_clientsDone.size(): {}",
+                          _clientsDone.size());
                   }
                 }
               }
               else {
-                FSyslog(LOG_ERR, "recvfrom({}) failed: {}",
-                        _fd6, strerror(errno));
+                MCLOG(Severity::err, "recvfrom({}) failed: {}",
+                      _fd6, strerror(errno));
               }
             }
             
@@ -193,7 +193,7 @@ namespace Dwm {
           ClearExpired();
         }
       }
-      Syslog(LOG_INFO, "KeyRequestListener thread done");
+      MCLOG(Severity::info, "KeyRequestListener thread done");
       return;
     }
     

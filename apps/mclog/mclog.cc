@@ -62,22 +62,11 @@ class MySink
 public:
   MySink()
   {
-#if 0
-    _selector.SourceHost(".+.rfdm.com");
-    _selector.MinimumSeverity(Dwm::Mclog::Severity::info);
-    _selector.Ident("TestLogger", false);
-#endif
   }
   
   bool PushBack(const Dwm::Mclog::Message & msg) override
   {
-#if 0
-    if (_selector.Matches(msg)) {
-      std::cout << msg << std::flush;
-    }
-#else
-      std::cout << msg << std::flush;
-#endif    
+    std::cout << msg << std::flush;
     return true;
   }
 

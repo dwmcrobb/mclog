@@ -1,5 +1,5 @@
 //===========================================================================
-//  Copyright (c) Daniel W. McRobb 2025, 2026
+//  Copyright (c) Daniel W. McRobb 2026
 //  All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
@@ -32,59 +32,73 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file DwmMclogMessage.cc
+//!  @file DwmMclogMessageHeader.cc
 //!  @author Daniel W. McRobb
-//!  @brief Dwm::Mclog::Message implementation
+//!  @brief Dwm::Mclog::MessageHeader implementation
 //---------------------------------------------------------------------------
 
-#include <algorithm>
-#include <array>
-#include <iomanip>
-#include <iterator>
-
 #include "DwmIOUtils.hh"
-#include "DwmStreamIO.hh"
-#include "DwmMclogMessage.hh"
+#include "DwmMclogMessageHeader.hh"
 
 namespace Dwm {
 
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    Message::Message()
-        : _header(), _message()
+    MessageHeader::MessageHeader(const MessageHeader & hdr)
+        : _timestamp(hdr._timestamp), _facility(hdr._facility),
+          _severity(hdr._severity), _origin(hdr._origin) // , _msgid(hdr._msgid)
     {}
 
     //------------------------------------------------------------------------
-    //!  
-    //------------------------------------------------------------------------
-    Message::Message(const MessageHeader & header, std::string && message)
-        : _header(header), _message(message)
-    {}
-
-    //------------------------------------------------------------------------
-    //!  
-    //------------------------------------------------------------------------
-    Message::Message(const MessageHeader & header, const std::string & message)
-        : _header(header), _message(message)
-    {}
-
-    //------------------------------------------------------------------------
-    std::istream & Message::Read(std::istream & is)
+    MessageHeader & MessageHeader::operator = (const MessageHeader & hdr)
     {
-      if (_header.Read(is)) {
-        StreamIO::Read(is, _message);
+      if (&hdr != this) {
+        _timestamp = hdr._timestamp;
+        _facility = hdr._facility;
+        _severity = hdr._severity;
+        _origin = hdr._origin;
+        //        _msgid = hdr._msgid;
+      }
+      return *this;
+    }
+    
+    //------------------------------------------------------------------------
+    std::istream & MessageHeader::Read(std::istream & is)
+    {
+      if (_timestamp.Read(is)) {
+        if (StreamIO::Read(is, _facility)) {
+          if (_facility <= Facility::local7) {
+            if (StreamIO::Read(is, _severity)) {
+              if (_severity <= Severity::debug) {
+                if (_origin.Read(is)) {
+                  //  StreamIO::Read(is, _msgid);
+                }
+              }
+              else {
+                is.setstate(std::ios_base::failbit);
+              }
+            }
+          }
+          else {
+            is.setstate(std::ios_base::failbit);
+          }
+        }
       }
       return is;
     }
-     
+    
     //------------------------------------------------------------------------
-    //!  
-    //------------------------------------------------------------------------
-    std::ostream & Message::Write(std::ostream & os) const
+    std::ostream & MessageHeader::Write(std::ostream & os) const
     {
-      if (_header.Write(os)) {
-        StreamIO::Write(os, _message);
+      if (_timestamp.Write(os)) {
+        if (StreamIO::Write(os, _facility)) {
+          if (StreamIO::Write(os, _severity)) {
+            if (_origin.Write(os)) {
+              // StreamIO::Write(os, _msgid);
+            }
+          }
+        }
       }
       return os;
     }
@@ -92,18 +106,23 @@ namespace Dwm {
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    uint64_t Message::StreamedLength() const
+    uint64_t MessageHeader::StreamedLength() const
     {
-      return (_header.StreamedLength()
-              + IOUtils::StreamedLength(_message));
+      return (_timestamp.StreamedLength()
+              + IOUtils::StreamedLength(_facility)
+              + IOUtils::StreamedLength(_severity)
+              + _origin.StreamedLength()
+              /* + IOUtils::StreamedLength(_msgid) */);
     }
     
     //------------------------------------------------------------------------
     //!  
     //------------------------------------------------------------------------
-    std::ostream & operator << (std::ostream & os, const Message & msg)
+    std::ostream &                                                     
+    operator << (std::ostream & os, const MessageHeader & hdr)
     {
-      os << msg._header << ' ' << msg._message << '\n';
+      os << hdr._timestamp << ' ' << hdr._origin << ": " << hdr._facility
+         << ' ' << hdr._severity;
       return os;
     }
     

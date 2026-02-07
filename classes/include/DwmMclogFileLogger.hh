@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogFileLogger.hh
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::FileLogger class declaration
 //---------------------------------------------------------------------------
 
 #ifndef _DWMMCLOGFILELOGGER_HH_
@@ -54,7 +54,7 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  
+    //!  Encapsulates logging to files.
     //------------------------------------------------------------------------
     class FileLogger
       : public MessageSink
@@ -62,12 +62,32 @@ namespace Dwm {
     public:
       using FilteredLog = std::pair<std::unique_ptr<FilterDriver>,LogFiles>;
       
+      //----------------------------------------------------------------------
+      //!  Default constructor
+      //----------------------------------------------------------------------
       FileLogger();
+      
+      //----------------------------------------------------------------------
+      //!  Starts the FileLogger using the given @c config.  Returns true on
+      //!  success, false on failure.
+      //----------------------------------------------------------------------
       bool Start(const Config & config);
+      
+      //----------------------------------------------------------------------
+      //!  Restarts the FileLogger using the given @c config.  Returns true
+      //!  on success, false on failure.
+      //----------------------------------------------------------------------
       bool Restart(const Config & config);
+      
+      //----------------------------------------------------------------------
+      //!  Stops the FileLogger.  Returns true on success, false on failure.
+      //----------------------------------------------------------------------
       bool Stop();
-      Thread::Queue<Message> *InputQueue()
-      { return &_inQueue; }
+
+      //----------------------------------------------------------------------
+      //!  Enqueues the given Message @c msg.  Returns true on success, false
+      //!  on failure.
+      //----------------------------------------------------------------------
       bool PushBack(const Message & msg) override;
       
     private:

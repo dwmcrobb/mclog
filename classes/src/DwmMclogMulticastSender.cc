@@ -49,6 +49,7 @@ extern "C" {
 #include "DwmCredenceXChaCha20Poly1305.hh"
 #include "DwmMclogMulticastSender.hh"
 #include "DwmMclogMessagePacket.hh"
+#include "DwmMclogLogger.hh"
 
 namespace Dwm {
 
