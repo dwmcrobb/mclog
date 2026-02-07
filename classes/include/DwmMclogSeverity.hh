@@ -37,6 +37,10 @@
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
+extern "C" {
+  #include <syslog.h>
+}
+
 #ifndef _DWMMCLOGSEVERITY_HH_
 #define _DWMMCLOGSEVERITY_HH_
 
@@ -52,14 +56,14 @@ namespace Dwm {
     //!  
     //------------------------------------------------------------------------
     enum class Severity : uint8_t {
-      emerg   = 0,
-      alert   = 1,
-      crit    = 2,
-      err     = 3,
-      warning = 4,
-      notice  = 5,
-      info    = 6,
-      debug   = 7
+      emerg   = LOG_EMERG,
+      alert   = LOG_ALERT,
+      crit    = LOG_CRIT,
+      err     = LOG_ERR,
+      warning = LOG_WARNING,
+      notice  = LOG_NOTICE,
+      info    = LOG_INFO,
+      debug   = LOG_DEBUG
     };
 
     //------------------------------------------------------------------------
