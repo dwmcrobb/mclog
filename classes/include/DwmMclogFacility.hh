@@ -40,6 +40,10 @@
 #ifndef _DWMMCLOGFACILITY_HH_
 #define _DWMMCLOGFACILITY_HH_
 
+extern "C" {
+  #include <syslog.h>
+}
+
 #include <cstdint>
 #include <iostream>
 #include <set>
@@ -56,26 +60,26 @@ namespace Dwm {
     //!  be seen on a host whose security matters).
     //------------------------------------------------------------------------
     enum class Facility : uint8_t {
-      kernel   = (0<<3),
-      user     = (1<<3),
-      mail     = (2<<3),
-      daemon   = (3<<3),
-      auth     = (4<<3),
-      syslog   = (5<<3),
-      lpr      = (6<<3),
-      news     = (7<<3),
-      uucp     = (8<<3),
-      cron     = (9<<3),
-      authpriv = (10<<3),
-      ftp      = (11<<3),
-      local0   = (16<<3),
-      local1   = (17<<3),
-      local2   = (18<<3),
-      local3   = (19<<3),
-      local4   = (20<<3),
-      local5   = (21<<3),
-      local6   = (22<<3),
-      local7   = (23<<3)
+      kernel   = LOG_KERN,
+      user     = LOG_USER,
+      mail     = LOG_MAIL,
+      daemon   = LOG_DAEMON,
+      auth     = LOG_AUTH,
+      syslog   = LOG_SYSLOG,
+      lpr      = LOG_LPR,
+      news     = LOG_NEWS,
+      uucp     = LOG_UUCP,
+      cron     = LOG_CRON,
+      authpriv = LOG_AUTHPRIV,
+      ftp      = LOG_FTP,
+      local0   = LOG_LOCAL0,
+      local1   = LOG_LOCAL1,
+      local2   = LOG_LOCAL2,
+      local3   = LOG_LOCAL3,
+      local4   = LOG_LOCAL4,
+      local5   = LOG_LOCAL5,
+      local6   = LOG_LOCAL6,
+      local7   = LOG_LOCAL7
     };
 
     //------------------------------------------------------------------------
