@@ -65,6 +65,8 @@ namespace Dwm {
       Credence::KXKeyPair  key2;
       _key = key2.SharedKey(key1.PublicKey().Value());
       _nextSendTime = Clock::now() + std::chrono::milliseconds(1000);
+
+      _outQueue.MaxLength(1000);
     }
 
     //------------------------------------------------------------------------
@@ -275,10 +277,6 @@ namespace Dwm {
     //------------------------------------------------------------------------
     bool MulticastSender::Process(const Message & msg)
     {
-      if (! _run) {
-        return true;
-      }
-      
       if (nullptr == _filterDriver) {
         return _outQueue.PushBack(msg);
       }
