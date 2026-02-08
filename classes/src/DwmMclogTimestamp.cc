@@ -42,6 +42,7 @@ extern "C" {
   #include <time.h>
 }
 
+#include <cstring>
 #include <iomanip>
 
 #include "DwmEncodedUnsigned.hh"
