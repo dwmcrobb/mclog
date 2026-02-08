@@ -73,14 +73,11 @@ namespace Dwm {
     //!  
     //------------------------------------------------------------------------
     Logger::Logger()
-        : _origin("","",0), _facility(Facility::user), _logLocations(false),
+        : _origin("","",0), _facility(Facility::user),
+          _minimumSeverity(Severity::debug), _logLocations(false),
           _options(0), _sinksMtx(), _sinks(), _loopbackSender(nullptr),
           _cerrSink(std::cerr), _syslogSink(nullptr)
-    {
-      std::lock_guard  lck(_sinksMtx);
-      _loopbackSender = new LoopbackSender();
-      _sinks.push_back(_loopbackSender);
-    }
+    { }
     
     //------------------------------------------------------------------------
     bool Logger::Open(const char *ident, int logopt, Facility facility)
@@ -96,6 +93,12 @@ namespace Dwm {
       _facility = facility;
       _options = logopt;
 
+      _loopbackSender = new LoopbackSender();
+      {
+        std::lock_guard  lck(_sinksMtx);
+        _sinks.push_back(_loopbackSender);
+      }
+      
       if (_options & logStderr) {
         std::lock_guard  lck(_sinksMtx);
         _sinks.push_back(&_cerrSink);
@@ -168,6 +171,10 @@ namespace Dwm {
     bool Logger::Log(Severity severity, std::string && msg,
                      std::source_location loc)
     {
+      if (severity > _minimumSeverity) {
+        return true;
+      }
+      
       //  NOTE: the performance of this function is likely abysmal; we
       //  have too many allocations.
       namespace fs = std::filesystem;
