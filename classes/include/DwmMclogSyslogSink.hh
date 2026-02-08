@@ -65,20 +65,25 @@ namespace Dwm {
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
-      SyslogSink(const char *ident, int logopt, int facility)
+      SyslogSink(const char *ident, int facility)
       {
-        SysLogger::Open(ident, logopt, facility);
+        SysLogger::Open(ident, LOG_PID, facility);
         SysLogger::ShowPriorities(true);
       }
 
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
+      ~SyslogSink()
+      { SysLogger::Close(); }
+        
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
       bool Process(const Message & msg) override
       {
         const MessageHeader  & hdr = msg.Header();
-        Syslog((int)(hdr.facility())|(int)(hdr.severity()),
-               msg.Data().c_str());
+        Syslog((int)(hdr.severity()), msg.Data().c_str());
         return true;
       }
       

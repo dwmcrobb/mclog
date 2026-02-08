@@ -44,7 +44,7 @@ extern "C" {
 
 #include "DwmDaemonUtils.hh"
 #include "DwmSignal.hh"
-#include "DwmSysLogger.hh"
+// #include "DwmSysLogger.hh"
 #include "DwmMclogLogger.hh"
 #include "DwmMclogLoopbackReceiver.hh"
 #include "DwmMclogMulticastSender.hh"
@@ -192,7 +192,6 @@ int main(int argc, char *argv[])
     Dwm::DaemonUtils::Daemonize();
   }
   
-  Dwm::SysLogger::Open("mclogd", syslogOpts, LOG_USER);
   if (! debug) {
     Dwm::SysLogger::MinimumPriority("info");
   }

@@ -97,10 +97,12 @@ namespace Dwm {
       _options = logopt;
 
       if (_options & logStderr) {
+        std::lock_guard  lck(_sinksMtx);
         _sinks.push_back(&_cerrSink);
       }
       if (_options & logSyslog) {
-        _syslogSink = new SyslogSink(ident, logopt, (int)facility);
+        _syslogSink = new SyslogSink(ident, (int)facility);
+        std::lock_guard  lck(_sinksMtx);
         _sinks.push_back(_syslogSink);
       }
       return true;
@@ -125,7 +127,7 @@ namespace Dwm {
       else {
         if (_options & logSyslog) {
           _syslogSink = new SyslogSink(_origin.appname().c_str(),
-                                       _options, (int)_facility);
+                                       (int)_facility);
           _sinks.push_back(_syslogSink);
         }
       }
