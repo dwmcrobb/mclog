@@ -44,7 +44,6 @@ extern "C" {
 
 #include "DwmDaemonUtils.hh"
 #include "DwmSignal.hh"
-// #include "DwmSysLogger.hh"
 #include "DwmMclogLogger.hh"
 #include "DwmMclogLoopbackReceiver.hh"
 #include "DwmMclogMulticastSender.hh"
@@ -104,7 +103,7 @@ static int WaitSigHupOrTerm()
   int  signum;
   sigwait(&sigSet, &signum);
   Dwm::Signal  sig(signum);
-  FSyslog(LOG_INFO, "Received {}", sig.Name());
+  MCLOG(Dwm::Mclog::Severity::info, "Received {}", sig.Name());
   
   return signum;
 }
@@ -128,7 +127,7 @@ static void SavePID(const std::string & pidFile)
   int    fd = open(g_pidFile.c_str(), O_WRONLY|O_CREAT|O_TRUNC|O_EXLOCK, 0644);
   if (fd >= 0) {
     if (write(fd, pidstr.c_str(), pidstr.size()) != pidstr.size()) {
-      FSyslog(LOG_ERR, "Failed to save PID in {}", g_pidFile);
+      MCLOG(Dwm::Mclog::Severity::err, "Failed to save PID in {}", g_pidFile);
     }
     close(fd);
   }
@@ -161,7 +160,7 @@ static void Usage(const char *argv0)
 int main(int argc, char *argv[])
 {
   bool         daemonize = true, debug = false;
-  int          syslogOpts = 0;
+  int          mclogOpts = 0;
   std::string  pidFile("/var/run/mclogd.pid");
   std::string  configPath("/usr/local/etc/mclogd.cfg");
   
@@ -172,7 +171,7 @@ int main(int argc, char *argv[])
         configPath = optarg;
         break;
       case 'd':
-        syslogOpts |= LOG_PERROR;
+        mclogOpts |= Dwm::Mclog::Logger::logStderr;
         daemonize = false;
         break;
       case 'D':
@@ -193,13 +192,13 @@ int main(int argc, char *argv[])
   }
   
   if (! debug) {
-    Dwm::SysLogger::MinimumPriority("info");
+    Dwm::Mclog::logger.MinimumSeverity(Dwm::Mclog::Severity::info);
   }
 
   Dwm::Mclog::logger.SetSinks({&g_fileLogger, &g_mcastSender});
   Dwm::Mclog::logger.LogLocations(true);
-  Dwm::Mclog::logger.Open("mclogd", Dwm::Mclog::Logger::logSyslog
-                          | Dwm::Mclog::Logger::logStderr,
+  Dwm::Mclog::logger.Open("mclogd",
+                          mclogOpts | Dwm::Mclog::Logger::logSyslog,
                           Dwm::Mclog::Facility::local0);
   
   if (g_config.Parse(configPath)) {
@@ -218,7 +217,7 @@ int main(int argc, char *argv[])
         Restart(configPath);
       }
       else if ((SIGTERM == sig) || (SIGINT == sig)) {
-        Syslog(LOG_INFO, "Received exit signal");
+        MCLOG(Dwm::Mclog::Severity::info, "Received exit signal");
         g_loopbackReceiver.Stop();
         g_mcastSender.Close();
         g_fileLogger.Stop();
