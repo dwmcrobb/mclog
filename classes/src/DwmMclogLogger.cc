@@ -74,70 +74,14 @@ namespace Dwm {
     //------------------------------------------------------------------------
     Logger::Logger()
         : _origin("","",0), _facility(Facility::user), _logLocations(false),
-          _options(0), _ofd(-1), _ofdmtx(), _cerrmtx(), _msgs(), _thread(),
-          _run(false), _nextSendTime()
-    {}
+          _options(0), _sinksMtx(), _sinks(), _loopbackSender(nullptr),
+          _cerrSink(std::cerr), _syslogSink(nullptr)
+    {
+      std::lock_guard  lck(_sinksMtx);
+      _loopbackSender = new LoopbackSender();
+      _sinks.push_back(_loopbackSender);
+    }
     
-    //------------------------------------------------------------------------
-    //!  
-    //------------------------------------------------------------------------
-    void Logger::SetSndBuf(int fd)
-    {
-      if (0 <= fd) {
-        std::vector<int>  trySizes{131072, 98304, 65536, 32768};
-        int  defaultsz;
-        int  foundsz = 0;
-        socklen_t  len = sizeof(defaultsz);
-        if (0 == getsockopt(fd, SOL_SOCKET, SO_SNDBUF, &defaultsz, &len)) {
-          for (int trysz : trySizes) {
-            if (0 == setsockopt(fd, SOL_SOCKET, SO_SNDBUF,
-                                &trysz, sizeof(trysz))) {
-              foundsz = trysz;
-              break;
-            }
-          }
-        }
-        if (foundsz > defaultsz) {
-          FSyslog(LOG_INFO, "Logger fd {} sndbuf {}", fd, foundsz);
-          return;
-        }
-        if (0 == setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &defaultsz,
-                            sizeof(defaultsz))) {
-          FSyslog(LOG_INFO, "Logger fd {} sndbuf {}", fd, defaultsz);
-        }
-        else {
-          FSyslog(LOG_ERR, "Logger setsockopt({},SOL_SOCKET, SO_SNDBUF,"
-                  " {}) failed: {}", fd, defaultsz, strerror(errno));
-        }
-      }
-      else {
-        FSyslog(LOG_ERR, "Logger::SetSndBuf() invalid fd {}", fd);
-      }
-      return;
-    }
-      
-    //------------------------------------------------------------------------
-    bool Logger::OpenSocket()
-    {
-      bool  rc = false;
-      if (0 > _ofd) {
-        _ofd = socket(PF_INET, SOCK_DGRAM, 0);
-        if (0 <= _ofd) {
-          SetSndBuf(_ofd);
-          rc = true;
-        }
-        else {
-          FSyslog(LOG_ERR, "socket(PF_INET, SOCK_DGRAM, 0) failed: {}",
-                  strerror(errno));
-        }
-      }
-      else {
-        Syslog(LOG_ERR, "Logger socket alread open");
-      }
-      
-      return rc;
-    }
-
     //------------------------------------------------------------------------
     bool Logger::Open(const char *ident, int logopt, Facility facility)
     {
@@ -150,59 +94,74 @@ namespace Dwm {
       _origin.appname(ident);
       _origin.processid(getpid());
       _facility = facility;
-      
-      std::lock_guard  lck(_ofdmtx);
       _options = logopt;
 
+      if (_options & logStderr) {
+        _sinks.push_back(&_cerrSink);
+      }
       if (_options & logSyslog) {
-        Dwm::SysLogger::Open(ident, logopt, (int)facility);
+        _syslogSink = new SyslogSink(ident, logopt, (int)facility);
+        _sinks.push_back(_syslogSink);
       }
-      if (OpenSocket()) {
-        _run = true;
-        _thread = std::thread(&Logger::Run, this);
-#if (defined(__FreeBSD__) || defined(__linux__))
-        pthread_setname_np(_thread.native_handle(), "Logger");
-#endif
-        return true;
-      }
-      return false;
+      return true;
     }
 
     //------------------------------------------------------------------------
+    void Logger::SetSinks(const std::vector<MessageSink *> & sinks)
+    {
+      std::lock_guard  lck(_sinksMtx);
+      
+      _sinks.clear();
+      if (nullptr != _loopbackSender) {
+        delete _loopbackSender;
+        _loopbackSender = nullptr;
+      }
+      if (nullptr != _syslogSink) {
+        if (! (_options & logSyslog)) {
+          delete _syslogSink;
+          _syslogSink = nullptr;
+        }
+      }
+      else {
+        if (_options & logSyslog) {
+          _syslogSink = new SyslogSink(_origin.appname().c_str(),
+                                       _options, (int)_facility);
+          _sinks.push_back(_syslogSink);
+        }
+      }
+            
+      for (auto sink : sinks) {
+        if (nullptr != sink) {
+          _sinks.push_back(sink);
+        }
+      }
+      return;
+    }
+    
+    //------------------------------------------------------------------------
     bool Logger::Close()
     {
-      _run = false;
-      _msgs.ConditionSignal();
-      if (_thread.joinable()) {
-        _thread.join();
+      {
+        std::lock_guard  lck(_sinksMtx);
+        _sinks.clear();
+        if (nullptr != _loopbackSender) {
+          delete _loopbackSender;
+          _loopbackSender = nullptr;
+        }
       }
       
       _origin.hostname("");
       _origin.appname("");
       _origin.processid(0);
 
-      std::lock_guard  lck(_ofdmtx);
-      if (0 <= _ofd) {
-        ::close(_ofd);
-        _ofd = -1;
-        if (_options & logSyslog) {
-          Dwm::SysLogger::Close();
-        }
-        return true;
+#if 0
+      if (_options & logSyslog) {
+        Dwm::SysLogger::Close();
       }
-      return false;
+#endif
+      return true;
     }
 
-    //------------------------------------------------------------------------
-    bool Logger::SendPacket(MessagePacket & pkt)
-    {
-      static const  UdpEndpoint  dstAddr4(Ipv4Address("127.0.0.1"), 3737);
-      ssize_t  sendrc = pkt.SendTo(_ofd, dstAddr4);
-      pkt.Reset();
-      std::cerr << "Logger::SendPacket sendrc: " << sendrc << '\n';
-      return (0 < sendrc);
-    }
-    
     //------------------------------------------------------------------------
     bool Logger::Log(Severity severity, std::string && msg,
                      std::source_location loc)
@@ -220,67 +179,17 @@ namespace Dwm {
             + std::to_string(loc.line()) + '}';
         }
         Message  logmsg(hdr, msg);
-        if (_options & logStderr) {
-          std::lock_guard  lck(_cerrmtx);
-          std::cerr << logmsg;
+        rc = true;
+        {
+          std::lock_guard  sinklock(_sinksMtx);
+          for (auto sink : _sinks) {
+            rc &= sink->Process(logmsg);
+          }
         }
-        if (_options & logSyslog) {
-          Syslog((int)(severity)|(int)(_facility), msg.c_str());
-        }
-        rc = _msgs.PushBack(std::move(logmsg));
       }
       return rc;
     }
     
-    //------------------------------------------------------------------------
-    void Logger::Run()
-    {
-      char           buf[1200];
-      MessagePacket  pkt(buf, sizeof(buf));
-      Message        msg;
-
-#if (__APPLE__)
-      pthread_setname_np("Logger");
-#endif
-
-      while (_run) {
-        if (_msgs.ConditionTimedWait(std::chrono::seconds(1))) {
-          auto  now = Clock::now();
-          while (_msgs.PopFront(msg)) {
-            if (! pkt.Add(msg)) {
-              if (! SendPacket(pkt)) {
-                Syslog(LOG_ERR, "SendPacket() failed");
-              }
-              _nextSendTime = now + std::chrono::milliseconds(1000);
-              pkt.Add(msg);
-            }
-          }
-        }
-        else {
-          auto  now = Clock::now();
-          if (pkt.HasPayload()) {
-            if (! SendPacket(pkt)) {
-              Syslog(LOG_ERR, "SendPacket() failed");
-            }
-            _nextSendTime = now + std::chrono::milliseconds(1000);
-          }
-        }
-      }
-      bool  msgRemaining = false;
-      while (_msgs.PopFront(msg)) {
-        if (! pkt.Add(msg)) {
-          SendPacket(pkt);
-          pkt.Add(msg);
-        }
-      }
-      if (pkt.HasPayload()) {
-        SendPacket(pkt);
-      }
-        
-      Syslog(LOG_INFO, "Logger thread done");
-      return;
-    }
-
     //------------------------------------------------------------------------
     Logger::~Logger()
     {

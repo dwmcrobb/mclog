@@ -59,9 +59,9 @@ namespace FMT = fmt;
 #endif
 
 #include "DwmIpv4Address.hh"
-#include "DwmThreadQueue.hh"
-#include "DwmMclogMessage.hh"
-#include "DwmMclogMessagePacket.hh"
+#include "DwmMclogLoopbackSender.hh"
+#include "DwmMclogOstreamSink.hh"
+#include "DwmMclogSyslogSink.hh"
 
 namespace Dwm {
 
@@ -112,6 +112,11 @@ namespace Dwm {
       //----------------------------------------------------------------------
       bool LogLocations(bool logLocations)
       { return _logLocations = logLocations; }
+
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      void SetSinks(const std::vector<MessageSink *> & sinks);
       
       //----------------------------------------------------------------------
       //!  
@@ -133,25 +138,18 @@ namespace Dwm {
                std::source_location loc = std::source_location::current());
       
     private:
-      MessageOrigin           _origin;
-      Facility                _facility;
-      std::atomic<bool>       _logLocations;
-      int                     _options;
-      int                     _ofd;
-      std::mutex              _ofdmtx;
-      std::mutex              _cerrmtx;
-      Thread::Queue<Message>  _msgs;
-      std::thread             _thread;
-      std::atomic<bool>       _run;
-      Clock::time_point       _nextSendTime;
-
+      MessageOrigin                _origin;
+      Facility                     _facility;
+      std::atomic<bool>            _logLocations;
+      int                          _options;
+      std::mutex                   _sinksMtx;
+      std::vector<MessageSink *>   _sinks;
+      LoopbackSender              *_loopbackSender;
+      OstreamSink                  _cerrSink;
+      SyslogSink                  *_syslogSink;
+      
       Logger();
       ~Logger();
-      bool OpenSocket();
-      void SetSndBuf(int fd);
-      bool SendMessage(const Message & msg);
-      bool SendPacket(MessagePacket & pkt);
-      void Run();
       
       template <typename ...Args>
       std::string Format(FMT::format_string<Args...> fm, Args &&...args)

@@ -76,7 +76,7 @@ static bool SendToMcastGroup(int fd, const uint8_t *buf, size_t buflen,
   memset(&dstAddr, 0, sizeof(dstAddr));
   dstAddr.sin_family = PF_INET;
   dstAddr.sin_addr.s_addr = dst.Raw();
-  dstAddr.sin_port = htons(3456);
+  dstAddr.sin_port = htons(3737);
 #ifndef __linux__
   dstAddr.sin_len = sizeof(dstAddr);
 #endif
@@ -93,7 +93,7 @@ static bool SendToLocal(int fd, const uint8_t *buf, size_t buflen)
   memset(&dstAddr, 0, sizeof(dstAddr));
   dstAddr.sin_family = PF_INET;
   dstAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-  dstAddr.sin_port = htons(3456);
+  dstAddr.sin_port = htons(3737);
 #ifndef __linux__
   dstAddr.sin_len = sizeof(dstAddr);
 #endif
@@ -127,7 +127,6 @@ int main(int argc, char *argv[])
 {
   Dwm::Ipv4Address  intfAddr(argv[1]);
   Dwm::Ipv4Address  groupAddr(argv[2]);
-  uint16_t          port = std::stoul(argv[3]);
   
   int  fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
   if (0 <= fd) {
@@ -143,7 +142,7 @@ int main(int argc, char *argv[])
       RandomFillBuffer(buf, i);
       SendToMcastGroup(fd, buf, i, groupAddr);
       SendToLocal(fd, buf, i);
-      SendToMcastSource(fd, buf, i, intfAddr, port);
+      SendToMcastSource(fd, buf, i, intfAddr, 3737);
       std::cerr << "Sent " << i << " bytes\n";
     }
   }

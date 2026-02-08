@@ -90,32 +90,32 @@ namespace Dwm {
 #endif
         if (setsockopt(_fd, IPPROTO_IP, IP_MULTICAST_IF, &bindAddr.sin_addr,
                        sizeof(bindAddr.sin_addr)) == 0) {
-          FSyslog(LOG_INFO, "MulticastSender socket fd {} interface set to {}",
-                  _fd, bindAddr.sin_addr);
+          MCLOG(Severity::info, "MulticastSender socket fd {} interface"
+                " set to {}", _fd, bindAddr.sin_addr);
           if (0 == bind(_fd, (sockaddr *)&bindAddr, sizeof(bindAddr))) {
             rc = true;
             socklen_t  socklen = sizeof(bindAddr);
             getsockname(_fd, (sockaddr *)&bindAddr, &socklen);
-            FSyslog(LOG_INFO, "MulticastSender socket fd {} bound to {}",
+            MCLOG(Severity::info, "MulticastSender socket fd {} bound to {}",
                     _fd, bindAddr);
           }
           else {
-            FSyslog(LOG_ERR, "bind({},{},{}) failed: {}",
-                    _fd, bindAddr, sizeof(bindAddr), strerror(errno));
+            MCLOG(Severity::err, "bind({},{},{}) failed: {}",
+                  _fd, bindAddr, sizeof(bindAddr), strerror(errno));
             ::close(_fd);  _fd = -1;
           }
         }
         else {
-          FSyslog(LOG_ERR,
-                  "setsockopt({},IPPROTO_IP,IP_MULTICAST_IF,{},{}) failed: {}",
-                  _fd, bindAddr.sin_addr, sizeof(bindAddr.sin_addr),
-                  strerror(errno));
+          MCLOG(Severity::err,
+                "setsockopt({},IPPROTO_IP,IP_MULTICAST_IF,{},{}) failed: {}",
+                _fd, bindAddr.sin_addr, sizeof(bindAddr.sin_addr),
+                strerror(errno));
           ::close(_fd);  _fd = -1;
         }
       }
       else {
-        FSyslog(LOG_ERR, "socket(PF_INET,SOCK_DGRAM,0) failed: {}",
-                strerror(errno));
+        MCLOG(Severity::err, "socket(PF_INET,SOCK_DGRAM,0) failed: {}",
+              strerror(errno));
       }
       return rc;
     }
@@ -125,8 +125,8 @@ namespace Dwm {
     {
       bool  rc = false;
       if (_config.mcast.intfName.empty()) {
-        FSyslog(LOG_ERR, "intfName is empty in configuration but required for"
-                " IPv6");
+        MCLOG(Severity::err, "intfName is empty in configuration but"
+              " required for IPv6");
         return false;
       }
       
@@ -137,8 +137,8 @@ namespace Dwm {
         if (0 < intfIndex) {
           if (setsockopt(_fd6, IPPROTO_IPV6, IPV6_MULTICAST_IF, &intfIndex,
                        sizeof(intfIndex)) == 0) {
-            FSyslog(LOG_INFO, "MulticastSender socket fd {} interface set"
-                    " to {} ({})", _fd6, intfIndex, _config.mcast.intfName);
+            MCLOG(Severity::info, "MulticastSender socket fd {} interface set"
+                  " to {} ({})", _fd6, intfIndex, _config.mcast.intfName);
             sockaddr_in6  bindAddr;
             memset(&bindAddr, 0, sizeof(bindAddr));
             bindAddr.sin6_family = PF_INET6;
@@ -151,32 +151,32 @@ namespace Dwm {
               rc = true;
               socklen_t  socklen = sizeof(bindAddr);
               getsockname(_fd6, (sockaddr *)&bindAddr, &socklen);
-              FSyslog(LOG_INFO, "MulticastSender socket fd {} bound to {}",
-                      _fd6, bindAddr);
+              MCLOG(Severity::info, "MulticastSender socket fd {} bound to {}",
+                    _fd6, bindAddr);
             }
             else {
-              FSyslog(LOG_ERR, "bind({},{},{}) failed: {}",
-                      _fd6, bindAddr, sizeof(bindAddr), strerror(errno));
+              MCLOG(Severity::err, "bind({},{},{}) failed: {}",
+                    _fd6, bindAddr, sizeof(bindAddr), strerror(errno));
               ::close(_fd6);  _fd6 = -1;
             }
           }
           else {
-            FSyslog(LOG_ERR, "setsockopt({},IPPROTO_IPV6,IPV6_MULTICAST_IF,"
-                    "{},{}) failed: {}", _fd6, intfIndex, sizeof(intfIndex),
-                    strerror(errno));
+            MCLOG(Severity::err, "setsockopt({},IPPROTO_IPV6,IPV6_MULTICAST_IF,"
+                  "{},{}) failed: {}", _fd6, intfIndex, sizeof(intfIndex),
+                  strerror(errno));
             ::close(_fd6);  _fd6 = -1;
           }
         }
         else {
-          FSyslog(LOG_ERR,
-                  "intefface index not found for interface '{}': {}",
-                  _config.mcast.intfName, strerror(errno));
+          MCLOG(Severity::err,
+                "interface index not found for interface '{}': {}",
+                _config.mcast.intfName, strerror(errno));
           ::close(_fd6);  _fd6 = -1;
         }
       }
       else {
-        FSyslog(LOG_ERR, "socket(PF_INET6,SOCK_DGRAM,0) failed: {}",
-                strerror(errno));
+        MCLOG(Severity::err, "socket(PF_INET6,SOCK_DGRAM,0) failed: {}",
+              strerror(errno));
       }
       return rc;
     }
@@ -213,21 +213,21 @@ namespace Dwm {
       if (_config.mcast.ShouldSendIpv4()) {
         if (0 > _fd) {
           if (! OpenSocket()) {
-            FSyslog(LOG_ERR, "Failed to open IPv4 socket");
+            MCLOG(Severity::err, "Failed to open IPv4 socket");
           }
         }
         else {
-          FSyslog(LOG_ERR, "Ipv4 socket already open (fd {})", _fd);
+          MCLOG(Severity::err, "Ipv4 socket already open (fd {})", _fd);
         }
       }
       if (_config.mcast.ShouldSendIpv6()) {
         if (0 > _fd6) {
           if (! OpenSocket6()) {
-            FSyslog(LOG_ERR, "Failed to open IPv4 socket");
+            MCLOG(Severity::err, "Failed to open IPv4 socket");
           }
         }
         else {
-          FSyslog(LOG_ERR, "Ipv6 socket already open (fd {})", _fd6);
+          MCLOG(Severity::err, "Ipv6 socket already open (fd {})", _fd6);
         }
       }
       if (DesiredSocketsOpen()) {
@@ -242,11 +242,11 @@ namespace Dwm {
           rc = true;
         }
         else {
-          Syslog(LOG_ERR, "Failed to start KeyRequestListener");
+          MCLOG(Severity::err, "Failed to start KeyRequestListener");
         }
       }
       else {
-        Syslog(LOG_ERR,
+        MCLOG(Severity::err,
                "Desired sockets not open, KEyRequestListener not started!");
       }
       
@@ -311,7 +311,7 @@ namespace Dwm {
     //------------------------------------------------------------------------
     void MulticastSender::Run()
     {
-      Syslog(LOG_INFO, "MulticastSender thread started");
+      MCLOG(Severity::info, "MulticastSender thread started");
 #if (__APPLE__)
       pthread_setname_np("MulticastSender");
 #endif
@@ -324,7 +324,7 @@ namespace Dwm {
           while (_outQueue.PopFront(msg)) {
             if (! pkt.Add(msg)) {
               if (! SendPacket(pkt)) {
-                Syslog(LOG_ERR, "SendPacket() failed");
+                MCLOG(Severity::err, "SendPacket() failed");
               }
               _nextSendTime = now + std::chrono::milliseconds(1000);
               pkt.Add(msg);
@@ -335,13 +335,13 @@ namespace Dwm {
           auto  now = Clock::now();
           if (pkt.HasPayload()) {
             if (! SendPacket(pkt)) {
-              Syslog(LOG_ERR, "SendPacket() failed");
+              MCLOG(Severity::err, "SendPacket() failed");
             }
             _nextSendTime = now + std::chrono::milliseconds(1000);
           }
         }
       }
-      Syslog(LOG_INFO, "MulticastSender thread done");
+      MCLOG(Severity::info, "MulticastSender thread done");
       return;
     }
     

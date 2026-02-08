@@ -95,6 +95,12 @@ namespace Dwm {
       //----------------------------------------------------------------------
       const MessageHeader & Header() const
       { return _header; }
+
+      //----------------------------------------------------------------------
+      //!  Returns a const reference to the message data.
+      //----------------------------------------------------------------------
+      const std::string & Data() const
+      { return _message.Value(); }
         
       //----------------------------------------------------------------------
       //!  Reads the message from the given istream @c is.  Returns @c is.

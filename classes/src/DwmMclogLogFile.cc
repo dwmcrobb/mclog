@@ -44,6 +44,7 @@ extern "C" {
 #include <regex>
 
 #include "DwmMclogLogFile.hh"
+#include "DwmMclogLogger.hh"
 
 namespace Dwm {
 
@@ -75,26 +76,26 @@ namespace Dwm {
       
       bool  rc = false;
       if (_ofs.is_open()) {
-        FSyslog(LOG_INFO, "LogFile '{}' already open", _path.string());
+        MCLOG(Severity::info, "LogFile '{}' already open", _path.string());
         rc = true;
       }
       else {
         if (NeedRollBeforeOpen()) {
-          FSyslog(LOG_INFO, "Rolling '{}' before open", _path.string());
+          MCLOG(Severity::info, "Rolling '{}' before open", _path.string());
           Roll();
         }
         _ofs.open(_path, std::ios::out|std::ios::app);
         if (static_cast<bool>(_ofs)) {
           rc = true;
-          FSyslog(LOG_INFO, "LogFile '{}' opened", _path.string());
+          MCLOG(Severity::info, "LogFile '{}' opened", _path.string());
           if (0 == chmod(_path.string().c_str(), _permissions)) {
-            FSyslog(LOG_INFO, "LogFile '{}' permissions set to {:#04o}",
-                    _path.string(), _permissions);
+            MCLOG(Severity::info, "LogFile '{}' permissions set to {:#04o}",
+                  _path.string(), _permissions);
           }
           else {
-            FSyslog(LOG_WARNING,
-                    "Failed to set {:#04o} permissions on LogFile '{}': {}",
-                    _permissions, _path.string(), strerror(errno));
+            MCLOG(Severity::warning,
+                  "Failed to set {:#04o} permissions on LogFile '{}': {}",
+                  _permissions, _path.string(), strerror(errno));
           }
         }
         else if (! fs::exists(_path.parent_path())) {
@@ -102,29 +103,29 @@ namespace Dwm {
             _ofs.open(_path, std::ios::out|std::ios::app);
             rc = static_cast<bool>(_ofs);
             if (rc) {
-              FSyslog(LOG_INFO, "LogFile '{}' opened", _path.string());
+              MCLOG(Severity::info, "LogFile '{}' opened", _path.string());
               if (0 == chmod(_path.string().c_str(), _permissions)) {
-                FSyslog(LOG_INFO, "LogFile '{}' permissions set to {:#04o}",
-                        _path.string(), _permissions);
+                MCLOG(Severity::info, "LogFile '{}' permissions set to {:#04o}",
+                      _path.string(), _permissions);
               }
               else {
-                FSyslog(LOG_WARNING, "Failed to set {:#04o} permissions on"
-                        " LogFile '{}': {}", _permissions, _path.string(),
-                        strerror(errno));
+                MCLOG(Severity::warning, "Failed to set {:#04o} permissions on"
+                      " LogFile '{}': {}", _permissions, _path.string(),
+                      strerror(errno));
               }
             }
             else {
-              FSyslog(LOG_ERR, "Failed to open LogFile '{}'", _path.string());
+              MCLOG(Severity::err, "Failed to open LogFile '{}'", _path.string());
             }
           }
           else {
-            FSyslog(LOG_ERR, "Failed to create directory '{}'",
-                    _path.parent_path().string());
+            MCLOG(Severity::err, "Failed to create directory '{}'",
+                  _path.parent_path().string());
           }
         }
         else {
-          FSyslog(LOG_ERR, "Failed to open LogFile '{}': {}",
-                  _path.string(), strerror(errno));
+          MCLOG(Severity::err, "Failed to open LogFile '{}': {}",
+                _path.string(), strerror(errno));
         }
       }
       return rc;
@@ -135,10 +136,10 @@ namespace Dwm {
     {
       if (_ofs.is_open()) {
         _ofs.close();
-        FSyslog(LOG_INFO, "Closed LogFile '{}'", _path.string());
+        MCLOG(Severity::info, "Closed LogFile '{}'", _path.string());
       }
       else {
-        FSyslog(LOG_DEBUG, "LogFile '{}' already closed", _path.string());
+        MCLOG(Severity::debug, "LogFile '{}' already closed", _path.string());
       }
       return;
     }
@@ -160,7 +161,7 @@ namespace Dwm {
         }
       }
       else {
-        FSyslog(LOG_ERR, "LogFile {} not open", _path.string());
+        MCLOG(Severity::err, "LogFile {} not open", _path.string());
       }
       return rc;
     }
@@ -207,7 +208,7 @@ namespace Dwm {
     //------------------------------------------------------------------------
     void LogFile::Roll()
     {
-      FSyslog(LOG_INFO, "Rolling log file '{}'", _path.string());
+      MCLOG(Severity::info, "Rolling log file '{}'", _path.string());
       RollArchives();
       RollCurrent();
       _rollInterval.SetToCurrent();

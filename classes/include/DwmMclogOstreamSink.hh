@@ -1,5 +1,5 @@
 //===========================================================================
-//  Copyright (c) Daniel W. McRobb 2025
+//  Copyright (c) Daniel W. McRobb 2026
 //  All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
@@ -32,37 +32,59 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file TestLogger.cc
+//!  @file DwmMclogOstreamSink.hh
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-extern "C" {
-  #include <unistd.h>
-}
+#ifndef _DWMMCLOGOSTREAMSINK_HH_
+#define _DWMMCLOGOSTREAMSINK_HH_
 
-#include <cassert>
-#include <chrono>
 #include <iostream>
+#include <mutex>
 
-#include "DwmMclogLogger.hh"
-#include "DwmSysLogger.hh"
+#include "DwmMclogMessageSink.hh"
 
-int main(int argc, char *argv[])
-{
-  //  Dwm::SysLogger::Open("TestLogger", LOG_PERROR|LOG_PID, LOG_USER);
-  
-  using Dwm::Mclog::logger;
-  assert(logger.Open("TestLogger", Dwm::Mclog::Logger::logStderr,
-                      Dwm::Mclog::Facility::user));
-  logger.LogLocations(true);
-  
-  uint64_t  i = 0;
-  for (;;) {
-    for (int j = 0; j < 10; ++j) {
-      MCLOG(Dwm::Mclog::Severity::info, "{} hello there info.", i++);
-      MCLOG(Dwm::Mclog::Severity::debug, "{} hello there debug.", i++);
-    }
-    sleep(1);
-  }
-}
+namespace Dwm {
+
+  namespace Mclog {
+
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    class OstreamSink
+      : public MessageSink 
+    {
+    public:
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      OstreamSink() = delete;
+      
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      OstreamSink(std::ostream & os)
+          : _mtx(), _os(os)
+      {}
+
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      bool Process(const Message & msg)
+      {
+        std::lock_guard  lck(_mtx);
+        _os << msg << std::flush;
+        return (! _os.fail());
+      }
+      
+    private:
+      std::mutex     _mtx;
+      std::ostream & _os;
+    };
+    
+  }  // namespace Mclog
+
+}  // namespace Dwm
+
+#endif  // _DWMMCLOGOSTREAMSINK_HH_

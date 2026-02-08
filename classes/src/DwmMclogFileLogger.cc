@@ -38,6 +38,7 @@
 //---------------------------------------------------------------------------
 
 #include "DwmMclogFileLogger.hh"
+#include "DwmMclogLogger.hh"
 
 namespace Dwm {
 
@@ -46,7 +47,9 @@ namespace Dwm {
     //------------------------------------------------------------------------
     FileLogger::FileLogger()
         : _thread(), _inQueue(), _run(false), _logs()
-    {}
+    {
+      _inQueue.MaxLength(1000);
+    }
     
     //------------------------------------------------------------------------
     bool FileLogger::Start(const Config & cfg)
@@ -90,12 +93,12 @@ namespace Dwm {
     {
       bool  rc = false;
       _run.store(false);
-      Syslog(LOG_INFO, "Stopping FileLogger");
+      MCLOG(Severity::info, "Stopping FileLogger");
       _inQueue.ConditionSignal();
       if (_thread.joinable()) {
         _thread.join();
         rc = true;
-        Syslog(LOG_INFO, "FileLogger stopped");
+        MCLOG(Severity::info, "FileLogger stopped");
       }
       _logs.clear();
       return rc;
@@ -104,16 +107,13 @@ namespace Dwm {
     //------------------------------------------------------------------------
     bool FileLogger::Process(const Message & msg)
     {
-      if (_run) {
-        return _inQueue.PushBack(msg);
-      }
-      return true;
+      return _inQueue.PushBack(msg);
     }
     
     //------------------------------------------------------------------------
     void FileLogger::Run()
     {
-      Syslog(LOG_INFO, "FileLogger thread started");
+      MCLOG(Severity::info, "FileLogger thread started");
 #if (__APPLE__)
       pthread_setname_np("FileLogger");
 #endif
@@ -133,7 +133,7 @@ namespace Dwm {
         }
         msgs.clear();
       }
-      Syslog(LOG_INFO, "FileLogger thread done");
+      MCLOG(Severity::info, "FileLogger thread done");
       return;
     }
     

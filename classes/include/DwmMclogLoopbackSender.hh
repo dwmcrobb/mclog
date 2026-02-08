@@ -1,5 +1,5 @@
 //===========================================================================
-//  Copyright (c) Daniel W. McRobb 2025
+//  Copyright (c) Daniel W. McRobb 2026
 //  All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
@@ -32,37 +32,56 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file TestLogger.cc
+//!  @file DwmMclogLoopbackSender.hh
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-extern "C" {
-  #include <unistd.h>
-}
+#ifndef _DWMMCLOGLOOPBACKSENDER_HH_
+#define _DWMMCLOGLOOPBACKSENDER_HH_
 
-#include <cassert>
-#include <chrono>
-#include <iostream>
+#include <thread>
 
-#include "DwmMclogLogger.hh"
-#include "DwmSysLogger.hh"
+#include "DwmThreadQueue.hh"
+#include "DwmMclogMessagePacket.hh"
+#include "DwmMclogMessageSink.hh"
 
-int main(int argc, char *argv[])
-{
-  //  Dwm::SysLogger::Open("TestLogger", LOG_PERROR|LOG_PID, LOG_USER);
-  
-  using Dwm::Mclog::logger;
-  assert(logger.Open("TestLogger", Dwm::Mclog::Logger::logStderr,
-                      Dwm::Mclog::Facility::user));
-  logger.LogLocations(true);
-  
-  uint64_t  i = 0;
-  for (;;) {
-    for (int j = 0; j < 10; ++j) {
-      MCLOG(Dwm::Mclog::Severity::info, "{} hello there info.", i++);
-      MCLOG(Dwm::Mclog::Severity::debug, "{} hello there debug.", i++);
-    }
-    sleep(1);
-  }
-}
+namespace Dwm {
+
+  namespace Mclog {
+
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    class LoopbackSender
+      : public MessageSink
+    {
+    public:
+      using Clock = std::chrono::system_clock;
+
+      LoopbackSender();
+      ~LoopbackSender();
+      
+      bool Start();
+      bool Stop();
+      
+      bool Process(const Message & msg) override;
+
+    private:
+      std::atomic<bool>       _run;
+      int                     _ofd;
+      Thread::Queue<Message>  _msgs;
+      std::thread             _thread;
+      Clock::time_point       _nextSendTime;
+
+      void Run();
+      bool OpenSocket();
+      bool SendPacket(MessagePacket & pkt);
+      void SetSndBuf(int fd);
+    };
+    
+  }  // namespace Mclog
+
+}  // namespace Dwm
+
+#endif  // _DWMMCLOGLOOPBACKSENDER_HH_

@@ -1,4 +1,31 @@
 #------------------------------------------------------------------------------
+Feb 7, 2026:
+
+I need to split Logger to allow the user to specify message sinks.  By
+default, it should use what it uses today: send to loopback via UDP.
+But it should be possible to specy sinks instead.  This would allow
+mclogd, for example, to use Logger to directly send to multicast or
+files instead of a circuitous route through the loopback (which depends
+on the LoopbackReceiver thread being active).
+
+On output I need to separate direct I/O from threads that queue messages
+for I/O.  This would allow mclogd to directly log to files or multicast
+when stopping or starting threads that normally process log messages.
+
+Logger is now a singleton, but that could change in the future.  The
+only real process-wide resource concern with multiple Logger instances
+at the moment is open UDP sockets.  A few is no big deal.  Hundreds
+would be bad.
+
+#------------------------------------------------------------------------------
+Feb 6, 2026: I don't like the Logger implementation, with all static members.
+It doesn't let me control destruction (flush queued messages, for example).
+It could be a singleton, though I've never been a big fan of that pattern if
+it's avoidable.
+#------------------------------------------------------------------------------
+Feb 6, 2026: I don't really need this, since it can be accomplished with
+filtering.
+
 I need a routing configuration so I can specify whether or not to forward:
 
   - local messages (received on loopback) to files
@@ -7,6 +34,7 @@ I need a routing configuration so I can specify whether or not to forward:
 
 #------------------------------------------------------------------------------
 #  Filtering (work started in Mclog::MessageSelector)
+#  I think I'm done with this as of Feb 4, 2026
 #------------------------------------------------------------------------------
 I need a filtering config that allows message selection, so I can configure
 file output and also what gets sent via the aforementioned routing.  Message

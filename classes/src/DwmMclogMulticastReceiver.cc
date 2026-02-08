@@ -44,7 +44,7 @@
 #include "DwmCredenceXChaCha20Poly1305.hh"
 #include "DwmMclogKeyRequester.hh"
 #include "DwmMclogMulticastReceiver.hh"
-#include "DwmMclogMessagePacket.hh"
+#include "DwmMclogLogger.hh"
 
 namespace Dwm {
 
@@ -85,18 +85,18 @@ namespace Dwm {
             rc = true;
           }
           else {
-            FSyslog(LOG_ERR, "bind({},{},{}) failed: {}",
-                    _fd, locAddr, sizeof(locAddr), strerror(errno));
+            MCLOG(Severity::err, "bind({},{},{}) failed: {}",
+                  _fd, locAddr, sizeof(locAddr), strerror(errno));
           }
         }
         else {
-          FSyslog(LOG_ERR, "setsockopt({},SOL_SOCKET,SO_REUSEPORT) failed: {}",
-                  _fd, strerror(errno));
+          MCLOG(Severity::err, "setsockopt({},SOL_SOCKET,SO_REUSEPORT)"
+                " failed: {}", _fd, strerror(errno));
         }
       }
       else {
-        FSyslog(LOG_ERR, "setsockopt({},SOL_SOCKET,SO_REUSEADDR) failed: {}",
-                _fd, strerror(errno));
+        MCLOG(Severity::err, "setsockopt({},SOL_SOCKET,SO_REUSEADDR)"
+              " failed: {}", _fd, strerror(errno));
       }
       return rc;
     }
@@ -124,18 +124,18 @@ namespace Dwm {
             rc = true;
           }
           else {
-            FSyslog(LOG_ERR, "bind({},{},{}) failed: {}",
-                    _fd6, locAddr, sizeof(locAddr), strerror(errno));
+            MCLOG(Severity::err, "bind({},{},{}) failed: {}",
+                  _fd6, locAddr, sizeof(locAddr), strerror(errno));
           }
         }
         else {
-          FSyslog(LOG_ERR, "setsockopt({},SOL_SOCKET,SO_REUSEPORT) failed: {}",
-                  _fd6, strerror(errno));
+          MCLOG(Severity::err, "setsockopt({},SOL_SOCKET,SO_REUSEPORT)"
+                " failed: {}", _fd6, strerror(errno));
         }
       }
       else {
-        FSyslog(LOG_ERR, "setsockopt({},SOL_SOCKET,SO_REUSEADDR) failed: {}",
-                _fd6, strerror(errno));
+        MCLOG(Severity::err, "setsockopt({},SOL_SOCKET,SO_REUSEADDR)"
+              " failed: {}", _fd6, strerror(errno));
       }
       return rc;
     }
@@ -151,14 +151,14 @@ namespace Dwm {
         group.imr_interface.s_addr = _config.mcast.intfAddr.Raw();
         if (setsockopt(_fd, IPPROTO_IP, IP_ADD_MEMBERSHIP,
                        (char *)&group, sizeof(group)) == 0) {
-          FSyslog(LOG_INFO, "Joined group {} on {}", _config.mcast.groupAddr,
-                  _config.mcast.intfAddr);
+          MCLOG(Severity::info, "Joined group {} on {}",
+                _config.mcast.groupAddr, _config.mcast.intfAddr);
           return true;
         }
         else {
-          FSyslog(LOG_ERR, "setsockopt({},IPPROTO_IP, IP_ADD_MEMBERSHIP,{} {})"
-                  " failed: {}", _fd, _config.mcast.groupAddr,
-                  _config.mcast.intfAddr, strerror(errno));
+          MCLOG(Severity::err, "setsockopt({},IPPROTO_IP, IP_ADD_MEMBERSHIP,"
+                "{} {}) failed: {}", _fd, _config.mcast.groupAddr,
+                _config.mcast.intfAddr, strerror(errno));
           return false;
         }
       }
@@ -178,13 +178,13 @@ namespace Dwm {
         if (setsockopt(_fd6, IPPROTO_IPV6, IPV6_JOIN_GROUP,
                        (char *)&group, sizeof(group)) == 0) {
           rc = true;
-          FSyslog(LOG_INFO, "MulticastReceiver joined {} on interface {}",
-                  _config.mcast.groupAddr6, _config.mcast.intfName);
+          MCLOG(Severity::info, "MulticastReceiver joined {} on interface {}",
+                _config.mcast.groupAddr6, _config.mcast.intfName);
         }
         else {
-          FSyslog(LOG_ERR, "MulticastReceiver failed to join {} on interface"
-                  " {}: {}", _config.mcast.groupAddr6,
-                  _config.mcast.intfName, strerror(errno));
+          MCLOG(Severity::err, "MulticastReceiver failed to join {} on interface"
+                " {}: {}", _config.mcast.groupAddr6, _config.mcast.intfName,
+                strerror(errno));
         }
       }
       return (shouldJoin ? rc : true);
@@ -334,7 +334,7 @@ namespace Dwm {
     //------------------------------------------------------------------------
     void MulticastReceiver::Run()
     {
-      Syslog(LOG_INFO, "MulticastReceiver thread started");
+      MCLOG(Severity::info, "MulticastReceiver thread started");
 #if (__APPLE__)
       pthread_setname_np("MulticastReceiver");
 #endif
@@ -368,8 +368,8 @@ namespace Dwm {
               Ipv4Address  fromIP(fromAddr.sin_addr.s_addr);
               if ((recvrc > 0) && (_acceptLocal || (fromIP != _config.mcast.intfAddr))) {
                 UdpEndpoint  endPoint(fromAddr);
-                FSyslog(LOG_DEBUG, "Received {} bytes from {}",
-                        recvrc, endPoint);
+                MCLOG(Severity::debug, "Received {} bytes from {}",
+                      recvrc, endPoint);
                 _sources.ProcessPacket(endPoint, buf, recvrc);
               }
             }
@@ -382,8 +382,8 @@ namespace Dwm {
               Ipv6Address  fromIP(fromAddr6.sin6_addr);
               if ((recvrc > 0) && (_acceptLocal || (fromIP != _config.mcast.intfAddr6))) {
                 UdpEndpoint  endPoint(fromAddr6);
-                FSyslog(LOG_DEBUG, "Received {} bytes from {}",
-                        recvrc, endPoint);
+                MCLOG(Severity::debug, "Received {} bytes from {}",
+                      recvrc, endPoint);
                 _sources.ProcessPacket(endPoint, buf, recvrc);
               }
             }
@@ -391,7 +391,7 @@ namespace Dwm {
         }
       }
       _run = false;
-      Syslog(LOG_INFO, "MulticastReceiver thread done");
+      MCLOG(Severity::info, "MulticastReceiver thread done");
       return;
     }
     

@@ -1,5 +1,5 @@
 //===========================================================================
-//  Copyright (c) Daniel W. McRobb 2025
+//  Copyright (c) Daniel W. McRobb 2026
 //  All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
@@ -32,37 +32,60 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file TestLogger.cc
+//!  @file DwmMclogSyslogSink.hh
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
-extern "C" {
-  #include <unistd.h>
-}
+#ifndef _DWMMCLOGSYSLOGSINK_HH_
+#define _DWMMCLOGSYSLOGSINK_HH_
 
-#include <cassert>
-#include <chrono>
 #include <iostream>
+#include <mutex>
 
-#include "DwmMclogLogger.hh"
 #include "DwmSysLogger.hh"
+#include "DwmMclogMessageSink.hh"
 
-int main(int argc, char *argv[])
-{
-  //  Dwm::SysLogger::Open("TestLogger", LOG_PERROR|LOG_PID, LOG_USER);
-  
-  using Dwm::Mclog::logger;
-  assert(logger.Open("TestLogger", Dwm::Mclog::Logger::logStderr,
-                      Dwm::Mclog::Facility::user));
-  logger.LogLocations(true);
-  
-  uint64_t  i = 0;
-  for (;;) {
-    for (int j = 0; j < 10; ++j) {
-      MCLOG(Dwm::Mclog::Severity::info, "{} hello there info.", i++);
-      MCLOG(Dwm::Mclog::Severity::debug, "{} hello there debug.", i++);
-    }
-    sleep(1);
-  }
-}
+namespace Dwm {
+
+  namespace Mclog {
+
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    class SyslogSink
+      : public MessageSink 
+    {
+    public:
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      SyslogSink() = delete;
+      
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      SyslogSink(const char *ident, int logopt, int facility)
+      {
+        SysLogger::Open(ident, logopt, facility);
+        SysLogger::ShowPriorities(true);
+      }
+
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      bool Process(const Message & msg) override
+      {
+        const MessageHeader  & hdr = msg.Header();
+        Syslog((int)(hdr.facility())|(int)(hdr.severity()),
+               msg.Data().c_str());
+        return true;
+      }
+      
+    };
+    
+  }  // namespace Mclog
+
+}  // namespace Dwm
+
+#endif  // _DWMMCLOGSYSLOGSINK_HH_

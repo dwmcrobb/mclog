@@ -46,9 +46,8 @@ extern "C" {
 
 #include "DwmFormatters.hh"
 #include "DwmIpv4Address.hh"
+#include "DwmMclogLogger.hh"
 #include "DwmMclogLoopbackReceiver.hh"
-#include "DwmMclogMessage.hh"
-#include "DwmMclogMessagePacket.hh"
 
 namespace Dwm {
 
@@ -70,11 +69,11 @@ namespace Dwm {
 #if (defined(__FreeBSD__) || defined(__linux__))
         pthread_setname_np(_thread.native_handle(), "LoopbackRecv");
 #endif
-        Syslog(LOG_INFO, "LoopbackReceiver started");
+        MCLOG(Severity::info, "LoopbackReceiver started");
         return true;
       }
       else {
-        FSyslog(LOG_ERR, "LoopbackReceiver not started: pipe() failed ({})",
+        MCLOG(Severity::err, "LoopbackReceiver not started: pipe() failed ({})",
                 strerror(errno));
       }
       return false;
@@ -97,7 +96,7 @@ namespace Dwm {
         _thread.join();
         ::close(_stopfds[1]);  _stopfds[1] = -1;
         ::close(_stopfds[0]);  _stopfds[0] = -1;
-        Syslog(LOG_INFO, "LoopbackReceiver stopped");
+        MCLOG(Severity::info, "LoopbackReceiver stopped");
       }
       return;
     }
@@ -134,16 +133,16 @@ namespace Dwm {
             }
           }
           setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &bufsz, sizeof(bufsz));
-          FSyslog(LOG_INFO, "LoopbackReceiver fd {} rcvbuf {}", fd, bufsz);
+          MCLOG(Severity::info, "LoopbackReceiver fd {} rcvbuf {}", fd, bufsz);
         }
         else {
-          FSyslog(LOG_ERR, "LoopbackReceiver getsockopt({},SOL_SOCKET,"
-                  " SO_RCVBUF) failed: {}", fd, strerror(errno));
+          MCLOG(Severity::err, "LoopbackReceiver getsockopt({},SOL_SOCKET,"
+                " SO_RCVBUF) failed: {}", fd, strerror(errno));
         }
       }
       else {
-        FSyslog(LOG_ERR, "LoopbackReceiver::SetRcvBuf() called with invalid"
-                " fd {}", fd);
+        MCLOG(Severity::err, "LoopbackReceiver::SetRcvBuf() called with"
+              " invalid fd {}", fd);
       }
       return;
     }
@@ -170,15 +169,14 @@ namespace Dwm {
           rc = true;
         }
         else {
-          FSyslog(LOG_ERR, "LoopbackReceiver bind({},{}) failed: {}",
+          MCLOG(Severity::err, "LoopbackReceiver bind({},{}) failed: {}",
                   _ifd, sockAddr, strerror(errno));
           ::close(_ifd); _ifd = -1;
         }
       }
       else {
-        FSyslog(LOG_ERR,
-                "LoopbackReceiver socket(PF_INET,SOCK_DGRAM,0) failed: {}",
-                strerror(errno));
+        MCLOG(Severity::err, "LoopbackReceiver socket(PF_INET,SOCK_DGRAM,0)"
+              " failed: {}", strerror(errno));
       }
       return rc;
     }
@@ -205,15 +203,14 @@ namespace Dwm {
           rc = true;
         }
         else {
-          FSyslog(LOG_ERR, "LoopbackReceiver bind({},{}) failed: {}",
-                  _ifd6, sockAddr, strerror(errno));
+          MCLOG(Severity::err, "LoopbackReceiver bind({},{}) failed: {}",
+                _ifd6, sockAddr, strerror(errno));
           ::close(_ifd6); _ifd6 = -1;
         }
       }
       else {
-        FSyslog(LOG_ERR,
-                "LoopbackReceiver socket(PF_INET,SOCK_DGRAM,0) failed: {}",
-                strerror(errno));
+        MCLOG(Severity::err, "LoopbackReceiver socket(PF_INET,SOCK_DGRAM,0)"
+              " failed: {}", strerror(errno));
       }
       return rc;
     }
@@ -226,14 +223,14 @@ namespace Dwm {
       bool  v4ok =
         (_config.loopback.ListenIpv4() ? (0 <= _ifd) : (0 > _ifd));
       if (! v4ok) {
-        FSyslog(LOG_ERR, "LoopbackReceiver ipv4 socket not in desired state"
-                " (_ifd == {})!", _ifd);
+        MCLOG(Severity::err, "LoopbackReceiver ipv4 socket not in desired"
+              " state (_ifd == {})!", _ifd);
       }
       bool  v6ok =
         (_config.loopback.ListenIpv6() ? (0 <= _ifd6) : (0 > _ifd6));
       if (! v6ok) {
-        FSyslog(LOG_ERR, "LoopbackReceiver ipv6 socket not in desired state"
-                " (_ifd6 == {})!", _ifd6);
+        MCLOG(Severity::err, "LoopbackReceiver ipv6 socket not in desired"
+              " state (_ifd6 == {})!", _ifd6);
       }
       return (v4ok && v6ok);
     }
@@ -243,7 +240,7 @@ namespace Dwm {
     //------------------------------------------------------------------------
     void LoopbackReceiver::Run()
     {
-      Syslog(LOG_INFO, "LoopbackReceiver thread started");
+      MCLOG(Severity::info, "LoopbackReceiver thread started");
 #if (__APPLE__)
       pthread_setname_np("LoopbackReceiver");
 #endif
@@ -308,10 +305,10 @@ namespace Dwm {
       else {
         if (0 <= _ifd)   { ::close(_ifd); _ifd = -1; }
         if (0 <= _ifd6)  { ::close(_ifd6); _ifd6 = -1; }
-        FSyslog(LOG_ERR, "LoopbackReceiver sockets not in desired state!");
+        MCLOG(Severity::err, "LoopbackReceiver sockets not in desired state!");
       }
       _run = false;
-      Syslog(LOG_INFO, "LoopbackReceiver thread done");
+      MCLOG(Severity::info, "LoopbackReceiver thread done");
       return;
     }
     

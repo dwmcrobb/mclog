@@ -197,6 +197,8 @@ int main(int argc, char *argv[])
     Dwm::SysLogger::MinimumPriority("info");
   }
 
+  Dwm::Mclog::logger.SetSinks({&g_fileLogger, &g_mcastSender});
+  Dwm::Mclog::logger.LogLocations(true);
   Dwm::Mclog::logger.Open("mclogd", Dwm::Mclog::Logger::logSyslog
                           | Dwm::Mclog::Logger::logStderr,
                           Dwm::Mclog::Facility::local0);

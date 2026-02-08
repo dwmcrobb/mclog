@@ -64,7 +64,7 @@ public:
   {
   }
   
-  bool PushBack(const Dwm::Mclog::Message & msg) override
+  bool Process(const Dwm::Mclog::Message & msg) override
   {
     std::cout << msg << std::flush;
     return true;
