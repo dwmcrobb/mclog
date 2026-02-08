@@ -116,6 +116,12 @@ namespace Dwm {
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
+      Severity MinimumSeverity(Severity minSeverity)
+      { return _minimumSeverity = minSeverity; }
+        
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
       void SetSinks(const std::vector<MessageSink *> & sinks);
       
       //----------------------------------------------------------------------
@@ -140,6 +146,7 @@ namespace Dwm {
     private:
       MessageOrigin                _origin;
       Facility                     _facility;
+      Severity                     _minimumSeverity;
       std::atomic<bool>            _logLocations;
       int                          _options;
       std::mutex                   _sinksMtx;
