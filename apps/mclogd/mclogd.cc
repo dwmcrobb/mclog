@@ -192,14 +192,20 @@ int main(int argc, char *argv[])
   }
   
   if (! debug) {
-    Dwm::Mclog::logger.MinimumSeverity(Dwm::Mclog::Severity::info);
+    // Dwm::Mclog::logger.MinimumSeverity(Dwm::Mclog::Severity::info);
   }
 
-  Dwm::Mclog::logger.SetSinks({&g_fileLogger, &g_mcastSender});
   Dwm::Mclog::logger.LogLocations(true);
   Dwm::Mclog::logger.Open("mclogd",
                           mclogOpts | Dwm::Mclog::Logger::logSyslog,
                           Dwm::Mclog::Facility::local0);
+  if (daemonize) {
+    Dwm::Mclog::logger.SetSinks({&g_fileLogger, &g_mcastSender});
+  }
+  else {
+    auto  cerrSink = new Dwm::Mclog::OstreamSink(std::cerr);
+    Dwm::Mclog::logger.SetSinks({&g_fileLogger, &g_mcastSender, cerrSink});
+  }
   
   if (g_config.Parse(configPath)) {
     SavePID(pidFile);
