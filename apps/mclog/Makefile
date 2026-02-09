@@ -16,7 +16,7 @@ $(my LtClean  := $(my mydir)/mclog)
 
 $(eval TARGETS          $(dwm_ifcwd :=,+=) $(my Targets))
 $(eval DEPSTARGETS      $(dwm_ifcwd :=,+=) $(my ObjDeps))
-$(eval TARTARGETS       $(dwm_ifcwd :=,+=) ${TARDIR}/sbin/mclog)
+$(eval TARTARGETS       $(dwm_ifcwd :=,+=) ${TARDIR}/bin/mclog)
 $(eval CLEANTARGETS     $(dwm_ifcwd :=,+=) $(my Clean))
 $(eval LTCLEANTARGETS   $(dwm_ifcwd :=,+=) $(my LtClean))
 $(eval DISTCLEANTARGETS $(dwm_ifcwd :=,+=) $(my ObjDeps))
@@ -45,6 +45,6 @@ $(my mydir)/%.o: $(my mydir)/%.cc $(my mydir)/deps/%_deps
 	@dwmgmk_quiet "compiling $(dwm_relpwd $<)" \
 	  ${CXX} ${CXXFLAGS} ${PTHREADCXXFLAGS} $(my mclog.Incs) -c $< -o $@
 
-${TARDIR}/sbin/mclog: $(my mydir)/mclog
+${TARDIR}/bin/mclog: $(my mydir)/mclog
 	${INSTALL} -s -c -m 555 $< $@
 
