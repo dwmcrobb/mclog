@@ -123,6 +123,7 @@ namespace Dwm {
       bool OpenSocket();
       bool OpenSocket6();
       bool SendPacket(MessagePacket & pkt);
+      bool PassesFilter(const Message & msg);
       void Run();
     };
     
