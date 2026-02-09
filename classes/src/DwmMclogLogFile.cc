@@ -81,7 +81,6 @@ namespace Dwm {
       }
       else {
         if (NeedRollBeforeOpen()) {
-          MCLOG(Severity::info, "Rolling '{}' before open", _path.string());
           Roll();
         }
         _ofs.open(_path, std::ios::out|std::ios::app);
@@ -115,7 +114,7 @@ namespace Dwm {
               }
             }
             else {
-              MCLOG(Severity::err, "Failed to open LogFile '{}'", _path.string());
+              MCLOG(Severity::err, "LogFile '{}' open failed", _path.string());
             }
           }
           else {
@@ -124,7 +123,7 @@ namespace Dwm {
           }
         }
         else {
-          MCLOG(Severity::err, "Failed to open LogFile '{}': {}",
+          MCLOG(Severity::err, "LogFile '{}' open failed: {}",
                 _path.string(), strerror(errno));
         }
       }
@@ -161,7 +160,7 @@ namespace Dwm {
         }
       }
       else {
-        MCLOG(Severity::err, "LogFile {} not open", _path.string());
+        MCLOG(Severity::err, "LogFile '{}' not open", _path.string());
       }
       return rc;
     }
@@ -208,10 +207,10 @@ namespace Dwm {
     //------------------------------------------------------------------------
     void LogFile::Roll()
     {
-      MCLOG(Severity::info, "Rolling log file '{}'", _path.string());
       RollArchives();
       RollCurrent();
       _rollInterval.SetToCurrent();
+      MCLOG(Severity::info, "LogFile '{}' rolled", _path.string());
       return;
     }
 
