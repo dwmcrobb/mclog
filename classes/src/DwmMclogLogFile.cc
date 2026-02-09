@@ -136,7 +136,7 @@ namespace Dwm {
     {
       if (_ofs.is_open()) {
         _ofs.close();
-        MCLOG(Severity::info, "Closed LogFile '{}'", _path.string());
+        MCLOG(Severity::info, "LogFile '{}' closed", _path.string());
       }
       else {
         MCLOG(Severity::debug, "LogFile '{}' already closed", _path.string());
