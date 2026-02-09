@@ -37,6 +37,7 @@
 //!  @brief Dwm::Mclog::FilterDriver implementation
 //---------------------------------------------------------------------------
 
+#include <cassert>
 #include <sstream>
 
 #include "DwmMclogFilterDriver.hh"
@@ -78,6 +79,7 @@ namespace Dwm {
       tokenIter = tokens.begin();
       FilterParser  parser(this, msg, result);
       bool  rc = (0 == parser());
+      assert(rc);
       if (! rc) {
         parser.error(location, std::string("invalid filter '") + expr + "'");
       }
