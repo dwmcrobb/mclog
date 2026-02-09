@@ -253,7 +253,7 @@ namespace Dwm {
       std::string  prevStateName = StateName();
       _state = newState;
       _lastStateChangeTime = time((time_t *)0);
-      MCLOG(Severity::info, "KeyRequestClient {} state changed from {} to {}",
+      MCLOG(Severity::debug, "KeyRequestClient {} state {} -> {}",
               src, prevStateName, StateName());
       return;
     }
