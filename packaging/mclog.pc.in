@@ -7,5 +7,5 @@ Name: mclog
 Description: Secure logging in C++
 Version: @TAGVERSION@
 Requires: libDwmCredence
-Libs: @PTHREADLDFLAGS@ -L${libdir} -lDwmCredence @DWMLIBS@ -lsodium @OSLIBS@
-Cflags: @PTHREADCXXFLAGS@ -I${includedir} @BOOSTINC@
+Libs: @PTHREADLDFLAGS@ -L${libdir} -lDwmMclog @OSLIBS@
+Cflags: @PTHREADCXXFLAGS@ -I${includedir}
