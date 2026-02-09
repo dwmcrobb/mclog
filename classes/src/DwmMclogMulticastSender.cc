@@ -275,20 +275,28 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
-    bool MulticastSender::Process(const Message & msg)
+    bool MulticastSender::PassesFilter(const Message & msg)
     {
       if (nullptr == _filterDriver) {
-        return _outQueue.PushBack(msg);
+        return true;
       }
       else {
         bool  filterPassed = false;
         if (_filterDriver->parse(&msg, filterPassed)) {
-          if (filterPassed) {
-            return _outQueue.PushBack(msg);
-          }
+          return filterPassed;
         }
       }
       return false;
+    }
+    
+    //------------------------------------------------------------------------
+    //!  This function runs in the context of the caller; be aware of
+    //!  the consequences of calling something inside here that is not
+    //!  threadsafe.
+    //------------------------------------------------------------------------
+    bool MulticastSender::Process(const Message & msg)
+    {
+      return _outQueue.PushBack(msg);
     }
     
     //------------------------------------------------------------------------
@@ -320,12 +328,14 @@ namespace Dwm {
         if (_outQueue.ConditionTimedWait(std::chrono::seconds(1))) {
           auto  now = Clock::now();
           while (_outQueue.PopFront(msg)) {
-            if (! pkt.Add(msg)) {
-              if (! SendPacket(pkt)) {
-                MCLOG(Severity::err, "SendPacket() failed");
+            if (PassesFilter(msg)) {
+              if (! pkt.Add(msg)) {
+                if (! SendPacket(pkt)) {
+                  MCLOG(Severity::err, "SendPacket() failed");
+                }
+                _nextSendTime = now + std::chrono::milliseconds(1000);
+                pkt.Add(msg);
               }
-              _nextSendTime = now + std::chrono::milliseconds(1000);
-              pkt.Add(msg);
             }
           }
         }
