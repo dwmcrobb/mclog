@@ -50,7 +50,7 @@ namespace Dwm {
     //------------------------------------------------------------------------
     FilterDriver::FilterDriver(const Config & cfg, const std::string & expr)
         : cfg(cfg), tokens(), tokenIter(tokens.begin()), tokenized(false),
-          expr(expr)
+          expr(expr), parsemtx()
     { }
     
     //------------------------------------------------------------------------
@@ -65,6 +65,8 @@ namespace Dwm {
     //------------------------------------------------------------------------
     bool FilterDriver::parse(const Message *msg, bool & result)
     {
+      std::lock_guard  lck(parsemtx);
+      
       location.initialize(nullptr);
       if (! tokenized) {
         std::istringstream  is(expr);

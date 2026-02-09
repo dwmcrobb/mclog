@@ -296,7 +296,10 @@ namespace Dwm {
     //------------------------------------------------------------------------
     bool MulticastSender::Process(const Message & msg)
     {
-      return _outQueue.PushBack(msg);
+      if (PassesFilter(msg)) {
+        return _outQueue.PushBack(msg);
+      }
+      return false;
     }
     
     //------------------------------------------------------------------------
@@ -328,14 +331,12 @@ namespace Dwm {
         if (_outQueue.ConditionTimedWait(std::chrono::seconds(1))) {
           auto  now = Clock::now();
           while (_outQueue.PopFront(msg)) {
-            if (PassesFilter(msg)) {
-              if (! pkt.Add(msg)) {
-                if (! SendPacket(pkt)) {
-                  MCLOG(Severity::err, "SendPacket() failed");
-                }
-                _nextSendTime = now + std::chrono::milliseconds(1000);
-                pkt.Add(msg);
+            if (! pkt.Add(msg)) {
+              if (! SendPacket(pkt)) {
+                MCLOG(Severity::err, "SendPacket() failed");
               }
+              _nextSendTime = now + std::chrono::milliseconds(1000);
+              pkt.Add(msg);
             }
           }
         }

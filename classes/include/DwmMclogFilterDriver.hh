@@ -72,6 +72,7 @@ namespace Dwm {
       std::vector<FilterParser::symbol_type>                  tokens;
       std::vector<FilterParser::symbol_type>::const_iterator  tokenIter;
       bool                                                    tokenized;
+      std::mutex                                              parsemtx;
       
       FilterParser::symbol_type next_token();
       
