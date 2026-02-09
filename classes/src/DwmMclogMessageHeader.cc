@@ -121,8 +121,7 @@ namespace Dwm {
     std::ostream &                                                     
     operator << (std::ostream & os, const MessageHeader & hdr)
     {
-      os << hdr._timestamp << ' ' << hdr._origin << ": " << hdr._facility
-         << ' ' << hdr._severity;
+      os << hdr._timestamp << ' ' << hdr._origin << ": " << hdr._severity;
       return os;
     }
     
