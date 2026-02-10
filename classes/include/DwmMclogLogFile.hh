@@ -45,7 +45,7 @@
 #include <fstream>
 #include <string>
 
-#include "DwmMclogMessage.hh"
+#include "DwmMclogMessageSink.hh"
 #include "DwmMclogRollInterval.hh"
 
 namespace Dwm {
@@ -56,6 +56,7 @@ namespace Dwm {
     //!  
     //------------------------------------------------------------------------
     class LogFile
+      : public MessageSink
     {
     public:
       using Clock = std::chrono::system_clock;
@@ -93,7 +94,7 @@ namespace Dwm {
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
-      bool Log(const Message & msg);
+      bool Process(const Message & msg) override;
 
     private:
       std::filesystem::path  _path;

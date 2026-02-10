@@ -144,7 +144,7 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
-    bool LogFile::Log(const Message & msg)
+    bool LogFile::Process(const Message & msg)
     {
       bool  rc = false;
       if (_ofs.is_open()) {
