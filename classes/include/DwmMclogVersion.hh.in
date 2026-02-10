@@ -47,8 +47,8 @@ namespace Dwm {
   namespace Mclog {
 
     inline constexpr const Dwm::What::Info __attribute__((used))
-    version_info(DWM_WHAT_TYPE_LIB, @DWM_WHAT_STATUS@, "mclog",
-                 "@DWM_VERSION@", "Daniel McRobb 2025",
+    version_info(DWM_WHAT_TYPE_EXE DWM_WHAT_TYPE_LIB, @DWM_WHAT_STATUS@, "mclog",
+                 "@DWM_VERSION@", "Daniel McRobb 2025 \xF0\x9F\xAA\xB5",
                  "mcplex.net");
 
   }  // namespace Mclog
