@@ -44,6 +44,7 @@
 #include <mutex>
 #include <tuple>
 
+#include "DwmMclogFilterDriver.hh"
 #include "DwmMclogLogFile.hh"
 
 namespace Dwm {
@@ -132,7 +133,7 @@ namespace Dwm {
       //----------------------------------------------------------------------
       bool Log(const Message & msg);
 
-      bool Log(const std::string & fmtstr, const Message & msg);
+      // bool Log(const std::string & fmtstr, const Message & msg);
 
       PathKey GetPathKey(const Message & msg) const;
 
@@ -147,6 +148,7 @@ namespace Dwm {
       std::map<PathKey,std::string>  _paths;
       std::map<std::string,LogFile>  _logFiles;
       mutable std::mutex             _mtx;
+      std::vector<std::pair<std::unique_ptr<FilterDriver>,LogFileConfig>>  _filters;
     };
     
   }  // namespace Mclog
