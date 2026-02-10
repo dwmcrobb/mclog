@@ -178,13 +178,13 @@ namespace Dwm {
       
       auto  it = _logFiles.find(key);
       if (it != _logFiles.end()) {
-        rc = it->second.Log(msg);
+        rc = it->second.Process(msg);
       }
       else {
         auto [nit, dontCare] =
           _logFiles.insert({key,LogFile(key,_permissions,_rollPeriod,_keep)});
         if (nit->second.Open()) {
-          rc = nit->second.Log(msg);
+          rc = nit->second.Process(msg);
         }
       }
       return rc;
