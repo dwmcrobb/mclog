@@ -190,7 +190,7 @@ int main(int argc, char *argv[])
   }
   
   if (! debug) {
-    // Dwm::Mclog::logger.MinimumSeverity(Dwm::Mclog::Severity::info);
+    Dwm::Mclog::logger.MinimumSeverity(Dwm::Mclog::Severity::info);
   }
 
   Dwm::Mclog::logger.LogLocations(true);
