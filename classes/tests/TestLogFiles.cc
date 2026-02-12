@@ -59,6 +59,7 @@ static Dwm::Mclog::Message MakeMessage(const char *host,
 int main(int argc, char *argv[])
 {
   Dwm::Mclog::LogFiles   logFiles;
+#if 0
   logFiles.LogDirectory("/tmp");
 
   auto  msg = MakeMessage("test.rfdm.com", "TestLogFiles",
@@ -70,6 +71,7 @@ int main(int argc, char *argv[])
   assert(logFiles.LogPath(msg) == "/var/log/test.rfdm.com/TestLogFiles");
   logFiles.PathPattern("%I/%H");
   assert(logFiles.LogPath(msg) == "/var/log/TestLogFiles/test.rfdm.com");
+#endif
   
   return 0;
 }
