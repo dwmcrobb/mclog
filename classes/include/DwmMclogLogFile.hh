@@ -53,7 +53,7 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  
+    //!  Encapsulates a log file and its archives.
     //------------------------------------------------------------------------
     class LogFile
       : public MessageSink
@@ -61,16 +61,25 @@ namespace Dwm {
     public:
       using Clock = std::chrono::system_clock;
 
+      //----------------------------------------------------------------------
+      //!  Default constructor.
+      //----------------------------------------------------------------------
       LogFile() = default;
       
       //----------------------------------------------------------------------
-      //!  
+      //!  Construct from the given @ path and optional permissions, roll
+      //!  period and number of files to keep (active file + arrchives).
       //----------------------------------------------------------------------
       LogFile(const std::string & path, mode_t permissions = 0644,
               RollPeriod period = RollPeriod::days_1, uint32_t keep = 7);
 
       //----------------------------------------------------------------------
-      //!  
+      //!  Copy construction is invalid.
+      //----------------------------------------------------------------------
+      LogFile(const LogFile &) = delete;
+      
+      //----------------------------------------------------------------------
+      //!  Move constructor.
       //----------------------------------------------------------------------
       LogFile(LogFile && logFile)
       {
