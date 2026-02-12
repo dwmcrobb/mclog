@@ -1,3 +1,30 @@
+Feb 8, 2026:
+
+I need to address the problem with FileLogger allowing multiple ofstreams
+to be open for the same file.  When I migrated to having a vector of
+filters, I didn't properly address the changes needed.  I need a many
+to one mapping of filters to log files.  While there isn't any true harm
+with the way things work today, it can mean duplicate entries in log files
+and conflicts with permissions and roll period.
+
+It's not so hard to solve the issue of multiple ofstreams open for the
+same file.  However, I don't have an easy fix yet for the permission
+and roll period conflicts.  The good news is that this only happens if
+more than one filter points to the same logfile path.  This would not
+be normal for my usage, and is mostly avoidable using the filter
+language.  However, it's still an issue I should fix.
+
+What I need is a function that returns a set of unique log paths we
+want to log to, so I can have:
+
+  map<string,LogFile>  _logFiles;
+
+And for a given message and configuration, a function that returns the set of
+unique paths we want to update.  e.g.:
+
+  GetLogPaths(??? , Message & msg, set<string> & logPaths);
+
+
 #------------------------------------------------------------------------------
 Feb 7, 2026:
 
