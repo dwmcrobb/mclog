@@ -160,7 +160,6 @@ static void Usage(const char *argv0)
 int main(int argc, char *argv[])
 {
   bool         daemonize = true, debug = false;
-  int          mclogOpts = 0;
   std::string  pidFile("/var/run/mclogd.pid");
   std::string  configPath("/usr/local/etc/mclogd.cfg");
   
@@ -171,7 +170,6 @@ int main(int argc, char *argv[])
         configPath = optarg;
         break;
       case 'd':
-        mclogOpts |= Dwm::Mclog::Logger::logStderr;
         daemonize = false;
         break;
       case 'D':
@@ -196,15 +194,14 @@ int main(int argc, char *argv[])
   }
 
   Dwm::Mclog::logger.LogLocations(true);
-  Dwm::Mclog::logger.Open("mclogd",
-                          mclogOpts | Dwm::Mclog::Logger::logSyslog,
-                          Dwm::Mclog::Facility::local0);
   if (daemonize) {
-    Dwm::Mclog::logger.SetSinks({&g_fileLogger, &g_mcastSender});
+    Dwm::Mclog::logger.Open(Dwm::Mclog::Facility::local0,
+                            {&g_fileLogger, &g_mcastSender});
   }
   else {
     auto  cerrSink = new Dwm::Mclog::OstreamSink(std::cerr);
-    Dwm::Mclog::logger.SetSinks({&g_fileLogger, &g_mcastSender, cerrSink});
+    Dwm::Mclog::logger.Open(Dwm::Mclog::Facility::local0,
+                            {&g_fileLogger, &g_mcastSender, cerrSink});
   }
   
   if (g_config.Parse(configPath)) {
