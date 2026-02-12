@@ -73,9 +73,6 @@ namespace Dwm {
     class Logger
     {
     public:
-      static const int  logStderr = 0x20;
-      static const int  logSyslog = 0x40;
-
       using Clock = std::chrono::system_clock;
 
       //----------------------------------------------------------------------
@@ -95,12 +92,24 @@ namespace Dwm {
         static Logger  loggerInstance;
         return loggerInstance;
       }
-      
+
+      //----------------------------------------------------------------------
+      //!  IF @c sinks is empty, we will add a LoopbackSender sink.
+      //----------------------------------------------------------------------
+      bool Open(Facility facility = Facility::user,
+                const std::vector<MessageSink *> & sinks = {},
+                const char *ident = nullptr);
+
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
-      bool Open(const char *ident, int logopt, Facility facility);
+      bool AddSinks(const std::vector<MessageSink *> & sinks);
 
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      bool RemoveSinks(const std::vector<MessageSink *> & sinks);
+      
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
@@ -148,7 +157,6 @@ namespace Dwm {
       Facility                     _facility;
       Severity                     _minimumSeverity;
       std::atomic<bool>            _logLocations;
-      int                          _options;
       std::mutex                   _sinksMtx;
       std::vector<MessageSink *>   _sinks;
       LoopbackSender              *_loopbackSender;

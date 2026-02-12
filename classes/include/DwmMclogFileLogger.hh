@@ -60,8 +60,6 @@ namespace Dwm {
       : public MessageSink
     {
     public:
-      using FilteredLog = std::pair<std::unique_ptr<FilterDriver>,LogFiles>;
-      
       //----------------------------------------------------------------------
       //!  Default constructor
       //----------------------------------------------------------------------
@@ -94,7 +92,7 @@ namespace Dwm {
       std::thread               _thread;
       Thread::Queue<Message>    _inQueue;
       std::atomic<bool>         _run;
-      std::vector<FilteredLog>  _logs;
+      LogFiles                  _logFiles;
       
       void Run();
     };

@@ -60,6 +60,16 @@ extern "C" {
 #  include "spanstream.hh"
 #endif
 
+#if (defined(__FreeBSD__) || __APPLE__)
+  #include <cstdlib>
+  //--------------------------------------------------------------------------
+  static const char *ProgramName()  { return getprogname(); }
+
+#elif (defined(__linux__))
+  #include <errno.h>
+  //--------------------------------------------------------------------------
+  static const char *ProgramName()  { return program_invocation_short_name; }
+#endif
 
 #include "DwmFormatters.hh"
 #include "DwmMclogLogger.hh"
@@ -75,12 +85,14 @@ namespace Dwm {
     Logger::Logger()
         : _origin("","",0), _facility(Facility::user),
           _minimumSeverity(Severity::debug), _logLocations(false),
-          _options(0), _sinksMtx(), _sinks(), _loopbackSender(nullptr),
+          _sinksMtx(), _sinks(), _loopbackSender(nullptr),
           _cerrSink(std::cerr), _syslogSink(nullptr)
     { }
-    
+
     //------------------------------------------------------------------------
-    bool Logger::Open(const char *ident, int logopt, Facility facility)
+    bool Logger::Open(Facility facility,
+                      const std::vector<MessageSink *> & sinks,
+                      const char *ident)
     {
       bool  rc = false;
       char  hn[255];
@@ -88,29 +100,66 @@ namespace Dwm {
       gethostname(hn, sizeof(hn));
 
       _origin.hostname(hn);
-      _origin.appname(ident);
+      if (nullptr == ident) {
+        _origin.appname(ProgramName());
+      }
+      else {
+        _origin.appname(ident);
+      }
       _origin.processid(getpid());
       _facility = facility;
-      _options = logopt;
 
-      _loopbackSender = new LoopbackSender();
-      {
-        std::lock_guard  lck(_sinksMtx);
-        _sinks.push_back(_loopbackSender);
+      std::lock_guard  lck(_sinksMtx);
+      _sinks.clear();
+      if (sinks.empty()) {
+        _loopbackSender = new LoopbackSender();
+        {
+          _sinks.push_back(_loopbackSender);
+        }
       }
-      
-      if (_options & logStderr) {
-        std::lock_guard  lck(_sinksMtx);
-        _sinks.push_back(&_cerrSink);
-      }
-      if (_options & logSyslog) {
-        _syslogSink = new SyslogSink(ident, (int)facility);
-        std::lock_guard  lck(_sinksMtx);
-        _sinks.push_back(_syslogSink);
+      else {
+        for (auto sink : sinks) {
+          _sinks.push_back(sink);
+        }
       }
       return true;
     }
 
+    //------------------------------------------------------------------------
+    bool Logger::AddSinks(const std::vector<MessageSink *> & sinks)
+    {
+      auto  haveSink = [&] (MessageSink *ms)
+      { return std::find_if(_sinks.begin(), _sinks.end(),
+                            [&] (const auto entry)
+                            { return (ms == entry); }) != _sinks.end(); 
+      };
+        
+      bool  rc = false;
+      std::lock_guard  lck(_sinksMtx);
+      for (auto sink : sinks) {
+        if (! haveSink(sink)) {
+          _sinks.push_back(sink);
+          rc = true;
+        }
+      }
+      return rc;
+    }
+
+    //------------------------------------------------------------------------
+    bool Logger::RemoveSinks(const std::vector<MessageSink *> & sinks)
+    {
+      bool  rc = false;
+      std::lock_guard  lck(_sinksMtx);
+      for (auto sink : sinks) {
+        auto it = std::find(_sinks.begin(), _sinks.end(), sink);
+        if (it != _sinks.end()) {
+          _sinks.erase(it);
+          rc = true;
+        }
+      }
+      return rc;
+    }
+    
     //------------------------------------------------------------------------
     void Logger::SetSinks(const std::vector<MessageSink *> & sinks)
     {
@@ -121,20 +170,6 @@ namespace Dwm {
         delete _loopbackSender;
         _loopbackSender = nullptr;
       }
-      if (nullptr != _syslogSink) {
-        if (! (_options & logSyslog)) {
-          delete _syslogSink;
-          _syslogSink = nullptr;
-        }
-      }
-      else {
-        if (_options & logSyslog) {
-          _syslogSink = new SyslogSink(_origin.appname().c_str(),
-                                       (int)_facility);
-          _sinks.push_back(_syslogSink);
-        }
-      }
-            
       for (auto sink : sinks) {
         if (nullptr != sink) {
           _sinks.push_back(sink);
@@ -159,11 +194,6 @@ namespace Dwm {
       _origin.appname("");
       _origin.processid(0);
 
-#if 0
-      if (_options & logSyslog) {
-        Dwm::SysLogger::Close();
-      }
-#endif
       return true;
     }
 

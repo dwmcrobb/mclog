@@ -46,7 +46,7 @@ namespace Dwm {
 
     //------------------------------------------------------------------------
     FileLogger::FileLogger()
-        : _thread(), _inQueue(), _run(false), _logs()
+        : _thread(), _inQueue(), _run(false), _logFiles()
     {
       _inQueue.MaxLength(1000);
     }
@@ -59,24 +59,14 @@ namespace Dwm {
       if (cfg.files.logs.empty()) {
         return true;
       }
-      
-      bool  rc = false;
-      _run.store(true);
-      for (const auto & logcfg : cfg.files.logs) {
-        auto  log =
-          make_pair(make_unique<FilterDriver>(cfg,logcfg.filter),LogFiles());
-        log.second.LogDirectory(cfg.files.logDirectory);
-        log.second.PathPattern(logcfg.pathPattern);
-        log.second.Permissions(logcfg.permissions);
-        log.second.Period(logcfg.period);
-        log.second.Keep(logcfg.keep);
-        _logs.emplace_back(std::move(log));
-      }
+
+      bool rc = true;
+      _logFiles.Configure(cfg);
+      _run = true;
       _thread = std::thread(&FileLogger::Run, this);
 #if (defined(__FreeBSD__) || defined(__linux__))
       pthread_setname_np(_thread.native_handle(), "FileLogger");
 #endif
-      rc = true;
       return rc;
     }
 
@@ -100,7 +90,7 @@ namespace Dwm {
         rc = true;
         MCLOG(Severity::info, "FileLogger stopped");
       }
-      _logs.clear();
+      _logFiles.Close();
       return rc;
     }
 
@@ -122,14 +112,7 @@ namespace Dwm {
         _inQueue.ConditionWait();
         _inQueue.Swap(msgs);
         for (const auto & msg : msgs) {
-          for (auto & log : _logs) {
-            bool  filterResult = false;
-            if (log.first->parse(&msg, filterResult)) {
-              if (filterResult) {
-                log.second.Log(msg);
-              }
-            }
-          }
+          _logFiles.Process(msg);
         }
         msgs.clear();
       }

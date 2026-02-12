@@ -50,12 +50,11 @@ extern "C" {
 
 int main(int argc, char *argv[])
 {
-  //  Dwm::SysLogger::Open("TestLogger", LOG_PERROR|LOG_PID, LOG_USER);
-  
   using Dwm::Mclog::logger;
-  assert(logger.Open("TestLogger", Dwm::Mclog::Logger::logStderr,
-                      Dwm::Mclog::Facility::user));
+  assert(logger.Open(Dwm::Mclog::Facility::user));
   logger.LogLocations(true);
+  auto  cerrSink = new Dwm::Mclog::OstreamSink(std::cerr);
+  logger.AddSinks({cerrSink});
   
   uint64_t  i = 0;
   for (;;) {

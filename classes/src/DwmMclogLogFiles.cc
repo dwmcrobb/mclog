@@ -46,15 +46,22 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
+    LogFiles::LogFiles()
+        : _mtx(), _selectors(), _filesConfig(), _filteredLogConfigs(),
+          _logFiles()
+    {
+    }
+    
+    //------------------------------------------------------------------------
     LogFiles::LogFiles(LogFiles && logFiles)
-        : _logDir(std::move(logFiles._logDir)),
-          _pathPattern(std::move(logFiles._pathPattern)),
-          _permissions(logFiles._permissions),
-          _rollPeriod(logFiles._rollPeriod), _keep(logFiles._keep),
-          _paths(std::move(logFiles._paths)),
-          _logFiles(std::move(logFiles._logFiles)),
-          _mtx()
-    {}
+        : _mtx(), _filesConfig(std::move(logFiles._filesConfig)),
+          _filteredLogConfigs(std::move(logFiles._filteredLogConfigs)),
+          _logFiles(std::move(logFiles._logFiles))
+    {
+      for (auto & sel : logFiles._selectors) {
+        _selectors.insert(sel);
+      }
+    }
 
     //------------------------------------------------------------------------
     LogFiles::~LogFiles()
@@ -64,185 +71,167 @@ namespace Dwm {
         logFile.second.Close();
       }
       _logFiles.clear();
-      _paths.clear();
+      _filteredLogConfigs.clear();
+    }
+
+    //------------------------------------------------------------------------
+    void LogFiles::Configure(const Config & config)
+    {
+      std::lock_guard  lck(_mtx);
+      for (auto & logFile : _logFiles) {
+        logFile.second.Close();
+      }
+      _logFiles.clear();
+      _filteredLogConfigs.clear();
+      _logPathCache.clear();
+      
+      _filesConfig = config.files;
+      for (const auto & logcfg : config.files.logs) {
+        auto  filtLogCfg =
+          FilteredLogConfig{std::make_unique<FilterDriver>(config,logcfg.filter), logcfg};
+        _filteredLogConfigs.push_back(std::move(filtLogCfg));
+      }
+      return;
     }
     
     //------------------------------------------------------------------------
-    const std::string & LogFiles::LogDirectory() const
+    bool LogFiles::Process(const Message & msg)
     {
+      bool  rc = true;
+      std::vector<std::pair<std::string,LogFileConfig &>>  logPaths;
       std::lock_guard  lck(_mtx);
-      return _logDir;
-    }
-    
-    //------------------------------------------------------------------------
-    const std::string & LogFiles::LogDirectory(const std::string & logDir)
-    {
-      std::lock_guard  lck(_mtx);
-      for (auto & logFile : _logFiles) {
-        logFile.second.Close();
-      }
-      _logFiles.clear();
-      _paths.clear();
-      return _logDir = logDir;
-    }
-
-    //------------------------------------------------------------------------
-    const std::string & LogFiles::PathPattern() const
-    {
-      std::lock_guard  lck(_mtx);
-      return _pathPattern;
-    }
-    
-    //------------------------------------------------------------------------
-    const std::string & LogFiles::PathPattern(const std::string & pathPattern)
-    {
-      std::lock_guard  lck(_mtx);
-      for (auto & logFile : _logFiles) {
-        logFile.second.Close();
-      }
-      _logFiles.clear();
-      _paths.clear();
-      if (pathPattern.empty()) {
-        return _pathPattern = "%H/%I";   // default
-      }
-      else {
-        return _pathPattern = pathPattern;
-      }
-    }
-
-    //------------------------------------------------------------------------
-    mode_t LogFiles::Permissions() const
-    {
-      std::lock_guard  lck(_mtx);
-      return _permissions;
-    }
-      
-    //------------------------------------------------------------------------
-    mode_t LogFiles::Permissions(mode_t permissions)
-    {
-      std::lock_guard  lck(_mtx);
-      for (auto & logFile : _logFiles) {
-        logFile.second.Close();
-      }
-      _logFiles.clear();
-      _paths.clear();
-      
-      return _permissions = permissions;
-    }
-
-    //------------------------------------------------------------------------
-    RollPeriod LogFiles::Period() const
-    {
-      std::lock_guard  lck(_mtx);
-      return _rollPeriod;
-    }
-
-    //------------------------------------------------------------------------
-    RollPeriod LogFiles::Period(const RollPeriod & period)
-    {
-      std::lock_guard  lck(_mtx);
-      for (auto & logFile : _logFiles) {
-        logFile.second.Close();
-      }
-      _logFiles.clear();
-      _paths.clear();
-      return _rollPeriod = period;
-    }
-      
-    //------------------------------------------------------------------------
-    uint32_t LogFiles::Keep() const
-    {
-      std::lock_guard  lck(_mtx);
-      return _keep;
-    }
-
-    //------------------------------------------------------------------------
-    uint32_t LogFiles::Keep(uint32_t keep)
-    {
-      std::lock_guard  lck(_mtx);
-      for (auto & logFile : _logFiles) {
-        logFile.second.Close();
-      }
-      _logFiles.clear();
-      _paths.clear();
-      return _keep = keep;
-    }
-    
-    //------------------------------------------------------------------------
-    bool LogFiles::Log(const Message & msg)
-    {
-      bool  rc = false;
-      std::lock_guard  lck(_mtx);
-
-      std::string  key = LogPath(msg);
-      
-      auto  it = _logFiles.find(key);
-      if (it != _logFiles.end()) {
-        rc = it->second.Process(msg);
-      }
-      else {
-        auto [nit, dontCare] =
-          _logFiles.insert({key,LogFile(key,_permissions,_rollPeriod,_keep)});
-        if (nit->second.Open()) {
-          rc = nit->second.Process(msg);
+      if (LogPathConfigs(msg, logPaths)) {
+        for (const auto & lp : logPaths) {
+          auto  fit = _logFiles.find(lp.first);
+          if (fit != _logFiles.end()) {
+            rc &= fit->second.Process(msg);
+          }
+          else {
+            LogFile  logFile(lp.first, lp.second.permissions,
+                             lp.second.period, lp.second.keep);
+            auto [newit, dontCare] =
+              _logFiles.insert({lp.first, std::move(logFile)});
+            newit->second.Open();
+            rc &= newit->second.Process(msg);
+          }
         }
       }
       return rc;
     }
 
     //------------------------------------------------------------------------
-    std::tuple<std::string,std::string,Facility>
-    LogFiles::GetPathKey(const Message & msg) const
+    //!  
+    //------------------------------------------------------------------------
+    void LogFiles::Close()
     {
-      return std::make_tuple(msg.Header().origin().hostname(),
-                             msg.Header().origin().appname(),
-                             msg.Header().facility());
+      std::lock_guard  lck(_mtx);
+      for (auto & lf : _logFiles) {
+        lf.second.Close();
+      }
+      _logFiles.clear();
     }
     
     //------------------------------------------------------------------------
-    std::string LogFiles::LogPath(const Message & msg)
+    //!  
+    //------------------------------------------------------------------------
+    std::string LogFiles::LogPathFromCache(const Message & msg,
+                                           const LogFileConfig & logFileConfig)
     {
-      static const boost::regex  rgx("(\%H)|(\%I)|(\%F)");
-
-      auto  pathKey = GetPathKey(msg);
-      auto  it = _paths.find(pathKey);
-      if (it != _paths.end()) {
+      LogPathCacheKey  cacheKey(msg, logFileConfig.pathPattern);
+      auto it = _logPathCache.find(cacheKey);
+      if (it != _logPathCache.end()) {
         return it->second;
       }
+      return "";
+    }
 
-      std::string  pathPattern = _pathPattern;
-      const auto & hdr = msg.Header();
-      const auto & origin = hdr.origin();
-      std::string  rc;
-      
-      if (! pathPattern.empty()) {
-        if (pathPattern.find_first_of('%') == std::string::npos) {
-          if ('/' == pathPattern[0]) {
-            rc = pathPattern;
+    //------------------------------------------------------------------------
+    std::string LogFiles::LogPath(const Message & msg,
+                                  const LogFileConfig & logFileConfig)
+    {
+      std::string  rc = LogPathFromCache(msg, logFileConfig);
+      if (rc.empty()) {
+        static const boost::regex  rgx("(\%H)|(\%I)|(\%F)");
+        std::string  pathPattern = logFileConfig.pathPattern;
+        const auto & hdr = msg.Header();
+        const auto & origin = hdr.origin();
+        
+        if (! pathPattern.empty()) {
+          if (pathPattern.find_first_of('%') == std::string::npos) {
+            if ('/' == pathPattern[0]) {
+              rc = pathPattern;
+            }
+            else {
+              rc = (_filesConfig.logDirectory + '/' + pathPattern);
+            }
           }
           else {
-            rc = (_logDir + '/' + pathPattern);
+            std::string  replacement("(?1" + origin.hostname()
+                                     + ")(?2" + origin.appname()
+                                     + ")(?3" + FacilityName(hdr.facility())
+                                     + ")");
+            rc = regex_replace(pathPattern, rgx, replacement,
+                               boost::match_default | boost::format_all);
+            if ('/' != rc[0]) {
+              rc = _filesConfig.logDirectory + '/' + rc;
+            }
           }
         }
         else {
-          std::string  replacement("(?1" + origin.hostname()
-                                   + ")(?2" + origin.appname()
-                                   + ")(?3" + FacilityName(hdr.facility())
-                                   + ")");
-          rc = regex_replace(pathPattern, rgx, replacement,
-                             boost::match_default | boost::format_all);
-          if ('/' != rc[0]) {
-            rc = _logDir + '/' + rc;
+          rc = "logs/" + origin.hostname() + '/' + origin.appname();
+        }
+        LogPathCacheKey  cacheKey(msg, logFileConfig.pathPattern);
+        _logPathCache[cacheKey] = rc;
+      }
+      
+      return rc;
+    }
+    
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    bool
+    LogFiles::LogPathConfigs(const Message & msg,
+                             std::map<std::string,LogFileConfig> & logPaths)
+    {
+      logPaths.clear();
+      for (auto & logcfg : _filteredLogConfigs) {
+        bool  accepted = false;
+        bool  parserc = logcfg.first->parse(&msg, accepted);
+        if (parserc && accepted) {
+          auto  logPath = LogPath(msg, logcfg.second);
+          if (logPaths.find(logPath) == logPaths.end()) {
+            auto [lpit, dontCare] = logPaths.insert({logPath,logcfg.second});
           }
         }
       }
-      else {
-        rc = "logs/" + origin.hostname() + '/' + origin.appname();
-      }
-      _paths[pathKey] = rc;
-      return rc;
+      return (! logPaths.empty());
     }
 
+    bool
+    LogFiles::LogPathConfigs(const Message & msg,
+                             std::vector<std::pair<std::string,LogFileConfig &>> & logPaths)
+    {
+      logPaths.clear();
+      auto  hasEntry = [&] (const auto & s) {
+        return std::find_if(logPaths.cbegin(), logPaths.cend(),
+                            [&] (const auto & e) { return (e.first == s); })
+          != logPaths.cend();
+      };
+      
+      for (auto & logcfg : _filteredLogConfigs) {
+        bool  accepted = false;
+        bool  parserc = logcfg.first->parse(&msg, accepted);
+        if (parserc && accepted) {
+          auto  logPath = LogPath(msg, logcfg.second);
+          if (! hasEntry(logPath)) {
+            logPaths.push_back({logPath,logcfg.second});
+          }
+        }
+      }
+      return (! logPaths.empty());
+    }
+    
   }  // namespace Mclog
 
 }  // namespace Dwm
