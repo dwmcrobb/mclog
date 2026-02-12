@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogMessageSink.hh
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::MessageSink declaration
 //---------------------------------------------------------------------------
 
 #ifndef _DWMMCLOGMESSAGESINK_HH_
@@ -47,12 +47,22 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  
+    //!  Interface for objects that can process a Message.
     //------------------------------------------------------------------------
     class MessageSink
     {
     public:
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
       virtual ~MessageSink() { }
+
+      //----------------------------------------------------------------------
+      //!  Process the given @c msg.  Must be threadsafe in typical use
+      //!  (where the object is a sink for Logger).  Must return true on
+      //!  success, false on failure.  Default implementation does nothing
+      //!  and returns true.
+      //----------------------------------------------------------------------
       virtual bool Process(const Message & msg)
       { return true; }
     };
