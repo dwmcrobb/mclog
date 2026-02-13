@@ -194,7 +194,7 @@ int main(int argc, char *argv[])
   }
 
   Dwm::Mclog::logger.LogLocations(true);
-  if (daemonize) {
+  if (daemonize || (! debug)) {
     Dwm::Mclog::logger.Open(Dwm::Mclog::Facility::local0,
                             {&g_fileLogger, &g_mcastSender});
   }
