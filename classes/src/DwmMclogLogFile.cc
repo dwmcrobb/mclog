@@ -68,12 +68,44 @@ namespace Dwm {
       }
       return false;
     }
+
+    //------------------------------------------------------------------------
+    bool LogFile::SetPermissions() const
+    {
+      if (0 == chmod(_path.string().c_str(), _permissions)) {
+        MCLOG(Severity::info, "LogFile '{}' permissions set to {:#04o}",
+              _path.string(), _permissions);
+        return true;
+      }
+      MCLOG(Severity::warning,
+            "Failed to set {:#04o} permissions on LogFile '{}': {}",
+            _permissions, _path.string(), strerror(errno));
+      return false;
+    }
+
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    bool LogFile::EnsureParentDirectory() const
+    {
+      namespace fs = std::filesystem;
+
+      if (fs::exists(_path.parent_path())) {
+        if (fs::is_directory(_path.parent_path())) {
+          return true;
+        }
+      }
+      else {
+        if (fs::create_directories(_path.parent_path())) {
+          return true;
+        }
+      }
+      return false;
+    }
     
     //------------------------------------------------------------------------
     bool LogFile::Open()
     {
-      namespace fs = std::filesystem;
-      
       bool  rc = false;
       if (_ofs.is_open()) {
         MCLOG(Severity::info, "LogFile '{}' already open", _path.string());
@@ -83,48 +115,21 @@ namespace Dwm {
         if (NeedRollBeforeOpen()) {
           Roll();
         }
-        _ofs.open(_path, std::ios::out|std::ios::app);
-        if (static_cast<bool>(_ofs)) {
-          rc = true;
-          MCLOG(Severity::info, "LogFile '{}' opened", _path.string());
-          if (0 == chmod(_path.string().c_str(), _permissions)) {
-            MCLOG(Severity::info, "LogFile '{}' permissions set to {:#04o}",
-                  _path.string(), _permissions);
+        if (EnsureParentDirectory()) {
+          _ofs.open(_path, std::ios::out|std::ios::app);
+          if (static_cast<bool>(_ofs)) {
+            rc = true;
+            MCLOG(Severity::info, "LogFile '{}' opened", _path.string());
+            SetPermissions();
           }
           else {
-            MCLOG(Severity::warning,
-                  "Failed to set {:#04o} permissions on LogFile '{}': {}",
-                  _permissions, _path.string(), strerror(errno));
-          }
-        }
-        else if (! fs::exists(_path.parent_path())) {
-          if (fs::create_directories(_path.parent_path())) {
-            _ofs.open(_path, std::ios::out|std::ios::app);
-            rc = static_cast<bool>(_ofs);
-            if (rc) {
-              MCLOG(Severity::info, "LogFile '{}' opened", _path.string());
-              if (0 == chmod(_path.string().c_str(), _permissions)) {
-                MCLOG(Severity::info, "LogFile '{}' permissions set to {:#04o}",
-                      _path.string(), _permissions);
-              }
-              else {
-                MCLOG(Severity::warning, "Failed to set {:#04o} permissions on"
-                      " LogFile '{}': {}", _permissions, _path.string(),
-                      strerror(errno));
-              }
-            }
-            else {
-              MCLOG(Severity::err, "LogFile '{}' open failed", _path.string());
-            }
-          }
-          else {
-            MCLOG(Severity::err, "Failed to create directory '{}'",
-                  _path.parent_path().string());
+            MCLOG(Severity::err, "LogFile '{}' open failed: {}",
+                  _path.string(), strerror(errno));
           }
         }
         else {
-          MCLOG(Severity::err, "LogFile '{}' open failed: {}",
-                _path.string(), strerror(errno));
+          MCLOG(Severity::err, "LogFile directory '{}' invalid",
+                _path.parent_path().string());
         }
       }
       return rc;
@@ -135,10 +140,6 @@ namespace Dwm {
     {
       if (_ofs.is_open()) {
         _ofs.close();
-        MCLOG(Severity::info, "LogFile '{}' closed", _path.string());
-      }
-      else {
-        MCLOG(Severity::debug, "LogFile '{}' already closed", _path.string());
       }
       return;
     }
@@ -153,14 +154,14 @@ namespace Dwm {
             Close();
             Roll();
             rc = Open();
+            if (rc) {
+              MCLOG(Severity::info, "LogFile {} rolled", _path.string());
+            }
           }
           else {
             rc = true;
           }
         }
-      }
-      else {
-        MCLOG(Severity::err, "LogFile '{}' not open", _path.string());
       }
       return rc;
     }

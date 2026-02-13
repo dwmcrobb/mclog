@@ -82,6 +82,7 @@ namespace Dwm {
       //!  Move constructor.
       //----------------------------------------------------------------------
       LogFile(LogFile && logFile)
+          : _mtx()
       {
         _path = std::move(logFile._path);
         _permissions = logFile._permissions;
@@ -106,6 +107,7 @@ namespace Dwm {
       bool Process(const Message & msg) override;
 
     private:
+      std::mutex             _mtx;
       std::filesystem::path  _path;
       mode_t                 _permissions;
       uint32_t               _keep;
@@ -132,6 +134,8 @@ namespace Dwm {
       };
 
       bool NeedRollBeforeOpen() const;
+      bool EnsureParentDirectory() const;
+      bool SetPermissions() const;
       bool RollCriteriaMet(const Message & msg) const;
       void RollArchives() const;
       void RollCurrent();
