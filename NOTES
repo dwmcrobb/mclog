@@ -14,23 +14,14 @@ more than one filter points to the same logfile path.  This would not
 be normal for my usage, and is mostly avoidable using the filter
 language.  However, it's still an issue I should fix.
 
-What I need is a function that returns a set of unique log paths we
-want to log to, so I can have:
-
-  map<string,LogFile>  _logFiles;
-
-And for a given message and configuration, a function that returns the set of
-unique paths we want to update.  e.g.:
-
-  GetLogPaths(??? , Message & msg, set<string> & logPaths);
-
+Solved Feb 11, 2026.
 
 #------------------------------------------------------------------------------
 Feb 7, 2026:
 
 I need to split Logger to allow the user to specify message sinks.  By
 default, it should use what it uses today: send to loopback via UDP.
-But it should be possible to specy sinks instead.  This would allow
+But it should be possible to specify sinks instead.  This would allow
 mclogd, for example, to use Logger to directly send to multicast or
 files instead of a circuitous route through the loopback (which depends
 on the LoopbackReceiver thread being active).
