@@ -68,7 +68,9 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  
+    //!  This is the primary logging interface for applications.  Typical use
+    //!  would involve a single call to the Open() member, after which the
+    //!  MCLOG() macro may be used to log a message.
     //------------------------------------------------------------------------
     class Logger
     {
@@ -94,19 +96,39 @@ namespace Dwm {
       }
 
       //----------------------------------------------------------------------
-      //!  IF @c sinks is empty, we will add a LoopbackSender sink.
+      //!  If @c sinks is empty, we will add a LoopbackSender sink.  This
+      //!  would be typical for most applications.  It will cause the Logger
+      //!  to send messages to the loopback address where @c mclogd is
+      //!  exepected to handle messages.
+      //!  However, @c sinks may be specified, in which case the Logger
+      //!  will only send messages to the given @c sinks.  This provides some
+      //!  flexibility; the interface for a sink (Dwm::Mclog::MessageSink)
+      //!  is trivial, though needs to be threadsafe in multithreaded
+      //!  applications.  And we have some classes in the library that
+      //!  implement this interface that may be used directly by applications
+      //!  if desired.
+      //!  Note that the Logger does not participate in the lifetime of
+      //!  @c sinks.  The @c sinks must be valid for as long as they are
+      //!  used by the Logger.
+      //!  If @c ident is @c nullptr, the program's name will be used, where
+      //!  the program's name comes from @c getprogname() on macOS and FreeBSD
+      //!  and @c program_invocation_short_name on linux.
       //----------------------------------------------------------------------
       bool Open(Facility facility = Facility::user,
                 const std::vector<MessageSink *> & sinks = {},
                 const char *ident = nullptr);
 
       //----------------------------------------------------------------------
-      //!  
+      //!  Adds the given @c sinks to the contained @c sinks to which the
+      //!  loggr will send messages.  Note that all @c sinks must be valid
+      //!  for as long as they might be used by the Logger.  Before
+      //!  destroying a sink, it should be removed with RemoveSinks(), or
+      //!  the Close() member should be called (which will remove all sinks).
       //----------------------------------------------------------------------
       bool AddSinks(const std::vector<MessageSink *> & sinks);
 
       //----------------------------------------------------------------------
-      //!  
+      //!  Removes @c sinks from the contained @c sinks.
       //----------------------------------------------------------------------
       bool RemoveSinks(const std::vector<MessageSink *> & sinks);
       
@@ -123,7 +145,7 @@ namespace Dwm {
       { return _logLocations = logLocations; }
 
       //----------------------------------------------------------------------
-      //!  
+      //!  Set the minimum severity that will be logged.
       //----------------------------------------------------------------------
       Severity MinimumSeverity(Severity minSeverity)
       { return _minimumSeverity = minSeverity; }
@@ -134,7 +156,8 @@ namespace Dwm {
       void SetSinks(const std::vector<MessageSink *> & sinks);
       
       //----------------------------------------------------------------------
-      //!  
+      //!  Removes all contained sinks, which has the effect of causing all
+      //!  future log messages to be dropped until Open() is called again.
       //----------------------------------------------------------------------
       bool Close();
 
