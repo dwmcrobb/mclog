@@ -52,43 +52,56 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  
+    //!  Encapsulates multiple log files, with configuration determining
+    //!  which messages are logged to which files.
     //------------------------------------------------------------------------
     class LogFiles
       : public MessageSink
     {
     public:
       //----------------------------------------------------------------------
-      //!  
+      //!  Default constructor.
       //----------------------------------------------------------------------
       LogFiles();
 
       //----------------------------------------------------------------------
-      //!  
+      //!  Move constructor.
       //----------------------------------------------------------------------
       LogFiles(LogFiles && logFiles);
 
       //----------------------------------------------------------------------
-      //!  
+      //!  Destructor.
       //----------------------------------------------------------------------
       ~LogFiles();
 
       //----------------------------------------------------------------------
-      //!  
+      //!  Note we need an entire configuration because we need the
+      //!  'selectors' in order to evaluate any filters in the 'logs'
+      //!  part of the 'files' configuration.
       //----------------------------------------------------------------------
       void Configure(const Config & config);
 
       //----------------------------------------------------------------------
-      //!  
+      //!  Process (log) the given @c msg.  Returns true on success, false
+      //!  on failure.
       //----------------------------------------------------------------------
       bool Process(const Message & msg) override;
 
+      //----------------------------------------------------------------------
+      //!  Close the LogFiles.
+      //----------------------------------------------------------------------
       void Close();
       
     private:
       using FilteredLogConfig =
         std::pair<std::unique_ptr<FilterDriver>,LogFileConfig>;
 
+      //----------------------------------------------------------------------
+      //!  Used as the key to cache log file paths.  Motivated mainly by the
+      //!  desire to avoid multiple open ofstreams referencing the same file,
+      //!  but also helps a little bit with performance by not having to
+      //!  construct a path for every message.
+      //----------------------------------------------------------------------
       class LogPathCacheKey
       {
       public:
@@ -143,7 +156,6 @@ namespace Dwm {
                           std::map<std::string,LogFileConfig> & logPaths);
       bool LogPathConfigs(const Message & msg,
                           std::vector<std::pair<std::string,LogFileConfig &>> & logPaths);
-      
     };
     
   }  // namespace Mclog
