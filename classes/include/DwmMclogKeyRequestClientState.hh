@@ -1,5 +1,5 @@
 //===========================================================================
-//  Copyright (c) Daniel W. McRobb 2025
+//  Copyright (c) Daniel W. McRobb 2025, 2026
 //  All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMcLogKeyRequestClientState.hh
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::KeyRequestClient class declaration
 //---------------------------------------------------------------------------
 
 #ifndef _DWMMCLOGKEYREQUESTCLIENTSTATE_HH_
@@ -59,7 +59,8 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  
+    //!  Encapsulates the state of a key request client (a client requesting
+    //!  the multicast decryption key).  Only used by mclogd.
     //------------------------------------------------------------------------
     class KeyRequestClientState
     {
@@ -69,48 +70,70 @@ namespace Dwm {
                                                     char *, size_t);
       
       //----------------------------------------------------------------------
-      //!  
+      //!  Construct with a pointer to the path of our Credence key storage
+      //!  directory and a pointer to the multicast decryption key.
       //----------------------------------------------------------------------
       KeyRequestClientState(const std::string *keyDir,
                             const std::string *mcastKey);
 
       //----------------------------------------------------------------------
-      //!  
+      //!  Destructor.
       //----------------------------------------------------------------------
       ~KeyRequestClientState();
       
+      //----------------------------------------------------------------------
+      //!  Process the @c buflen bytes of @c buf from @c src received on
+      //!  descriptor @c fd.  This just calls the current state.  Returns
+      //!  true on success, false on failure.
+      //----------------------------------------------------------------------
       bool ProcessPacket(int fd, const UdpEndpoint & src,
                          char *buf, size_t buflen)
       { return (this->*_state)(fd, src, buf, buflen); }
       
+      //----------------------------------------------------------------------
+      //!  The initial state.
+      //----------------------------------------------------------------------
       bool Initial(int fd, const UdpEndpoint & src,
                    char *buf, size_t buflen);
+      
+      //----------------------------------------------------------------------
+      //!  The state after we have sent our session key information.
+      //----------------------------------------------------------------------
       bool KXKeySent(int fd, const UdpEndpoint & src,
                      char *buf, size_t buflen);
+      
+      //----------------------------------------------------------------------
+      //!  The state after we have sent our signed authentication and the
+      //!  multicast encryption key.
+      //----------------------------------------------------------------------
       bool IDSent(int fd, const UdpEndpoint & src,
                   char *buf, size_t buflen);
+      
+      //----------------------------------------------------------------------
+      //!  The failure state.
+      //----------------------------------------------------------------------
       bool Failure(int fd, const UdpEndpoint & src,
                    char *buf, size_t buflen);
       
       //----------------------------------------------------------------------
-      //!  
+      //!  Returns the current state.
       //----------------------------------------------------------------------
       const State CurrentState() const
       { return _state; }
       
       //----------------------------------------------------------------------
-      //!  
+      //!  Returns a string representation of the current state.
       //----------------------------------------------------------------------
       const std::string & StateName() const;
       
       //----------------------------------------------------------------------
-      //!  
+      //!  Returns the last state change time.
       //----------------------------------------------------------------------
       time_t LastStateChangeTime() const
       { return _lastStateChangeTime; }
 
       //----------------------------------------------------------------------
-      //!  
+      //!  The success state.
       //----------------------------------------------------------------------
       bool Success()
       { return (_state == &KeyRequestClientState::IDSent); }
