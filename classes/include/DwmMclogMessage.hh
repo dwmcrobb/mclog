@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogMessage.hh
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::Message class declaration
 //---------------------------------------------------------------------------
 
 #ifndef _DWMMCLOGMESSAGE_HH_
@@ -50,7 +50,7 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  Encalsulates a log message.
+    //!  Encapsulates a log message.
     //------------------------------------------------------------------------
     class Message
     {
