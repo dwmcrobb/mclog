@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogKeyRequesterState.hh
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::KeyRequesterState class declaration
 //---------------------------------------------------------------------------
 
 #ifndef _DWMMCLOGKEYREQUESTERSTATE_HH_
@@ -56,7 +56,11 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  
+    //!  Encapsulates the state of a KeyRequester.
+    //!  There are 2 terminal end states: Success() and Failure().  When
+    //!  Success() is reached, the multicast key is available via McastKey().
+    //!  The current states for a successful key request:
+    //!  Initial -> KXKeySent() -> IDSent() -> Success()
     //------------------------------------------------------------------------
     class KeyRequesterState
     {
@@ -79,44 +83,58 @@ namespace Dwm {
       }
       
       //----------------------------------------------------------------------
-      //!  
+      //!  The initial state.
       //----------------------------------------------------------------------
       bool Initial(int fd, const UdpEndpoint & src, char *buf, size_t buflen);
       
       //----------------------------------------------------------------------
-      //!  
+      //!  The state in which we have transmitted our part of the session
+      //!  key.
       //----------------------------------------------------------------------
       bool KXKeySent(int fd, const UdpEndpoint & src,
                      char *buf, size_t buflen);
       
+      //----------------------------------------------------------------------
+      //!  The state in which we have transmitted our authentication
+      //!  information.
+      //----------------------------------------------------------------------
       bool IDSent(int fd, const UdpEndpoint & src, char *buf, size_t buflen);
+      
+      //----------------------------------------------------------------------
+      //!  The success state (terminal).
+      //----------------------------------------------------------------------
       bool Success(int fd, const UdpEndpoint & src, char *buf, size_t buflen);
+
+      //----------------------------------------------------------------------
+      //!  The failure state (terminal).
+      //----------------------------------------------------------------------
       bool Failure(int fd, const UdpEndpoint & src, char *buf, size_t buflen);
       
       //----------------------------------------------------------------------
-      //!  
+      //!  Returns a string representation of the current state.
       //----------------------------------------------------------------------
       const std::string & StateName() const;
       
       //----------------------------------------------------------------------
-      //!  
+      //!  Change state.
       //----------------------------------------------------------------------
       void ChangeState(State state, const UdpEndpoint & src);
       
       //----------------------------------------------------------------------
-      //!  
+      //!  Returns the current state.
       //----------------------------------------------------------------------
       State CurrentState() const
       { return _currentState; }
       
       //----------------------------------------------------------------------
-      //!  
+      //!  Returns the session key pair.
       //----------------------------------------------------------------------
       const Credence::KXKeyPair KX() const
       { return _kxKeyPair; }
       
       //----------------------------------------------------------------------
-      //!  
+      //!  Returns the multicast decryption key.  Only valid when state is
+      //!  Success().
       //----------------------------------------------------------------------
       const std::string & McastKey() const
       { return _mcastKey; }
