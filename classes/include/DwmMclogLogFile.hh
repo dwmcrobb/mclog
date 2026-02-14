@@ -64,11 +64,12 @@ namespace Dwm {
       //----------------------------------------------------------------------
       //!  Default constructor.
       //----------------------------------------------------------------------
-      LogFile() = default;
+      // LogFile() = default;
+      LogFile() = delete;
       
       //----------------------------------------------------------------------
       //!  Construct from the given @ path and optional permissions, roll
-      //!  period and number of files to keep (active file + arrchives).
+      //!  period and number of files to keep (active file + archives).
       //----------------------------------------------------------------------
       LogFile(const std::string & path, mode_t permissions = 0644,
               RollPeriod period = RollPeriod::days_1, uint32_t keep = 7);
@@ -81,15 +82,7 @@ namespace Dwm {
       //----------------------------------------------------------------------
       //!  Move constructor.
       //----------------------------------------------------------------------
-      LogFile(LogFile && logFile)
-          : _mtx()
-      {
-        _path = std::move(logFile._path);
-        _permissions = logFile._permissions;
-        _keep = logFile._keep;
-        _ofs = std::move(logFile._ofs);
-        _rollInterval = logFile._rollInterval;
-      }
+      LogFile(LogFile && logFile);
       
       //----------------------------------------------------------------------
       //!  
@@ -134,6 +127,7 @@ namespace Dwm {
       };
 
       bool NeedRollBeforeOpen() const;
+      bool OpenNoLock();
       bool EnsureParentDirectory() const;
       bool SetPermissions() const;
       bool RollCriteriaMet(const Message & msg) const;

@@ -53,10 +53,21 @@ namespace Dwm {
     //------------------------------------------------------------------------
     LogFile::LogFile(const std::string & path, mode_t permissions,
                      RollPeriod period, uint32_t keep)
-        : _path(path), _permissions(permissions), _keep(keep),
+        : _mtx(), _path(path), _permissions(permissions), _keep(keep),
           _ofs(), _rollInterval(period)
     {}
 
+    //------------------------------------------------------------------------
+    LogFile::LogFile(LogFile && logFile)
+        : _mtx()
+    {
+      _path = std::move(logFile._path);
+      _permissions = logFile._permissions;
+      _keep = logFile._keep;
+      _ofs = std::move(logFile._ofs);
+      _rollInterval = logFile._rollInterval;
+    }
+    
     //------------------------------------------------------------------------
     bool LogFile::NeedRollBeforeOpen() const
     {
@@ -102,9 +113,16 @@ namespace Dwm {
       }
       return false;
     }
-    
+
     //------------------------------------------------------------------------
     bool LogFile::Open()
+    {
+      std::lock_guard  lck(_mtx);
+      return OpenNoLock();
+    }
+    
+    //------------------------------------------------------------------------
+    bool LogFile::OpenNoLock()
     {
       bool  rc = false;
       if (_ofs.is_open()) {
@@ -138,6 +156,7 @@ namespace Dwm {
     //------------------------------------------------------------------------
     void LogFile::Close()
     {
+      std::lock_guard  lck(_mtx);
       if (_ofs.is_open()) {
         _ofs.close();
       }
@@ -148,12 +167,13 @@ namespace Dwm {
     bool LogFile::Process(const Message & msg)
     {
       bool  rc = false;
+      std::lock_guard  lck(_mtx);
       if (_ofs.is_open()) {
         if (_ofs << msg << std::flush) {
           if (RollCriteriaMet(msg)) {
-            Close();
+            _ofs.close();
             Roll();
-            rc = Open();
+            rc = OpenNoLock();
             if (rc) {
               MCLOG(Severity::info, "LogFile {} rolled", _path.string());
             }
