@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogFilterDriver.hh
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::FilterDriver class declaration
 //---------------------------------------------------------------------------
 
 #ifndef _DWMMCLOGFILTERDRIVER_HH_
@@ -58,11 +58,15 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  
+    //!  Used to pass information to/from the filter parser and lexer.
     //------------------------------------------------------------------------
     class FilterDriver
     {
     public:
+      //----------------------------------------------------------------------
+      //!  Construct from the given Config @c cfg and filter expression
+      //!  @c expr.
+      //----------------------------------------------------------------------
       FilterDriver(const Config & cfg, const std::string & expr);
 
       const Config                                           &cfg;
