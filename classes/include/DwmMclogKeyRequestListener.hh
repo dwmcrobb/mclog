@@ -1,5 +1,5 @@
 //===========================================================================
-//  Copyright (c) Daniel W. McRobb 2025
+//  Copyright (c) Daniel W. McRobb 2025, 2026
 //  All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogKeyRequestListener.hh
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::KeyRequestListener class declaration
 //---------------------------------------------------------------------------
 
 #ifndef _DWMMCLOGKEYREQUESTLISTENER_HH_
@@ -53,11 +53,15 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  
+    //!  Encapsulates a thread that handles requests for a multicast
+    //!  decryption key.  Only used by mclogd.
     //------------------------------------------------------------------------
     class KeyRequestListener
     {
     public:
+      //----------------------------------------------------------------------
+      //!  Default constructor.
+      //----------------------------------------------------------------------
       KeyRequestListener()
           : _keyDir(nullptr), _mcastKey(nullptr), _fd(-1), _fd6(-1),
             _thread(), _run(false), _clients(), _clientsDone()
@@ -66,10 +70,23 @@ namespace Dwm {
         _stopfds[1] = -1;
       }
 
+      //----------------------------------------------------------------------
+      //!  Destructor
+      //----------------------------------------------------------------------
       ~KeyRequestListener();
 
+      //----------------------------------------------------------------------
+      //!  Start handling key requests arriving on @c fd and @c fd6.
+      //!  @c keyDir is a pointer to the path to the directory containing our
+      //!  Credence key files.  @c mcastKey is a pointer to the multicast
+      //!  decryption key.
+      //----------------------------------------------------------------------
       bool Start(int fd, int fd6, const std::string *keyDir,
                  const std::string *mcastKey);
+
+      //----------------------------------------------------------------------
+      //!  Stop handling key requests.
+      //----------------------------------------------------------------------
       bool Stop();
       
     private:
