@@ -58,7 +58,6 @@
 
   #include "DwmMclogMessage.hh"
   #include "DwmMclogMessageSelector.hh"
-  #include "DwmMclogMessageFilter.hh"
     
   namespace Dwm {
     namespace Mclog {
