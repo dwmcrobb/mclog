@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogKeyRequester.hh
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::KeyRequester class declaration
 //---------------------------------------------------------------------------
 
 #ifndef _DWMMCLOGKEYREQUESTER_HH_
@@ -54,18 +54,26 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  
+    //!  Provides an insterface to request the decryption key from a
+    //!  multicast source.
     //------------------------------------------------------------------------
     class KeyRequester
     {
     public:
+      //----------------------------------------------------------------------
+      //!  Construct from the given endpoint @c servEndpoint and the
+      //!  directory where our Credence keys are stored.
+      //----------------------------------------------------------------------
       KeyRequester(const UdpEndpoint servEndpoint,
                    const std::string & keyDir)
           : _servEndpoint(servEndpoint), _keyDir(keyDir), _fd(-1),
             _state(_servEndpoint.Port(), keyDir)
-      {
-      }
+      { }
 
+      //----------------------------------------------------------------------
+      //!  Request the multicast decryption key.  On success, the returned
+      //!  key will have a non-empty Value().
+      //----------------------------------------------------------------------
       MulticastSourceKey GetKey();
       
     private:
