@@ -46,6 +46,7 @@ extern "C" {
 
 #include "DwmFormatters.hh"
 #include "DwmMclogMessagePacket.hh"
+#include "DwmMclogLogger.hh"
 
 namespace Dwm {
 
@@ -122,8 +123,8 @@ namespace Dwm {
                     sizeof(dstSock));
       }
       if (rc != len) {
-        FSyslog(LOG_ERR, "sendto() failed: {} ({})",
-                strerror(errno), errno);
+        MCLOG(Severity::err, "sendto({}) failed: {} ({})",
+              dst, strerror(errno), errno);
       }
       return rc;
     }
