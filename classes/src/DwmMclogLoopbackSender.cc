@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogLoopbackSender.cc
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::LoopbackSender class implementation
 //---------------------------------------------------------------------------
 
 extern "C" {

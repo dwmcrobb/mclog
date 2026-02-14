@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogLoopbackSender.hh
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::LoopbackSender class declaration
 //---------------------------------------------------------------------------
 
 #ifndef _DWMMCLOGLOOPBACKSENDER_HH_
@@ -51,7 +51,9 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  
+    //!  Encapsulates a threaded sink that will send processed messages to
+    //!  the loopback address, under the assumption that mclogd is listening
+    //!  on the loopback.
     //------------------------------------------------------------------------
     class LoopbackSender
       : public MessageSink
@@ -59,12 +61,30 @@ namespace Dwm {
     public:
       using Clock = std::chrono::system_clock;
 
+      //----------------------------------------------------------------------
+      //!  Constructor
+      //----------------------------------------------------------------------
       LoopbackSender();
+      
+      //----------------------------------------------------------------------
+      //!  Destructor
+      //----------------------------------------------------------------------
       ~LoopbackSender();
       
+      //----------------------------------------------------------------------
+      //!  Start the sender.
+      //----------------------------------------------------------------------
       bool Start();
+      
+      //----------------------------------------------------------------------
+      //!  Stop the sender.
+      //----------------------------------------------------------------------
       bool Stop();
       
+      //----------------------------------------------------------------------
+      //!  Ask the sender to send the given @c msg.  Returns true on success,
+      //!  false on failure.
+      //----------------------------------------------------------------------
       bool Process(const Message & msg) override;
 
     private:
