@@ -61,11 +61,32 @@ namespace Dwm {
     LogFile::LogFile(LogFile && logFile)
         : _mtx()
     {
+      std::lock_guard(logFile._mtx);
       _path = std::move(logFile._path);
       _permissions = logFile._permissions;
       _keep = logFile._keep;
       _ofs = std::move(logFile._ofs);
       _rollInterval = logFile._rollInterval;
+    }
+
+    //------------------------------------------------------------------------
+    LogFile & LogFile::operator = (LogFile && logFile)
+    {
+      if (&logFile != this) {
+        std::scoped_lock  lck(_mtx, logFile._mtx);
+        _path = std::move(logFile._path);
+        _permissions = logFile._permissions;
+        _keep = logFile._keep;
+        _ofs = std::move(logFile._ofs);
+        _rollInterval = logFile._rollInterval;
+      }
+      return *this;
+    }
+
+    //------------------------------------------------------------------------
+    LogFile::~LogFile()
+    {
+      Close();
     }
     
     //------------------------------------------------------------------------

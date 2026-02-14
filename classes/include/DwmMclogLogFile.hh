@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogLogFile.hh
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::LogFile class declaration
 //---------------------------------------------------------------------------
 
 #ifndef _DWMMCLOGLOGFILE_HH_
@@ -53,22 +53,20 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  Encapsulates a log file and its archives.
+    //!  Encapsulates a log file and its archives.  An instance of this
+    //!  class may be used as a sink of the Logger.
     //------------------------------------------------------------------------
     class LogFile
       : public MessageSink
     {
     public:
-      using Clock = std::chrono::system_clock;
-
       //----------------------------------------------------------------------
-      //!  Default constructor.
+      //!  Delete the default constructor.
       //----------------------------------------------------------------------
-      // LogFile() = default;
       LogFile() = delete;
       
       //----------------------------------------------------------------------
-      //!  Construct from the given @ path and optional permissions, roll
+      //!  Construct from the given @c path and optional permissions, roll
       //!  period and number of files to keep (active file + archives).
       //----------------------------------------------------------------------
       LogFile(const std::string & path, mode_t permissions = 0644,
@@ -83,19 +81,35 @@ namespace Dwm {
       //!  Move constructor.
       //----------------------------------------------------------------------
       LogFile(LogFile && logFile);
+
+      //----------------------------------------------------------------------
+      //!  Copy assignment is invalid.
+      //----------------------------------------------------------------------
+      LogFile & operator = (const LogFile &) = delete;
+
+      //----------------------------------------------------------------------
+      //!  Move assignment.
+      //----------------------------------------------------------------------
+      LogFile & operator = (LogFile && logFile);
+
+      //----------------------------------------------------------------------
+      //!  Destructor
+      //----------------------------------------------------------------------
+      ~LogFile();
       
       //----------------------------------------------------------------------
-      //!  
+      //!  Opens the log file.  Returns true on success, false on failure.
       //----------------------------------------------------------------------
       bool Open();
       
       //----------------------------------------------------------------------
-      //!  
+      //!  Closes the log file.
       //----------------------------------------------------------------------
       void Close();
 
       //----------------------------------------------------------------------
-      //!  
+      //!  Processes the given @c msg.  Returns true on success, false on
+      //!  failure.
       //----------------------------------------------------------------------
       bool Process(const Message & msg) override;
 
