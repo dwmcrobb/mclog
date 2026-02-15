@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogMulticastSource.hh
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::MulticastSource class declaration
 //---------------------------------------------------------------------------
 
 #ifndef _DWMMCLOGMULTICASTSOURCE_HH_
@@ -67,30 +67,81 @@ namespace Dwm {
     //!      than my last decryption key update, do nothing (we've already
     //!      popped it from the queue to process it).
     //!      .....
+    //!
+    //!  This all seems a bit complicated.  Is it more complicated than
+    //!  necessary for the desired functionality?
     //------------------------------------------------------------------------
     class MulticastSource
     {
     public:
       using Clock = std::chrono::system_clock;
       
+      //----------------------------------------------------------------------
+      //!  Default constructor.
+      //----------------------------------------------------------------------
       MulticastSource();
+      
+      //----------------------------------------------------------------------
+      //!  Destructor.
+      //----------------------------------------------------------------------
       ~MulticastSource();
+      
+      //----------------------------------------------------------------------
+      //!  Construct from the given @c srcEndpoint, pointer to the path to
+      //!  our Credence key directory @c keyDir and pointer to a collection
+      //!  of sinks that will receive messages from packets processed with
+      //!  ProcessPacket().
+      //----------------------------------------------------------------------
       MulticastSource(const UdpEndpoint & srcEndpoint,
                       const std::string *keyDir,
                       std::vector<MessageSink *> *sinks);
+      
+      //----------------------------------------------------------------------
+      //!  Copy constructor.
+      //----------------------------------------------------------------------
       MulticastSource(const MulticastSource & src);
+      
+      //----------------------------------------------------------------------
+      //!  Move constructor.
+      //----------------------------------------------------------------------
       MulticastSource(MulticastSource && src);
+      
+      //----------------------------------------------------------------------
+      //!  Copy assignment.
+      //----------------------------------------------------------------------
       MulticastSource & operator = (const MulticastSource & src);
+      
+      //----------------------------------------------------------------------
+      //!  Move assignment.
+      //----------------------------------------------------------------------
       MulticastSource & operator = (MulticastSource && src);
       
+      //----------------------------------------------------------------------
+      //!  Returns the decryption key.
+      //----------------------------------------------------------------------
       MulticastSourceKey Key() const;
+      
+      //----------------------------------------------------------------------
+      //!  Sets the decryption key.
+      //----------------------------------------------------------------------
       void Key(const MulticastSourceKey & key);
+      
+      //----------------------------------------------------------------------
+      //!  Process the packet @c data of length @c datalen.  Returns true
+      //!  on success, false on failure.
+      //----------------------------------------------------------------------
       bool ProcessPacket(char *data, size_t datalen);
+      
+      //----------------------------------------------------------------------
+      //!  Returns the last time we received a packet from the multicast
+      //!  source.
+      //----------------------------------------------------------------------
       Clock::time_point LastReceiveTime() const;
       
     private:
       //----------------------------------------------------------------------
-      //!  
+      //!  Encapsulates packet backlog entries, i.e. packets we have not
+      //!  yet processed due to waiting for retrieval of the decryption key.
       //----------------------------------------------------------------------
       class BacklogEntry
       {
@@ -125,9 +176,7 @@ namespace Dwm {
       void ClearOldBacklog();
       void StartQuery();
       void QueryForKey();
-      
     };
-
     
   }  // namespace Mclog
 
