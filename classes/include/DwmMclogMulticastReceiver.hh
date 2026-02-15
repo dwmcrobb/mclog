@@ -1,5 +1,5 @@
 //===========================================================================
-//  Copyright (c) Daniel W. McRobb 2025
+//  Copyright (c) Daniel W. McRobb 2025, 2026
 //  All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogMulticastReceiver.hh
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::MulticastReceiver class declaration
 //---------------------------------------------------------------------------
 
 #ifndef _DWMMCLOGMULTICASTRECEIVER_HH_
@@ -55,18 +55,60 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  
+    //!  Encapsulates a multicast receiver of log messages.  Runs in its own
+    //!  thread, sending each message received via multicast to each of the
+    //!  contained sinks (which are configured via AddSink(), RemoveSink()
+    //!  and ClearSinks()).
     //------------------------------------------------------------------------
     class MulticastReceiver
     {
     public:
+      //----------------------------------------------------------------------
+      //!  Default constructor
+      //----------------------------------------------------------------------
       MulticastReceiver();
+      
+      //----------------------------------------------------------------------
+      //!  Destructor
+      //----------------------------------------------------------------------
       ~MulticastReceiver();
+      
+      //----------------------------------------------------------------------
+      //!  Open the multicast receiver using the given configuration @c cfg.
+      //!  Accept multicast messages from the local host if @c acceptLocal is
+      //!  @c true, else ignore multicast messages from the local host.  A
+      //!  client normally wants @c acceptLocal to be @c true.  mclogd is
+      //!  the only application expected to set @c acceptLocal to @c false,
+      //!  in order to not process its own multicast output as multicast
+      //!  input.
+      //!  Returns true on success, false on failure.
+      //----------------------------------------------------------------------
       bool Open(const Config & cfg, bool acceptLocal = true);
+      
+      //----------------------------------------------------------------------
+      //!  Restarts the multicast receiver using the given configuration
+      //!  @c cfg.  Returns true on success, false on failure.
+      //----------------------------------------------------------------------
       bool Restart(const Config & cfg);
+      
+      //----------------------------------------------------------------------
+      //!  Closes the multicast receiver.
+      //----------------------------------------------------------------------
       void Close();
+      
+      //----------------------------------------------------------------------
+      //!  Adds a sink to the multicast receiver.
+      //----------------------------------------------------------------------
       bool AddSink(MessageSink *sink);
+      
+      //----------------------------------------------------------------------
+      //!  Removes a sink from the multicast receiver.
+      //----------------------------------------------------------------------
       bool RemoveSink(MessageSink *sink);
+      
+      //----------------------------------------------------------------------
+      //!  Removes all sinks from the multicast receiver.
+      //----------------------------------------------------------------------
       void ClearSinks();
       
     private:
