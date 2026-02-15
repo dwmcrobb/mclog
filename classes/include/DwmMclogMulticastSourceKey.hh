@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogMulticastSourceKey.hh
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::MulticastSourceKey class declaration
 //---------------------------------------------------------------------------
 
 #ifndef _DWMMCLOGMULTICASTSOURCEKEY_HH_
@@ -49,24 +49,77 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  
+    //!  Encapsulates the multicast decryption key for a multicast log
+    //!  source, including time information that allows us to make message
+    //!  backlog decisions and drive new decryption key queries as needed.
     //------------------------------------------------------------------------
     class MulticastSourceKey
     {
     public:
       using Clock = std::chrono::system_clock;
+
+      //----------------------------------------------------------------------
+      //!  Default constructor.
+      //----------------------------------------------------------------------
       MulticastSourceKey();
+
+      //----------------------------------------------------------------------
+      //!  Construct with the given decryption key @c mcastKey.
+      //----------------------------------------------------------------------
       MulticastSourceKey(std::string mcastKey);
+
+      //----------------------------------------------------------------------
+      //!  Copy constructor.
+      //----------------------------------------------------------------------
       MulticastSourceKey(const MulticastSourceKey & key);
+
+      //----------------------------------------------------------------------
+      //!  Copy assignment.
+      //----------------------------------------------------------------------
       MulticastSourceKey & operator = (const MulticastSourceKey & key);
       
+      //----------------------------------------------------------------------
+      //!  Returns the decryption key value.  Empty if we have no decryption
+      //!  key.
+      //----------------------------------------------------------------------
       std::string Value() const;
+      
+      //----------------------------------------------------------------------
+      //!  Sets the decryption key value.
+      //----------------------------------------------------------------------
       void Value(const std::string & value);
+
+      //----------------------------------------------------------------------
+      //!  Returns the last time we were asked for the decryption key.
+      //----------------------------------------------------------------------
       Clock::time_point LastRequested() const;
+      
+      //----------------------------------------------------------------------
+      //!  Sets and returns the last time we were asked for the decryption
+      //!  key.
+      //----------------------------------------------------------------------
       void LastRequested(Clock::time_point lastRequested);
+      
+      //----------------------------------------------------------------------
+      //!  Returns the last time we queried the source for the decryption key.
+      //----------------------------------------------------------------------
       Clock::time_point LastQueried() const;
+      
+      //----------------------------------------------------------------------
+      //!  Sets and returns the last time we queried the source for the
+      //!  decryption key.
+      //----------------------------------------------------------------------
       void LastQueried(Clock::time_point lastQueried);
+      
+      //----------------------------------------------------------------------
+      //!  Returns the last time we successfully updated the decryption key.
+      //----------------------------------------------------------------------
       Clock::time_point LastUpdated() const;
+      
+      //----------------------------------------------------------------------
+      //!  Sets and returns the last time we successfully updated the
+      //!  decryption key.
+      //----------------------------------------------------------------------
       void LastUpdated(Clock::time_point lastUpdated);
       
     private:
