@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogSeverity.hh
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::Severity and related utility declarations
 //---------------------------------------------------------------------------
 
 extern "C" {
@@ -53,7 +53,7 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  
+    //!  Valid log message severities.
     //------------------------------------------------------------------------
     enum class Severity : uint8_t {
       emerg   = LOG_EMERG,
@@ -67,12 +67,21 @@ namespace Dwm {
     };
 
     //------------------------------------------------------------------------
-    //!  
+    //!  Emit a Severity to an ostream in human-readable form.
     //------------------------------------------------------------------------
     std::ostream & operator << (std::ostream & os, const Severity & severity);
 
+    //------------------------------------------------------------------------
+    //!  Given a @c severityName, returns the corresponding Severity.  Valid
+    //!  @c severityyName values: "debug", "info", "notice", "warning", "err",
+    //!  "crit", "alert" and "emerg".  If @c severityyName is not a valid
+    //!  severity name, returns @c emerg.
+    //------------------------------------------------------------------------
     Severity SeverityValue(const std::string & severityName);
 
+    //------------------------------------------------------------------------
+    //!  Returns the string representation of the given @c severity.
+    //------------------------------------------------------------------------
     std::string SeverityName(Severity severity);
     
   }  // namespace Mclog
