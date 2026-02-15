@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogMulticastSources.hh
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::MulticastSources class declaration
 //---------------------------------------------------------------------------
 
 #ifndef _DWMMCLOGMULTICASTSOURCES_HH_
@@ -53,14 +53,30 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  
+    //!  Encapsulates a map of UDP endpoints to multicast log message
+    //!  sources and a set of sinks which will receive messages we receive
+    //!  from the multicast log message sources.
     //------------------------------------------------------------------------
     class MulticastSources
     {
     public:
+      //----------------------------------------------------------------------
+      //!  Default constructor.
+      //----------------------------------------------------------------------
       MulticastSources();
+      
+      //----------------------------------------------------------------------
+      //!  Construct from the given Credence key directory path @c keyDir
+      //!  and a pointer to the sinks which will receive log messages
+      //!  arriving from any of the m,ulticast sources.
+      //----------------------------------------------------------------------
       MulticastSources(const std::string *keyDir,
                        std::vector<MessageSink *> *sinks);
+      
+      //----------------------------------------------------------------------
+      //!  Processes the packet @c data of length @c datalen from the
+      //!  multicast source at @c src.
+      //----------------------------------------------------------------------
       void ProcessPacket(const UdpEndpoint & src, char *data,
                          size_t datalen);
       
