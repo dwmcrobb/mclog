@@ -1,5 +1,5 @@
 //===========================================================================
-//  Copyright (c) Daniel W. McRobb 2025
+//  Copyright (c) Daniel W. McRobb 2025, 2026
 //  All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogMulticastSender.hh
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::MulticastSender class declaration
 //---------------------------------------------------------------------------
 
 #ifndef _DWMMCLOGMULTICASTSENDER_HH_
@@ -58,7 +58,8 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  
+    //!  Encapsulates a thread to transmit log messages via multicast,
+    //!  encrypted.
     //------------------------------------------------------------------------
     class MulticastSender
       : public MessageSink
@@ -67,40 +68,46 @@ namespace Dwm {
       using Clock = std::chrono::system_clock;
       
       //----------------------------------------------------------------------
-      //!  
+      //!  Default constructor.
       //----------------------------------------------------------------------
       MulticastSender();
 
       //----------------------------------------------------------------------
-      //!  
+      //!  Destructor.
       //----------------------------------------------------------------------
       ~MulticastSender();
       
       //----------------------------------------------------------------------
-      //!  
+      //!  Open the multicast sender using the given @c config.  Returns true
+      //!  on success, false on failure.
       //----------------------------------------------------------------------
       bool Open(const Config & config);
 
       //----------------------------------------------------------------------
-      //!  
+      //!  Restarts the multicast sender using the given @c config.  Returns
+      //!  true on success, false on failure.
       //----------------------------------------------------------------------
       bool Restart(const Config & config);
       
       //----------------------------------------------------------------------
-      //!  
+      //!  Close the multicast sender.
       //----------------------------------------------------------------------
       void Close();
 
       //----------------------------------------------------------------------
-      //!  
+      //!  Returns a pointer to the message queue (do I need this?).
       //----------------------------------------------------------------------
       Thread::Queue<Message> *OutputQueue()
       { return &_outQueue; }
 
+      //----------------------------------------------------------------------
+      //!  Processes the given @c msg.  Returns true on success, false on
+      //!  failure.
+      //----------------------------------------------------------------------
       bool Process(const Message & msg) override;
       
       //----------------------------------------------------------------------
-      //!  
+      //!  Returns the multicast encryption key.
       //----------------------------------------------------------------------
       std::string Key() const
       { return _key; }
