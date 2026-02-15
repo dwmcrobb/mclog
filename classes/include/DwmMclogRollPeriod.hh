@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogRollPeriod.hh
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::RollPeriod and related utility declarations
 //---------------------------------------------------------------------------
 
 #ifndef _DWMMCLOGROLLPERIOD_HH_
@@ -48,7 +48,7 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  
+    //!  Defined log file rollover periods.
     //------------------------------------------------------------------------
     enum class RollPeriod : uint8_t {
       minutes_5,
@@ -65,7 +65,9 @@ namespace Dwm {
     };
 
     //------------------------------------------------------------------------
-    //!  
+    //!  Returns a RollPeriod for the given string @c str.  Valid values for
+    //!  @c std: "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h",
+    //!  "1d" or "7d".  For an invalid @c str, will return days_1.
     //------------------------------------------------------------------------
     RollPeriod GetRollPeriod(const std::string & str);
     
