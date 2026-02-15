@@ -1,5 +1,5 @@
 //===========================================================================
-//  Copyright (c) Daniel W. McRobb 2025
+//  Copyright (c) Daniel W. McRobb 2025, 2026
 //  All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogMessageOrigin.hh
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::MessageOrigin class declaration
 //---------------------------------------------------------------------------
 
 #ifndef _DWMMCLOGMESSAGEORIGIN_HH_
@@ -51,45 +51,105 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  
+    //!  Encapsulates message origin: hostname, appname (ident) and process
+    //!  ID.
     //------------------------------------------------------------------------
     class MessageOrigin
     {
     public:
+      //----------------------------------------------------------------------
+      //!  Default constructor
+      //----------------------------------------------------------------------
       MessageOrigin() = default;
 
+      //----------------------------------------------------------------------
+      //!  Copy constructor
+      //----------------------------------------------------------------------
       MessageOrigin(const MessageOrigin & origin);
 
+      //----------------------------------------------------------------------
+      //!  Copy assignment
+      //----------------------------------------------------------------------
       MessageOrigin & operator = (const MessageOrigin & origin);
 
+      //----------------------------------------------------------------------
+      //!  Move constructor
+      //----------------------------------------------------------------------
       MessageOrigin(MessageOrigin && origin);
 
+      //----------------------------------------------------------------------
+      //!  Move assignment
+      //----------------------------------------------------------------------
       MessageOrigin & operator = (MessageOrigin && origin);
       
+      //----------------------------------------------------------------------
+      //!  Construct from the given @c hostname, @c appname and @c pid.
+      //----------------------------------------------------------------------
       MessageOrigin(const char *hostname, const char *appname, pid_t pid);
 
+      //----------------------------------------------------------------------
+      //!  Returns the origin hostname.
+      //----------------------------------------------------------------------
       const std::string & hostname() const
       { std::lock_guard lck(_mtx); return _hostname.Value(); }
 
+      //----------------------------------------------------------------------
+      //!  Sets and returns the origin hostname.
+      //----------------------------------------------------------------------
       const std::string & hostname(const char *hostname)
-      { std::lock_guard lck(_mtx); _hostname = hostname; return _hostname.Value(); }
+      {
+        std::lock_guard lck(_mtx);
+        _hostname = hostname;
+        return _hostname.Value();
+      }
         
+      //----------------------------------------------------------------------
+      //!  Returns the origin appname (ident).
+      //----------------------------------------------------------------------
       const std::string & appname() const
       { std::lock_guard lck(_mtx); return _appname.Value(); }
 
+      //----------------------------------------------------------------------
+      //!  Sets and returns the origin appname (ident).
+      //----------------------------------------------------------------------
       const std::string & appname(const char *appname)
-      { std::lock_guard lck(_mtx); _appname = appname; return _appname.Value(); }
+      {
+        std::lock_guard lck(_mtx);
+        _appname = appname;
+        return _appname.Value();
+      }
 
+      //----------------------------------------------------------------------
+      //!  Returns the origin process ID.
+      //----------------------------------------------------------------------
       const uint32_t processid() const
       { std::lock_guard lck(_mtx); return _procid; }
 
+      //----------------------------------------------------------------------
+      //!  Sets and returns the origin process ID.
+      //----------------------------------------------------------------------
       const uint32_t processid(uint32_t procid)
       { std::lock_guard lck(_mtx); _procid = procid; return _procid; }
 
+      //----------------------------------------------------------------------
+      //!  Reads the origin from the given istream @c is.  Returns @c is.
+      //----------------------------------------------------------------------
       std::istream & Read(std::istream & is);
+      
+      //----------------------------------------------------------------------
+      //!  Writes the origin to the given ostream @c os.  Returns @c os.
+      //----------------------------------------------------------------------
       std::ostream & Write(std::ostream & os) const;
+      
+      //----------------------------------------------------------------------
+      //!  Returns the number of bytes that would be written if we called the
+      //!  Write() member.
+      //----------------------------------------------------------------------
       uint64_t StreamedLength() const;
       
+      //----------------------------------------------------------------------
+      //!  Prints the origin to an ostream in human-readable form.
+      //----------------------------------------------------------------------
       friend std::ostream & operator << (std::ostream & os,
                                          const MessageOrigin & origin);
       
