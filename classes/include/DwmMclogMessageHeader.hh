@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogMessageHeader.hh
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::MessageHeader class declaration
 //---------------------------------------------------------------------------
 
 #ifndef _DWMMCLOGMESSAGEHEADER_HH_
@@ -74,9 +74,9 @@ namespace Dwm {
       //!  
       //----------------------------------------------------------------------
       MessageHeader(Facility facility, Severity severity,
-                    const MessageOrigin & origin /*, std::string msgId = "" */)
+                    const MessageOrigin & origin)
           : _timestamp(), _facility(facility), _severity(severity),
-            _origin(origin) //, _msgid(msgId)
+            _origin(origin)
       {}
       
       //----------------------------------------------------------------------
@@ -97,14 +97,6 @@ namespace Dwm {
       Severity severity() const
       { return _severity; }
         
-      //----------------------------------------------------------------------
-      //!  
-      //----------------------------------------------------------------------
-#if 0
-      const std::string & msgid() const
-      { return _msgid.Value(); }
-#endif
-      
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
@@ -139,7 +131,6 @@ namespace Dwm {
       Facility                    _facility;
       Severity                    _severity;
       MessageOrigin               _origin;
-      // Credence::ShortString<255>  _msgid;
     };
 
   }  // namespace Mclog

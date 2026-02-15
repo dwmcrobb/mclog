@@ -47,7 +47,7 @@ namespace Dwm {
     //------------------------------------------------------------------------
     MessageHeader::MessageHeader(const MessageHeader & hdr)
         : _timestamp(hdr._timestamp), _facility(hdr._facility),
-          _severity(hdr._severity), _origin(hdr._origin) // , _msgid(hdr._msgid)
+          _severity(hdr._severity), _origin(hdr._origin)
     {}
 
     //------------------------------------------------------------------------
@@ -58,7 +58,6 @@ namespace Dwm {
         _facility = hdr._facility;
         _severity = hdr._severity;
         _origin = hdr._origin;
-        //        _msgid = hdr._msgid;
       }
       return *this;
     }
@@ -71,9 +70,7 @@ namespace Dwm {
           if (_facility <= Facility::local7) {
             if (StreamIO::Read(is, _severity)) {
               if (_severity <= Severity::debug) {
-                if (_origin.Read(is)) {
-                  //  StreamIO::Read(is, _msgid);
-                }
+                _origin.Read(is);
               }
               else {
                 is.setstate(std::ios_base::failbit);
@@ -94,9 +91,7 @@ namespace Dwm {
       if (_timestamp.Write(os)) {
         if (StreamIO::Write(os, _facility)) {
           if (StreamIO::Write(os, _severity)) {
-            if (_origin.Write(os)) {
-              // StreamIO::Write(os, _msgid);
-            }
+            _origin.Write(os);
           }
         }
       }
@@ -111,8 +106,7 @@ namespace Dwm {
       return (_timestamp.StreamedLength()
               + IOUtils::StreamedLength(_facility)
               + IOUtils::StreamedLength(_severity)
-              + _origin.StreamedLength()
-              /* + IOUtils::StreamedLength(_msgid) */);
+              + _origin.StreamedLength());
     }
     
     //------------------------------------------------------------------------
