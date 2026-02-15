@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogSyslogSink.hh
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::SyslogSink class declaration
 //---------------------------------------------------------------------------
 
 #ifndef _DWMMCLOGSYSLOGSINK_HH_
@@ -51,19 +51,19 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  
+    //!  Encapsulate a syslog sink that can be used as a sink for Logger.
     //------------------------------------------------------------------------
     class SyslogSink
       : public MessageSink 
     {
     public:
       //----------------------------------------------------------------------
-      //!  
+      //!  Delete the default constructor.
       //----------------------------------------------------------------------
       SyslogSink() = delete;
       
       //----------------------------------------------------------------------
-      //!  
+      //!  Construct with the given @c ident and @c facility.
       //----------------------------------------------------------------------
       SyslogSink(const char *ident, int facility)
       {
@@ -72,13 +72,13 @@ namespace Dwm {
       }
 
       //----------------------------------------------------------------------
-      //!  
+      //!  Destructor.
       //----------------------------------------------------------------------
       ~SyslogSink()
       { SysLogger::Close(); }
         
       //----------------------------------------------------------------------
-      //!  
+      //!  Process the given @c msg.
       //----------------------------------------------------------------------
       bool Process(const Message & msg) override
       {
