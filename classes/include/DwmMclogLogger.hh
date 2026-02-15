@@ -40,6 +40,7 @@
 #ifndef _DWMMCLOGLOGGER_HH_
 #define _DWMMCLOGLOGGER_HH_
 
+#include <cassert>
 #include <memory>
 #include <mutex>
 #include <source_location>
@@ -170,11 +171,25 @@ namespace Dwm {
       { return Log(severity, Format(fm, std::forward<Args>(args)...), loc); }
       
       //----------------------------------------------------------------------
+      //!  Allow an integer value for severity, so we can use syslog
+      //!  priorities LOG_DEBUG, LOG_INFO, LOG_ERR, et. al.
+      //----------------------------------------------------------------------
+      template <typename ...Args>
+      bool Log(std::source_location loc, int severity,
+               FMT::format_string<Args...> fm, Args &&...args)
+      {
+        assert((severity <= static_cast<int>(Severity::debug))
+               && (severity >= static_cast<int>(Severity::emerg)));
+        return Log(static_cast<Severity>(severity),
+                   Format(fm, std::forward<Args>(args)...), loc);
+      }
+
+      //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
       bool Log(Severity severity, std::string && msg,
                std::source_location loc = std::source_location::current());
-      
+
     private:
       MessageOrigin                _origin;
       Facility                     _facility;
