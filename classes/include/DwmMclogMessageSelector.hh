@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogMessageSelector.hh
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::MessageSelector class declaration
 //---------------------------------------------------------------------------
 
 #ifndef _DWMMCLOGMESSAGESELECTOR_HH_
@@ -50,22 +50,65 @@ namespace Dwm {
 
   namespace Mclog {
 
+    //------------------------------------------------------------------------
+    //!  Encapsulates message selection criteria.  Instances of this class
+    //!  are used as operands in the message filtering language.  This class
+    //!  is relatively simple, and a 'match' is determined using a logical
+    //!  AND ('&&') of the matches of each of the fields against the field's
+    //!  corresponding expression.  We have 2 fields which will be matched
+    //!  using regular expressions (SourceHost and Ident), one which will
+    //!  be compared for membership in a set (Facilities) and one which will
+    //!  be compared arithmetically (MinimumSeverity).
+    //------------------------------------------------------------------------
     class MessageSelector
     {
     public:
+      //----------------------------------------------------------------------
+      //!  Default constructor.  A default constructed MessageSelector will
+      //!  match all messages with a non-empty origin (source) host.
+      //----------------------------------------------------------------------
       MessageSelector();
 
+      //----------------------------------------------------------------------
+      //!  Sets the source host (origin) expression to match
+      //!  (@c match == @c true) or not match (@c match == @c false).
+      //----------------------------------------------------------------------
       bool SourceHost(const std::string & srcHostExpr, bool match = true);
+      
+      //----------------------------------------------------------------------
+      //!  Sets the @c facilities to match (@c match == @c true) or not match
+      //!  (@c match == @c false).
+      //----------------------------------------------------------------------
       void Facilities(const std::set<Facility> & facilities,
                       bool match = true);
+      
+      //----------------------------------------------------------------------
+      //!  Returns a mutable reference to the facilities to match or not
+      //!  match.  This is a convenience for inserting into the facilities
+      //!  when building a MessageSelector from configuration.
+      //----------------------------------------------------------------------
       const std::pair<std::set<Facility>,bool> & Facilities() const
       { return _facilities; }
         
+      //----------------------------------------------------------------------
+      //!  Sets the minimum severity we will match.
+      //----------------------------------------------------------------------
       void MinimumSeverity(Severity minSeverity);
+      
+      //----------------------------------------------------------------------
+      //!  Sets the application name ('ident') expression we will match
+      //!  (@c match == @c true) or not match (@c match == @c false).
+      //----------------------------------------------------------------------
       bool Ident(const std::string & identExpr, bool match = true);
 
+      //----------------------------------------------------------------------
+      //!  Returns true if the given @c msg matches.
+      //----------------------------------------------------------------------
       bool Matches(const Message & msg) const;
       
+      //----------------------------------------------------------------------
+      //!  Clears the selector (sets to default-constructed state).
+      //----------------------------------------------------------------------
       void Clear();
       
     private:
