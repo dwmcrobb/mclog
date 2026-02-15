@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogTimestamp.hh
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::Timestamp class declaration
 //---------------------------------------------------------------------------
 
 #ifndef _DWMMCLOGTIMESTAMP_HH_
