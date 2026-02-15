@@ -71,7 +71,7 @@ namespace Dwm {
       MessageHeader & operator = (const MessageHeader & hdr);
       
       //----------------------------------------------------------------------
-      //!  
+      //!  Construct from the given @c facility, @c severity and @c origin.
       //----------------------------------------------------------------------
       MessageHeader(Facility facility, Severity severity,
                     const MessageOrigin & origin)
@@ -80,25 +80,25 @@ namespace Dwm {
       {}
       
       //----------------------------------------------------------------------
-      //!  
+      //!  Returns the timestamp.
       //----------------------------------------------------------------------
       const Timestamp & timestamp() const
       { return _timestamp; }
 
       //----------------------------------------------------------------------
-      //!  
+      //!  Returns the facility.
       //----------------------------------------------------------------------
       Facility facility() const
       { return _facility; }
 
       //----------------------------------------------------------------------
-      //!  
+      //!  Returns the severity.
       //----------------------------------------------------------------------
       Severity severity() const
       { return _severity; }
         
       //----------------------------------------------------------------------
-      //!  
+      //!  Returns the origin.
       //----------------------------------------------------------------------
       const MessageOrigin & origin() const
       { return _origin; }
