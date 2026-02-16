@@ -196,8 +196,12 @@ namespace Dwm {
             }
           }
         }
+        if (pkt.HasPayload()) {
+          if (! SendPacket(pkt)) {
+            Syslog(LOG_ERR, "SendPacket() failed");
+          }
+        }
       }
-      
       return;
     }
     
