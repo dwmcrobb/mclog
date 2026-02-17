@@ -190,18 +190,15 @@ namespace Dwm {
       bool  rc = false;
       std::lock_guard  lck(_mtx);
       if (_ofs.is_open()) {
+        if (RollCriteriaMet(msg)) {
+          _ofs.close();
+          Roll();
+          if (OpenNoLock()) {
+            MCLOG(Severity::info, "LogFile {} rolled", _path.string());
+          }
+        }
         if (_ofs << msg << std::flush) {
-          if (RollCriteriaMet(msg)) {
-            _ofs.close();
-            Roll();
-            rc = OpenNoLock();
-            if (rc) {
-              MCLOG(Severity::info, "LogFile {} rolled", _path.string());
-            }
-          }
-          else {
-            rc = true;
-          }
+          rc = true;
         }
       }
       return rc;
