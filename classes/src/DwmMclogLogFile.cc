@@ -39,6 +39,7 @@
 
 extern "C" {
   #include <sys/stat.h>
+  #include <unistd.h>
 }
 
 #include <regex>
@@ -54,7 +55,7 @@ namespace Dwm {
     LogFile::LogFile(const std::string & path, mode_t permissions,
                      RollPeriod period, uint32_t keep)
         : _mtx(), _path(path), _permissions(permissions), _keep(keep),
-          _ofs(), _rollInterval(period)
+          _ofs(), _rollInterval(period), _user(getuid()), _group(getgid())
     {}
 
     //------------------------------------------------------------------------
@@ -67,6 +68,8 @@ namespace Dwm {
       _keep = logFile._keep;
       _ofs = std::move(logFile._ofs);
       _rollInterval = logFile._rollInterval;
+      _user = logFile._user;
+      _group = logFile._group;
     }
 
     //------------------------------------------------------------------------
@@ -79,6 +82,8 @@ namespace Dwm {
         _keep = logFile._keep;
         _ofs = std::move(logFile._ofs);
         _rollInterval = logFile._rollInterval;
+        _user = logFile._user;
+        _group = logFile._group;
       }
       return *this;
     }

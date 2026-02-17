@@ -52,10 +52,13 @@ extern "C" {
 #include "DwmCredenceXChaCha20Poly1305.hh"
 #include "DwmMclogConfig.hh"
 #include "DwmMclogMessageSelector.hh"
-#include "DwmMclogMessageSink.hh"
+#include "DwmMclogLogger.hh"
 #include "DwmMclogKeyRequester.hh"
 #include "DwmMclogMulticastReceiver.hh"
 
+//----------------------------------------------------------------------------
+//!  
+//----------------------------------------------------------------------------
 class MySink
   : public Dwm::Mclog::MessageSink
 {
@@ -73,6 +76,19 @@ public:
 private:
   //  Dwm::Mclog::MessageSelector  _selector;
 };
+
+//----------------------------------------------------------------------------
+//!  
+//----------------------------------------------------------------------------
+static void Log(const std::string & facility, const std::string & severity,
+                std::string && msg)
+{
+  Dwm::Mclog::logger.Open(Dwm::Mclog::FacilityValue(facility));
+  Dwm::Mclog::logger.LogLocations(false);
+  Dwm::Mclog::logger.Log(Dwm::Mclog::SeverityValue(severity), std::move(msg));
+  Dwm::Mclog::logger.Close();
+  return;
+}
 
 //----------------------------------------------------------------------------
 //!  
