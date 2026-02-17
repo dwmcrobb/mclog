@@ -179,10 +179,10 @@
   YY_DECL;
 }
 
-%token FACILITY FILES FILTER GROUPADDR GROUPADDR6 HOST IDENT INTFADDR INTFADDR6
-%token INTFNAME KEEP KEYDIRECTORY LISTENV4 LISTENV6 LOGICALOR LOGICALAND
-%token LOOPBACK LOGDIRECTORY LOGS MINIMUMSEVERITY MULTICAST NOT OUTFILTER PATH
-%token PERIOD PERMS PORT SELECTORS SERVICE
+%token COMPRESS FACILITY FILES FILTER GROUP GROUPADDR GROUPADDR6 HOST IDENT
+%token INTFADDR INTFADDR6 INTFNAME KEEP KEYDIRECTORY LISTENV4 LISTENV6
+%token LOGICALOR LOGICALAND LOOPBACK LOGDIRECTORY LOGS MINIMUMSEVERITY
+%token MULTICAST NOT OUTFILTER PATH PERIOD PERMS PORT SELECTORS SERVICE USER
 
 %token<stringVal>  STRING
 %token<intVal>     INTEGER
@@ -191,7 +191,7 @@
 %type<stringVal>          Filter IntfName KeyDirectory LogDirectory
 %type<intVal>             Keep Permissions
 %type<rollPeriodVal>      RollPeriod
-%type<stringVal>          OutFilter Path
+%type<stringVal>          Compress Group OutFilter Path User
 %type<serviceConfigVal>   ServiceSettings
 %type<loopbackConfigVal>  LoopbackSettings
 %type<filesConfigVal>     FilesSettings
@@ -712,6 +712,24 @@ LogSettings: Filter
     mclogcfgerror("invalid keep '%d', using 7", $1);
   }
 }
+| User
+{
+  $$ = new Dwm::Mclog::LogFileConfig();
+  $$->user = *($1);
+  delete $1;
+}
+| Group
+{
+  $$ = new Dwm::Mclog::LogFileConfig();
+  $$->group = *($1);
+  delete $1;
+}
+| Compress
+{
+  $$ = new Dwm::Mclog::LogFileConfig();
+  $$->compress = *($1);
+  delete $1;
+}
 | LogSettings Filter
 {
   $$->filter = *($2);
@@ -745,6 +763,21 @@ LogSettings: Filter
   else {
     mclogcfgerror("invalid keep '%d', using 7", $2);
   }
+}
+| LogSettings User
+{
+  $$->user = *($2);
+  delete $2;
+}
+| LogSettings Group
+{
+  $$->group = *($2);
+  delete $2;
+}
+| LogSettings Compress
+{
+  $$->compress = *($2);
+  delete $2;
 };
 
 Filter: FILTER '=' STRING ';'
@@ -764,11 +797,26 @@ Permissions: PERMS '=' INTEGER ';'
 
 RollPeriod: PERIOD '=' STRING ';'
 {
-    $$ = Dwm::Mclog::GetRollPeriod(*($3));
+  $$ = Dwm::Mclog::GetRollPeriod(*($3));
   delete $3;
 };
 
 Keep: KEEP '=' INTEGER ';'
+{
+  $$ = $3;
+};
+
+User: USER '=' STRING ';'
+{
+  $$ = $3;
+};
+
+Group: GROUP '=' STRING ';'
+{
+  $$ = $3;
+};
+
+Compress: COMPRESS '=' STRING ';'
 {
   $$ = $3;
 };
@@ -837,6 +885,9 @@ namespace Dwm {
       permissions = 0644;
       period = RollPeriod::days_1;
       keep = 7;
+      user.clear();
+      group.clear();
+      compress = "bzip2";
     }
     
     //-----------------------------------------------------------------------

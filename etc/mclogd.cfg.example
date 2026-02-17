@@ -134,7 +134,8 @@ files {
     #  default is 7.
     #-----------------------------------------------------------------------
     logs {
-        { filter="mydaemons"; path="%H/%I"; perms=0644; period=1d; keep=7; },
+        { filter="mydaemons"; path="%H/%I"; user="dwm"; group="staff";
+          perms=0644; period=1d; keep=7; compress="bzip2"; },
         { filter="myapps"; path="%H/myapps"; perms=0600; }
     };
 };

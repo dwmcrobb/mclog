@@ -120,6 +120,9 @@ namespace Dwm {
       mode_t       permissions;   // file permissions (octal)
       RollPeriod   period;        // time between rollovers
       uint32_t     keep;          // number of log files to keep when rolling
+      std::string  user;
+      std::string  group;
+      std::string  compress;
     };
     
     //------------------------------------------------------------------------

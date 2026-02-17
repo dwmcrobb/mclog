@@ -66,9 +66,11 @@
 
   //--------------------------------------------------------------------------
   static const std::map<std::string,int>  g_configKeywords = {
+    { "compress",           COMPRESS        },
     { "facility",           FACILITY        },
     { "files",              FILES           },
-    { "filter",             FILTER          }, 
+    { "filter",             FILTER          },
+    { "group",              GROUP           },
     { "groupAddr",          GROUPADDR       },
     { "groupAddr6",         GROUPADDR6      },
     { "host",               HOST            },
@@ -91,7 +93,8 @@
     { "perms",              PERMS           },
     { "port",               PORT            },
     { "selectors",          SELECTORS       },
-    { "service",            SERVICE         }
+    { "service",            SERVICE         },
+    { "user",               USER            }
   };
 
   //--------------------------------------------------------------------------
