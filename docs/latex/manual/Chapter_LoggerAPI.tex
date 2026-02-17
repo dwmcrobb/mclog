@@ -1,0 +1,32 @@
+\chapter{Logger API}
+
+\section{Opening the logger}
+
+\begin{verbatim}
+  bool Open(Facility facility = Facility::user,
+            const std::vector<MessageSink *> & sinks = {},
+            const char *ident = nullptr);
+\end{verbatim}
+
+If \texttt{sinks} is empty, the logger will send all log messages
+to the loopback address.
+
+If \texttt{ident} is \textt{nullptr}, the logger will use the ident
+given by the runtime.  On macOS and FreeBSD, this comes from
+\textt{getprogname(3)}.  On Linux, this comes from
+\texttt{program\_invocation\_short\_name(3)}.
+
+\section{Alternate or additional sinks}
+
+\begin{verbatim}
+  bool AddSinks(const std::vector<MessageSink *> & sinks);
+\end{verbatim}
+
+\begin{verbatim}
+  bool RemoveSinks(const std::vector<MessageSink *> & sinks);
+\end{verbatim}
+
+\section{Sending log messages}
+
+\section{Closing the logger}
+

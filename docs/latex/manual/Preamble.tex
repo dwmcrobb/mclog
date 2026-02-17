@@ -1,0 +1,205 @@
+\usepackage{emoji}
+\usepackage{lmodern}
+\setemojifont{Apple Color Emoji}
+\setmainfont{Latin Modern Sans}
+\usepackage{fontspec}
+\usepackage{newunicodechar}
+% \usepackage{capt-of}
+\usepackage{caption}
+\usepackage{enumitem}
+\usepackage[en-US,showzone]{datetime2}
+\usepackage{fancyvrb}
+% \fvset{frame=single,framesep=1mm,fontfamily=courier,fontsize=\scriptsize,numbers=left,framerule=.3mm,numbersep=1mm,commandchars=\\\{\}}
+\fvset{frame=none,framesep=1mm,numbers=none,commandchars=\\\{\}}
+\usepackage{fvextra}
+\usepackage{float}
+\usepackage{mdframed}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{makecell}
+\usepackage{multirow}
+\usepackage{setspace}
+\usepackage{tabularx}
+\usepackage{titlesec}
+\usepackage{titletoc}
+\usepackage{tikz}
+\usetikzlibrary{calc,chains,positioning,shapes,decorations.pathreplacing}
+% \usepackage[T1]{fontenc}
+\usepackage[table]{xcolor}
+% \usepackage[scaled]{beramono}
+% \renewcommand{\ttdefault}{beramono}
+% \renewcommand{\familydefault}{\sfdefault}
+
+\directlua{luaotfload.add_fallback
+   ("emojifallback",
+    {
+      "AppleColorEmoji:mode=harf;"
+    }
+   )}
+
+\setmonofont{Fira Code}[
+  RawFeature={fallback=emojifallback}
+]
+
+\titleformat{\chapter}[display]
+            {\normalfont\huge\bfseries}
+            {\chaptertitlename~\thechapter}{20pt}{\huge}
+
+\titlespacing*{\section}{0pt}{1ex}{.1ex}
+\titlespacing*{\chapter}{0pt}{1ex}{.1ex}
+\titlespacing*{\subsection}{0pt}{1ex}{1ex}
+\titlespacing*{\subsubsection}{0pt}{1ex}{1ex}
+
+\titlecontents{chapter}   % Affects chapters
+[0em]                    % Left indentation
+{}                       % Space before entry
+{\bfseries\contentslabel{2.3em}}  % Font for numbered chapters
+{}                       % Font for unnumbered chapters
+{\titlerule*[1pc]{.}\contentspage}    % Dot leaders
+{}          % Page number
+\titlecontents{section}   % Affects sections
+[1em]                    % Left indentation
+{}                       % Space before entry
+{\bfseries\contentslabel{2.3em}}  % Font for numbered sections
+{}                       % Font for unnumbered sections
+{\titlerule*[1pc]{.}\contentspage}    % Dot leaders
+{}          % Page number
+\titlecontents{subsection}   % Affects subsections
+[2.5em]                    % Left indentation
+{}                       % Space before entry
+{\contentslabel{3.3em}}         % Font for numbered subsections
+{}                       % Font for unnumbered subsections
+{\titlerule*[1pc]{.}\contentspage}    % Dot leaders
+{}          % Page number
+\titlecontents{subsubsection}   % Affects subsubsections
+[1em]                    % Left indentation
+{}                       % Space before entry
+{\bfseries\contentslabel{2.5em}}      % Font for numbered subsubsections
+{\bfseries\contentslabel{2.5em}}      % Font for unnumbered subsubsections
+{\titlerule*[1pc]{.}\contentspage}    % Dot leaders
+{}          
+
+\titleformat{\subsubsection}
+  {\normalfont\large\bfseries}{\underline{\thesubsubsection}}{1em}{}
+  
+\textwidth=6.5in
+\textheight=9.0in
+\oddsidemargin=-0.25in
+\evensidemargin=-0.25in
+\topmargin=-0.25in
+\parskip=1em
+\parindent=0in
+\itemsep=.1ex
+
+% the styles for short and long nodes
+\tikzset{
+short/.style={draw,text height=3pt,text depth=20pt,
+  text width=7pt,align=center,fill=blue!10},
+shortTall/.style={draw,text height=1pt,text depth=36pt,inner sep=1pt,
+  text width=.013888\textwidth, align=center,fill=blue!10},
+long/.style={short,fill=green!10,text width=(\textwidth-64pt)/3},
+nineTall/.style={long,fill=green!10,text width=(\textwidth)/9,
+  align=center,text centered,text depth=20pt,minimum height=36pt,
+  text height=18pt},
+dotdot/.style={fill=white,minimum width=(\textwidth-96pt)/3},
+eightByteEmpty/.style={draw,fill=blue!10,text depth=20pt,text width=96pt,align=center},
+fourByteEmpty/.style={draw,fill=blue!10,minimum height=20pt,text depth=10pt,text width=48pt,align=center,text centered}}
+
+\makeatletter
+    \let\pgf@decorate@@brace@brace@code@old\pgf@decorate@@brace@brace@code
+    \def\pgf@decorate@@brace@brace@code{
+        \ifdim\pgfdecoratedremainingdistance<4\pgfdecorationsegmentamplitude
+            \pgftransformxscale{\pgfdecoratedremainingdistance/4\pgfdecorationsegmentamplitude}
+            \pgfdecoratedremainingdistance=4\pgfdecorationsegmentamplitude
+        \fi
+        \pgf@decorate@@brace@brace@code@old
+    }
+    \makeatother
+
+% Using Courier font
+% \renewcommand{\ttdefault}{pcr}
+
+\definecolor{dwmOrange}{RGB}{255,127,42}
+\definecolor{codegray}{rgb}{0.7,0.7,0.7}
+\definecolor{codeblue}{rgb}{0.2,0.2,1.0}
+\definecolor{darkblue}{rgb}{0.0,0.0,0.7}
+\definecolor{green1}{RGB}{0,160,0}
+\definecolor{red1}{RGB}{160,0,0}
+\definecolor{numberbg}{rgb}{0.9,0.9,0.2}
+\definecolor{numbercolor}{rgb}{0.2,0.2,1.0}
+\colorlet{mynumberbg}{numberbg!20}
+\colorlet{mynumbercolor}{numbercolor!40}
+
+\colorlet{delimColor}{red}
+\colorlet{typeColor}{codeblue}
+\colorlet{statusColor}{green1}
+\colorlet{nameColor}{magenta}
+\colorlet{versionColor}{violet}
+\colorlet{copyrightColor}{brown}
+\colorlet{otherColor}{dwmOrange}
+
+\lstdefinestyle{mystyle}%
+{basicstyle=\ttfamily,
+ keywordstyle=\ttfamily\color{black},
+ identifierstyle=\ttfamily\color{black},
+ morekeywords={std::string, cout, cin, vector, map, assert},
+ keepspaces=true,
+ showspaces=false,                
+ showstringspaces=false,
+% numberstyle=\sffamily\small\color{codegray},
+ numbers=left,                    
+ numbersep=1em,
+ frame=l,
+ framesep=2em,
+ framexleftmargin=.8em,
+ fillcolor=\color{mynumberbg},
+ rulecolor=\color{mynumberbg},
+ numberstyle=\sffamily\small\color{mynumbercolor}
+}
+
+\lstset{language=C++,
+  style=mystyle
+}
+
+\newcounter{lastbyte}
+
+\DefineVerbatimEnvironment{fnverb}{Verbatim}{
+  fontfamily=\ttdefault,
+  fontshape=\updefault,
+  fontseries=bx,
+  breaklines,
+  breakanywhere,
+  breaksymbolleft=,
+  breakindent=0pt
+}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,    
+    urlcolor=cyan,
+    pdftitle={libDwm I/O},
+    pdfpagemode=FullScreen,
+}
+
+\ExplSyntaxOn
+\NewExpandableDocumentCommand{\numtestTF}{mmm}
+ {% #1 = possibly complex test, #2 = true text, #3 = false text
+  \int_compare:nTF {#1} {#2} {#3}
+ }
+\ExplSyntaxOff
+
+\newcommand{\dwmNote}[1]{
+  \begin{mdframed}[backgroundcolor=blue!10]
+  \textbf{NOTE:} #1
+  \end{mdframed}
+}
+
+\newcommand{\dwmTodo}[1]{
+  \begin{mdframed}[backgroundcolor=red!10]
+  \textbf{TODO:} #1
+  \end{mdframed}
+}
+
+\newcommand{\whiteCheckMark}{\emoji{white-check-mark}}
