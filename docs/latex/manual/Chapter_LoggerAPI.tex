@@ -1,0 +1,71 @@
+\chapter{Logger API}
+
+\section{Opening the logger}
+
+\begin{verbatim}
+  bool Open(Facility facility = Facility::user,
+            const std::vector<MessageSink *> & sinks = {},
+            const char *ident = nullptr)
+\end{verbatim}
+
+If \texttt{sinks} is empty, the logger will send all log messages
+to the loopback address.
+
+If \texttt{ident} is \texttt{nullptr}, the logger will use the ident
+given by the runtime.  On macOS and FreeBSD, this comes from
+\texttt{getprogname(3)}.  On Linux, this comes from
+\texttt{program\_invocation\_short\_name(3)}.
+
+\section{Alternate or additional sinks}
+The logger sends messages to \textit{sinks}, which must implement
+the \texttt{Dwm::Mclog::MessageSink} interface.
+
+\subsection{Dwm::Mclog::MessageSink interface}
+\begin{verbatim}
+  virtual bool Process(const Message & msg)
+\end{verbatim}
+
+\subsection{Adding or removing sinks}
+Sinks may be added to the logger by using the \texttt{AddSinks()}
+member of the logger.
+
+\begin{verbatim}
+  bool AddSinks(const std::vector<MessageSink *> & sinks)
+\end{verbatim}
+
+Sinks may be removed from the logger by using the \texttt{RemoveSinks()}
+member of the logger.
+
+\begin{verbatim}
+  bool RemoveSinks(const std::vector<MessageSink *> & sinks)
+\end{verbatim}
+
+\subsection{Dwm::Mclog::LogFile}
+
+\texttt{Dwm::Mclog::LogFile} provides a sink that writes logged messages
+to a file, with configurable rollover period, permissions and number of
+archives to keep.  If all you need is a log file, and/or do not want or
+need networked logging, it is a good choice of sink in the list of sinks
+given as the second argument of the \texttt{Open()} member of the logger.
+
+\begin{verbatim}
+  LogFile(const std::string & path, mode_t permissions = 0644,
+          RollPeriod period = RollPeriod::days_1, uint32_t keep = 7)
+\end{verbatim}
+
+\subsection{Dwm::Mclog::OstreamSink}
+
+\begin{verbatim}
+  OstreamSink(std::ostream & os)
+\end{verbatim}
+
+\subsection{Dwm::Mclog::SyslogSink}
+
+\begin{verbatim}
+  SyslogSink(const char *ident, int facility)
+\end{verbatim}
+
+\section{Sending log messages}
+
+\section{Closing the logger}
+
