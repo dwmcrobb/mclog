@@ -166,6 +166,7 @@ namespace Dwm {
       bool OpenNoLock();
       bool EnsureParentDirectory() const;
       bool SetPermissions() const;
+      bool SetOwnership() const;
       bool RollCriteriaMet(const Message & msg) const;
       void RollArchives() const;
       void RollCurrent();

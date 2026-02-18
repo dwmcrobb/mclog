@@ -109,6 +109,8 @@ namespace Dwm {
           else {
             LogFile  logFile(lp.first, lp.second.permissions,
                              lp.second.period, lp.second.keep);
+            logFile.User(lp.second.user);
+            logFile.Group(lp.second.group);
             auto [newit, dontCare] =
               _logFiles.insert({lp.first, std::move(logFile)});
             newit->second.Open();

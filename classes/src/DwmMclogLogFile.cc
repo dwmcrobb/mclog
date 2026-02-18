@@ -105,15 +105,12 @@ namespace Dwm {
     //------------------------------------------------------------------------
     uid_t LogFile::User(const std::string & user)
     {
-      long  bufmax = sysconf(_SC_GETPW_R_SIZE_MAX);
-      if (bufmax > 0) {
-        struct passwd   pwd;
-        char            buf[bufmax];
-        struct passwd  *result = nullptr;
-        if (0 == getpwnam_r(user.c_str(), &pwd, buf, sizeof(buf), &result)) {
-          if (nullptr != result) {
-            _user = pwd.pw_uid;
-          }
+      struct passwd   pwd;
+      char            buf[4096];
+      struct passwd  *result = nullptr;
+      if (0 == getpwnam_r(user.c_str(), &pwd, buf, sizeof(buf), &result)) {
+        if (nullptr != result) {
+          _user = pwd.pw_uid;
         }
       }
       return _user;
@@ -126,15 +123,12 @@ namespace Dwm {
     //------------------------------------------------------------------------
     gid_t LogFile::Group(const std::string & group)
     {
-      long  bufmax = sysconf(_SC_GETGR_R_SIZE_MAX);
-      if (bufmax > 0) {
-        struct group   grp;
-        char           buf[bufmax];
-        struct group  *result = nullptr;
-        if (0 == getgrnam_r(group.c_str(), &grp, buf, sizeof(buf), &result)) {
-          if (nullptr != result) {
-            _group = grp.gr_gid;
-          }
+      struct group   grp;
+      char           buf[4096];
+      struct group  *result = nullptr;
+      if (0 == getgrnam_r(group.c_str(), &grp, buf, sizeof(buf), &result)) {
+        if (nullptr != result) {
+          _group = grp.gr_gid;
         }
       }
       return _group;
@@ -167,7 +161,18 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
-    //!  
+    bool LogFile::SetOwnership() const
+    {
+      if (0 == chown(_path.string().c_str(), _user, _group)) {
+        MCLOG(Severity::info, "LogFile '{}' ownership set to {}:{}",
+              _path.string(), _user, _group);
+        return true;
+      }
+      MCLOG(Severity::warning, "LogFile '{}' SetOwnership({}:{}) failed: {}",
+            _path.string(), _user, _group, strerror(errno));
+      return false;
+    }
+    
     //------------------------------------------------------------------------
     bool LogFile::EnsureParentDirectory() const
     {
@@ -211,6 +216,7 @@ namespace Dwm {
             rc = true;
             MCLOG(Severity::info, "LogFile '{}' opened", _path.string());
             SetPermissions();
+            SetOwnership();
           }
           else {
             MCLOG(Severity::err, "LogFile '{}' open failed: {}",
