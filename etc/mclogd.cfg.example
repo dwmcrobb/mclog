@@ -132,6 +132,15 @@ files {
     #
     #  'keep' is the number of log files to keep during rollover.  The
     #  default is 7.
+    #
+    #  'user' sets the owning user of the log file.  This is only valid
+    #  when mclogd is run as root.
+    #
+    #  'group' sets the owning group of the log file.  This is only valid
+    #  when nclogd is run as root.
+    #
+    #  'compress' sets the compression used for log file archives.  The
+    #  valid choices are "bzip2" (the default) and "gzip".
     #-----------------------------------------------------------------------
     logs {
         { filter="mydaemons"; path="%H/%I"; user="dwm"; group="staff";
