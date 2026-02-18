@@ -39,6 +39,8 @@
 
 extern "C" {
   #include <sys/stat.h>
+  #include <grp.h>
+  #include <pwd.h>
   #include <unistd.h>
 }
 
@@ -62,7 +64,7 @@ namespace Dwm {
     LogFile::LogFile(LogFile && logFile)
         : _mtx()
     {
-      std::lock_guard(logFile._mtx);
+      std::lock_guard  lck(logFile._mtx);
       _path = std::move(logFile._path);
       _permissions = logFile._permissions;
       _keep = logFile._keep;
@@ -92,6 +94,50 @@ namespace Dwm {
     LogFile::~LogFile()
     {
       Close();
+    }
+
+    //------------------------------------------------------------------------
+    uid_t LogFile::User() const
+    { return _user; }
+
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    uid_t LogFile::User(const std::string & user)
+    {
+      long  bufmax = sysconf(_SC_GETPW_R_SIZE_MAX);
+      if (bufmax > 0) {
+        struct passwd   pwd;
+        char            buf[bufmax];
+        struct passwd  *result = nullptr;
+        if (0 == getpwnam_r(user.c_str(), &pwd, buf, sizeof(buf), &result)) {
+          if (nullptr != result) {
+            _user = pwd.pw_uid;
+          }
+        }
+      }
+      return _user;
+    }
+      
+    //------------------------------------------------------------------------
+    gid_t LogFile::Group() const
+    { return _group; }
+
+    //------------------------------------------------------------------------
+    gid_t LogFile::Group(const std::string & group)
+    {
+      long  bufmax = sysconf(_SC_GETGR_R_SIZE_MAX);
+      if (bufmax > 0) {
+        struct group   grp;
+        char           buf[bufmax];
+        struct group  *result = nullptr;
+        if (0 == getgrnam_r(group.c_str(), &grp, buf, sizeof(buf), &result)) {
+          if (nullptr != result) {
+            _group = grp.gr_gid;
+          }
+        }
+      }
+      return _group;
     }
     
     //------------------------------------------------------------------------
