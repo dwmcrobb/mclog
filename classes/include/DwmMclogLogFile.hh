@@ -116,6 +116,10 @@ namespace Dwm {
       //!  
       //----------------------------------------------------------------------
       gid_t Group(const std::string & group);
+
+      const std::string & Compress() const;
+      
+      const std::string & Compress(const std::string & compress);
       
       //----------------------------------------------------------------------
       //!  Opens the log file.  Returns true on success, false on failure.
@@ -142,6 +146,7 @@ namespace Dwm {
       RollInterval           _rollInterval;
       uid_t                  _user;
       gid_t                  _group;
+      std::string            _compress;
       
       //----------------------------------------------------------------------
       //!  
@@ -149,7 +154,8 @@ namespace Dwm {
       class Archive
       {
       public:
-        Archive(const std::filesystem::path & base, size_t num);
+        Archive(const std::filesystem::path & base, size_t num,
+                const std::string & compress);
         std::string String() const;
         size_t Num() const;
         std::filesystem::path Base() const;
@@ -160,6 +166,7 @@ namespace Dwm {
       private:
         size_t                 _num;
         std::filesystem::path  _base;
+        std::string            _compress;
       };
 
       bool NeedRollBeforeOpen() const;

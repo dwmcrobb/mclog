@@ -54,10 +54,37 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
+    static const std::map<std::string,std::string>  sg_compressionExt = {
+      { "bzip2", "bz2" },
+      { "gzip",  "gz"  }
+    };
+
+    //------------------------------------------------------------------------
+    static std::string CompressCommand(const std::string & compressConfig)
+    {
+      auto  it = sg_compressionExt.find(compressConfig);
+      if (it != sg_compressionExt.end()) {
+        return it->first;
+      }
+      return "bzip2";
+    }
+
+    //------------------------------------------------------------------------
+    static std::string ArchiveExtension(const std::string & compressConfig)
+    {
+      auto  it = sg_compressionExt.find(compressConfig);
+      if (it != sg_compressionExt.end()) {
+        return it->second;
+      }
+      return "bz2";
+    }
+    
+    //------------------------------------------------------------------------
     LogFile::LogFile(const std::string & path, mode_t permissions,
                      RollPeriod period, uint32_t keep)
         : _mtx(), _path(path), _permissions(permissions), _keep(keep),
-          _ofs(), _rollInterval(period), _user(getuid()), _group(getgid())
+          _ofs(), _rollInterval(period), _user(getuid()), _group(getgid()),
+          _compress("bzip2")
     {}
 
     //------------------------------------------------------------------------
@@ -72,6 +99,7 @@ namespace Dwm {
       _rollInterval = logFile._rollInterval;
       _user = logFile._user;
       _group = logFile._group;
+      _compress = logFile._compress;
     }
 
     //------------------------------------------------------------------------
@@ -86,6 +114,7 @@ namespace Dwm {
         _rollInterval = logFile._rollInterval;
         _user = logFile._user;
         _group = logFile._group;
+        _compress = std::move(logFile._compress);
       }
       return *this;
     }
@@ -133,7 +162,21 @@ namespace Dwm {
       }
       return _group;
     }
-    
+
+    //------------------------------------------------------------------------
+    const std::string & LogFile::Compress() const
+    { return _compress; }
+      
+    //------------------------------------------------------------------------
+    const std::string & LogFile::Compress(const std::string & compress)
+    {
+      auto  it = sg_compressionExt.find(compress);
+      if (it != sg_compressionExt.end()) {
+        return (_compress = compress);
+      }
+      return (_compress = "bzip2");
+    }
+
     //------------------------------------------------------------------------
     bool LogFile::NeedRollBeforeOpen() const
     {
@@ -295,7 +338,8 @@ namespace Dwm {
       
       std::string  dst(_path.string() + ".0");
       fs::rename(_path, dst);
-      std::string  cmd("bzip2 " + dst + " > /dev/null 2>&1 &");
+      std::string  cmd(CompressCommand(_compress) + " " + dst
+                       + " > /dev/null 2>&1 &");
       system(cmd.c_str());
       return;
     }
@@ -318,7 +362,8 @@ namespace Dwm {
       archives.clear();
       auto  dir = _path.parent_path();
       auto  f = _path.filename();
-      std::string  s(f.string() + "\\.([0-9]+)\\.bz2");
+      std::string  s(f.string() + "\\.([0-9]+)\\."
+                     + ArchiveExtension(_compress));
       std::regex   rgx(s, std::regex::ECMAScript|std::regex::optimize);
       std::smatch  sm;
       for (auto const & dirEntry : fs::directory_iterator{dir}) {
@@ -326,7 +371,7 @@ namespace Dwm {
           std::string  fname = dirEntry.path().filename().string();
           if (regex_match(fname, sm, rgx)) {
             if (sm.size() == 2) {
-              LogFile::Archive  archive(_path, stoull(sm[1].str()));
+              LogFile::Archive  archive(_path, stoull(sm[1].str()), _compress);
               archives.push_back(archive);
             }
           }
@@ -339,13 +384,17 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
-    LogFile::Archive::Archive(const std::filesystem::path & base, size_t num)
-        : _num(num), _base(base)
+    LogFile::Archive::Archive(const std::filesystem::path & base, size_t num,
+                              const std::string & compress)
+        : _num(num), _base(base), _compress(compress)
     { }
 
     //------------------------------------------------------------------------
     std::string LogFile::Archive::String() const
-    { return (_base.string() + "." + std::to_string(_num) + ".bz2"); }
+    {
+      return (_base.string() + "." + std::to_string(_num)
+              + "." + ArchiveExtension(_compress));
+    }
 
     //------------------------------------------------------------------------
     size_t LogFile::Archive::Num() const
@@ -357,7 +406,7 @@ namespace Dwm {
         
     //------------------------------------------------------------------------
     LogFile::Archive LogFile::Archive::Next() const
-    { return LogFile::Archive(_base, _num + 1); }
+    { return LogFile::Archive(_base, _num + 1, _compress); }
 
     //------------------------------------------------------------------------
     //!  
