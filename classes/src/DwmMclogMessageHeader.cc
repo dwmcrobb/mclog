@@ -117,6 +117,24 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
+    int MessageHeader::Read(gzFile gzf)
+    {
+      int  rc = GZIO::ReadV(gzf, _timestamp, _facility, _severity, _origin);
+      if (0 < rc) {
+        if ((Facility::local7 < _facility) || (Severity::debug < _severity)) {
+          rc = -1;
+        }
+      }
+      return rc;
+    }
+    
+    //------------------------------------------------------------------------
+    int MessageHeader::Write(gzFile gzf) const
+    {
+      return GZIO::WriteV(gzf, _timestamp, _facility, _severity, _origin);
+    }
+
+    //------------------------------------------------------------------------
     uint64_t MessageHeader::StreamedLength() const
     {
       return (_timestamp.StreamedLength()
