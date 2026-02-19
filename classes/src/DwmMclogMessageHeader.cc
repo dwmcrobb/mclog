@@ -99,7 +99,23 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
-    //!  
+    int MessageHeader::BZRead(BZFILE *bzf)
+    {
+      int  rc = BZ2IO::BZReadV(bzf, _timestamp, _facility, _severity, _origin);
+      if (0 < rc) {
+        if ((Facility::local7 < _facility) || (Severity::debug < _severity)) {
+          rc = -1;
+        }
+      }
+      return rc;
+    }
+    
+    //------------------------------------------------------------------------
+    int MessageHeader::BZWrite(BZFILE *bzf) const
+    {
+      return BZ2IO::BZWriteV(bzf, _timestamp, _facility, _severity, _origin);
+    }
+
     //------------------------------------------------------------------------
     uint64_t MessageHeader::StreamedLength() const
     {
@@ -109,8 +125,6 @@ namespace Dwm {
               + _origin.StreamedLength());
     }
     
-    //------------------------------------------------------------------------
-    //!  
     //------------------------------------------------------------------------
     std::ostream &                                                     
     operator << (std::ostream & os, const MessageHeader & hdr)
