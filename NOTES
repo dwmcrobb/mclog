@@ -1,3 +1,23 @@
+Feb 19, 2026:
+
+Now that I have bzip2 and gzip I/O, I'd like to have a more general filtering
+language that could be leveraged against log files that use the binary format
+of Message (or the compressed binary format).  Of course I have yet to add the
+option of binary log file output to mclogd, but it's not difficult.
+
+field operands    valid operators
+--------------    ---------------
+  host            = != rgx
+  ident           = != rgx
+  facility        = != rgx
+  severity        = != < <= > >=
+  timestamp       < <= > >=
+
+unary operators:  !
+grouping:         ( )
+
+  
+#------------------------------------------------------------------------------
 Feb 8, 2026:
 
 I need to address the problem with FileLogger allowing multiple ofstreams
