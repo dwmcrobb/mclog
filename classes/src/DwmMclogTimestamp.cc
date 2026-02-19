@@ -81,15 +81,30 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
-    //!  
+    int Timestamp::BZRead(BZFILE *bzf)
+    {
+      _usecs = 0;
+      EncodedU64  eu64;
+      int rc = eu64.BZRead(bzf);
+      if (0 < rc) {
+        _usecs = eu64;
+      }
+      return rc;
+    }
+
+    //------------------------------------------------------------------------
+    int Timestamp::BZWrite(BZFILE *bzf) const
+    {
+      EncodedU64  eu64 = _usecs;
+      return eu64.BZWrite(bzf);
+    }
+    
     //------------------------------------------------------------------------
     uint64_t Timestamp::StreamedLength() const
     {
       return EncodedU64(_usecs).StreamedLength();
     }
 
-    //------------------------------------------------------------------------
-    //!  
     //------------------------------------------------------------------------
     std::ostream & operator << (std::ostream & os, const Timestamp & ts)
     {

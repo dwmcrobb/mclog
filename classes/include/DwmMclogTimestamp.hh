@@ -43,6 +43,9 @@
 #include <cstdint>
 #include <iostream>
 
+#include "DwmBZ2IO.hh"
+#include "DwmGZIO.hh"
+
 namespace Dwm {
 
   namespace Mclog {
@@ -79,15 +82,27 @@ namespace Dwm {
       Timestamp & operator = (Timestamp &&) = default;
       
       //----------------------------------------------------------------------
-      //!  Reads the timestamp from the given istream @c is.  Returns @c is
+      //!  Reads the timestamp from the given istream @c is.  Returns @c is.
       //----------------------------------------------------------------------
       std::istream & Read(std::istream & is);
 
       //----------------------------------------------------------------------
-      //!  Writes the timestamp to the given ostream @c os.  Returns @c os
+      //!  Writes the timestamp to the given ostream @c os.  Returns @c os.
       //----------------------------------------------------------------------
       std::ostream & Write(std::ostream & os) const;
 
+      //----------------------------------------------------------------------
+      //!  Reads the timestamp from the given BZFILE @c bzf.  Returns the
+      //!  number of bytes read on success, -1 on failure.
+      //----------------------------------------------------------------------
+      int BZRead(BZFILE *bzf);
+
+      //----------------------------------------------------------------------
+      //!  Writes the timestamp to the given BZFILE @c bzf.  Returns the
+      //!  number of bytes written on success, -1 on failure.
+      //----------------------------------------------------------------------
+      int BZWrite(BZFILE *bzf) const;
+      
       //----------------------------------------------------------------------
       //!  Returns the number of bytes that would be written if we called the
       //!  Write() member.
