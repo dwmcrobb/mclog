@@ -140,6 +140,30 @@ namespace Dwm {
       //!  Writes the origin to the given ostream @c os.  Returns @c os.
       //----------------------------------------------------------------------
       std::ostream & Write(std::ostream & os) const;
+
+      //----------------------------------------------------------------------
+      //!  Reads the origin from the given BZFILE @c bzf.  Returns the
+      //!  number of bytes read on success, -1 on failure.
+      //----------------------------------------------------------------------
+      int BZRead(BZFILE *bzf);
+
+      //----------------------------------------------------------------------
+      //!  Writes the origin to the given BZFILE @c bzf.  Returns the
+      //!  number of bytes written on success, -1 on failure.
+      //----------------------------------------------------------------------
+      int BZWrite(BZFILE *bzf) const;
+
+      //----------------------------------------------------------------------
+      //!  Reads the origin from the given gzFile @c gzf.  Returns the
+      //!  number of bytes read on success, -1 on failure.
+      //----------------------------------------------------------------------
+      int Read(gzFile gzf);
+
+      //----------------------------------------------------------------------
+      //!  Writes the origin to the given gzFile @c gzf.  Returns the
+      //!  number of bytes written on success, -1 on failure.
+      //----------------------------------------------------------------------
+      int Write(gzFile gzf) const;
       
       //----------------------------------------------------------------------
       //!  Returns the number of bytes that would be written if we called the

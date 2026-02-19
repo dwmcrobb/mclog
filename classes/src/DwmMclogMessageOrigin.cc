@@ -37,6 +37,8 @@
 //!  @brief Dwm::Mclog::MessageOrigin implementation
 //---------------------------------------------------------------------------
 
+#include "DwmBZ2IO.hh"
+#include "DwmGZIO.hh"
 #include "DwmIOUtils.hh"
 #include "DwmStreamIO.hh"
 #include "DwmMclogMessageOrigin.hh"
@@ -147,7 +149,53 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
-    //!  
+    int MessageOrigin::BZRead(BZFILE *bzf)
+    {
+      int  rc = -1, bytesRead;
+      {
+        std::lock_guard  lck(_mtx);
+        bytesRead = BZ2IO::BZReadV(bzf, _hostname, _appname, _procid);
+      }
+      if (0 < bytesRead) {
+        if (IsValidHostname(_hostname.Value())
+            && IsValidAppName(_appname.Value())) {
+          rc = bytesRead;
+        }
+      }
+      return rc;
+    }
+    
+    //------------------------------------------------------------------------
+    int MessageOrigin::BZWrite(BZFILE *bzf) const
+    {
+      std::lock_guard  lck(_mtx);
+      return BZ2IO::BZWriteV(bzf, _hostname, _appname, _procid);
+    }
+
+    //------------------------------------------------------------------------
+    int MessageOrigin::Read(gzFile gzf)
+    {
+      int  rc = -1, bytesRead;
+      {
+        std::lock_guard  lck(_mtx);
+        bytesRead = GZIO::ReadV(gzf, _hostname, _appname, _procid);
+      }
+      if (0 < bytesRead) {
+        if (IsValidHostname(_hostname.Value())
+            && IsValidAppName(_appname.Value())) {
+          rc = bytesRead;
+        }
+      }
+      return rc;
+    }
+
+    //------------------------------------------------------------------------
+    int MessageOrigin::Write(gzFile gzf) const
+    {
+      std::lock_guard  lck(_mtx);
+      return GZIO::WriteV(gzf, _hostname, _appname, _procid);
+    }
+
     //------------------------------------------------------------------------
     uint64_t MessageOrigin::StreamedLength() const
     {
@@ -156,9 +204,7 @@ namespace Dwm {
               + IOUtils::StreamedLength(_appname)
               + IOUtils::StreamedLength(_procid));
     }
-    
-    //------------------------------------------------------------------------
-    //!  
+
     //------------------------------------------------------------------------
     std::ostream & operator << (std::ostream & os,
                                 const MessageOrigin & origin)
