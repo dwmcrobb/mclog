@@ -111,7 +111,7 @@ namespace Dwm {
                              lp.second.period, lp.second.keep);
             logFile.User(lp.second.user);
             logFile.Group(lp.second.group);
-            logFile.Compress(lp.second.compress);
+            logFile.Compression(lp.second.compress);
             auto [newit, dontCare] =
               _logFiles.insert({lp.first, std::move(logFile)});
             newit->second.Open();
