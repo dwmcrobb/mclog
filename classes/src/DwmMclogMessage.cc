@@ -56,14 +56,10 @@ namespace Dwm {
     {}
 
     //------------------------------------------------------------------------
-    //!  
-    //------------------------------------------------------------------------
     Message::Message(const MessageHeader & header, std::string && message)
         : _header(header), _message(message)
     {}
 
-    //------------------------------------------------------------------------
-    //!  
     //------------------------------------------------------------------------
     Message::Message(const MessageHeader & header, const std::string & message)
         : _header(header), _message(message)
@@ -79,8 +75,6 @@ namespace Dwm {
     }
      
     //------------------------------------------------------------------------
-    //!  
-    //------------------------------------------------------------------------
     std::ostream & Message::Write(std::ostream & os) const
     {
       if (_header.Write(os)) {
@@ -90,7 +84,13 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
-    //!  
+    int Message::BZRead(BZFILE *bzf)
+    { return BZ2IO::BZReadV(bzf, _header, _message); }
+    
+    //------------------------------------------------------------------------
+    int Message::BZWrite(BZFILE *bzf) const
+    { return BZ2IO::BZWriteV(bzf, _header, _message); }
+    
     //------------------------------------------------------------------------
     uint64_t Message::StreamedLength() const
     {
@@ -98,8 +98,6 @@ namespace Dwm {
               + IOUtils::StreamedLength(_message));
     }
     
-    //------------------------------------------------------------------------
-    //!  
     //------------------------------------------------------------------------
     std::ostream & operator << (std::ostream & os, const Message & msg)
     {

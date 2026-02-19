@@ -113,6 +113,18 @@ namespace Dwm {
       std::ostream & Write(std::ostream & os) const;
 
       //----------------------------------------------------------------------
+      //!  Reads the message from the given BZFILE @c bzf.  Returns the
+      //!  number of bytes read on success, -1 on failure.
+      //----------------------------------------------------------------------
+      int BZRead(BZFILE *bzf);
+
+      //----------------------------------------------------------------------
+      //!  Writes the message to the given BZFILE @c bzf.  Returns the number
+      //!  of bytes written on success, -1 on failure.
+      //----------------------------------------------------------------------
+      int BZWrite(BZFILE *bzf) const;
+      
+      //----------------------------------------------------------------------
       //!  Returns the number of bytes that would be written if we called
       //!  the Write() member.
       //----------------------------------------------------------------------
