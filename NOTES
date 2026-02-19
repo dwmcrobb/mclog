@@ -22,7 +22,27 @@ This would allow filtering statements such as:
   (host rgx ".*\.(mcplex\.net|rfdm\.com)") && (facility = local0)
 
   (ident = "mcroverd") && (severity > debug)
-  
+
+Note that the 'rgx' operator is a pessimistic optimization.  Since I'm
+doing a full match of the expression, technically I could just always
+use a regex.  However, regular expressions are considerably slower
+than plain string comparisons, so I want to allow '=' and '!=' for
+string comparisons.
+
+HOST EQUAL STRING
+HOST NOTEQUAL STRING
+HOST RGX STRING
+IDENT EQUAL STRING
+IDENT NOTEQUAL STRING
+IDENT RGX STRING
+FACILITY ???
+SEVERITY EQUAL Severity
+SEVERITY NOTEQUAL Severity
+SEVERITY GREATERTHAN Severity
+SEVERITY LESSTHAN Severity
+SEVERITY GREATEROREQ Severity
+SEVERITY LESSOREQ Severity
+
 #------------------------------------------------------------------------------
 Feb 8, 2026:
 
