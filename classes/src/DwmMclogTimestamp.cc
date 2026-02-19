@@ -98,7 +98,26 @@ namespace Dwm {
       EncodedU64  eu64 = _usecs;
       return eu64.BZWrite(bzf);
     }
+
+    //------------------------------------------------------------------------
+    int Timestamp::Read(gzFile gzf)
+    {
+      _usecs = 0;
+      EncodedU64  eu64;
+      int rc = eu64.Read(gzf);
+      if (0 < rc) {
+        _usecs = eu64;
+      }
+      return rc;
+    }
     
+    //------------------------------------------------------------------------
+    int Timestamp::Write(gzFile gzf) const
+    {
+      EncodedU64  eu64 = _usecs;
+      return eu64.Write(gzf);
+    }
+
     //------------------------------------------------------------------------
     uint64_t Timestamp::StreamedLength() const
     {

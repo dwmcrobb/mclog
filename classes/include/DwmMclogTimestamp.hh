@@ -102,6 +102,10 @@ namespace Dwm {
       //!  number of bytes written on success, -1 on failure.
       //----------------------------------------------------------------------
       int BZWrite(BZFILE *bzf) const;
+
+      int Read(gzFile gzf);
+
+      int Write(gzFile gzf) const;
       
       //----------------------------------------------------------------------
       //!  Returns the number of bytes that would be written if we called the
