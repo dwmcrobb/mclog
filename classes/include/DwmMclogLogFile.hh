@@ -117,9 +117,15 @@ namespace Dwm {
       //----------------------------------------------------------------------
       gid_t Group(const std::string & group);
 
-      const std::string & Compress() const;
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      const std::string & Compression() const;
       
-      const std::string & Compress(const std::string & compress);
+      //----------------------------------------------------------------------
+      //!  
+      //----------------------------------------------------------------------
+      const std::string & Compression(const std::string & compress);
       
       //----------------------------------------------------------------------
       //!  Opens the log file.  Returns true on success, false on failure.

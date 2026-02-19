@@ -164,11 +164,11 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
-    const std::string & LogFile::Compress() const
+    const std::string & LogFile::Compression() const
     { return _compress; }
       
     //------------------------------------------------------------------------
-    const std::string & LogFile::Compress(const std::string & compress)
+    const std::string & LogFile::Compression(const std::string & compress)
     {
       auto  it = sg_compressionExt.find(compress);
       if (it != sg_compressionExt.end()) {
