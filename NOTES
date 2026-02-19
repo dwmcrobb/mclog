@@ -13,9 +13,15 @@ field operands    valid operators
   severity        = != < <= > >=
   timestamp       < <= > >=
 
+binary operators: || &&
 unary operators:  !
 grouping:         ( )
 
+This would allow filtering statements such as:
+
+  (host rgx ".*\.(mcplex\.net|rfdm\.com)") && (facility = local0)
+
+  (ident = "mcroverd") && (severity > debug)
   
 #------------------------------------------------------------------------------
 Feb 8, 2026:
