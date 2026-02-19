@@ -90,6 +90,14 @@ namespace Dwm {
     //------------------------------------------------------------------------
     int Message::BZWrite(BZFILE *bzf) const
     { return BZ2IO::BZWriteV(bzf, _header, _message); }
+
+    //------------------------------------------------------------------------
+    int Message::Read(gzFile gzf)
+    { return GZIO::ReadV(gzf, _header, _message); }
+
+    //------------------------------------------------------------------------
+    int Message::Write(gzFile gzf) const
+    { return GZIO::WriteV(gzf, _header, _message); }
     
     //------------------------------------------------------------------------
     uint64_t Message::StreamedLength() const
