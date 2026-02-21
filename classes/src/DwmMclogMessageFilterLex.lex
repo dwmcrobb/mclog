@@ -127,9 +127,18 @@ m_facval (kernel|user|mail|daemon|auth|syslog|lpr|news|uucp|cron|authpriv|ftp|lo
 <x_quoted>["]      { BEGIN(INITIAL); }
 <INITIAL>[\/]      { BEGIN(x_regex); }
 <x_regex>[^\/]*    {
-  auto tok = MFP::make_REGEX(boost::regex(YYText()), loc);
-  drv.tokens.push_back(tok);
-  return tok;
+  try {
+    auto tok = MFP::make_REGEX(boost::regex(YYText()), loc);
+    drv.tokens.push_back(tok);
+    return tok;
+  }
+  catch (boost::bad_expression & bex) {
+    std::cerr << "Exception creating regex from '" << YYText() << "': "
+              << bex.what() << '\n';
+    auto tok = MessageFilterParser::make_YYerror(loc);
+    drv.tokens.push_back(tok);
+    return tok;
+  }
 }
 <x_regex>[\/]      { BEGIN(INITIAL); }
   
