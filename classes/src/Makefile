@@ -17,7 +17,7 @@ $(my CxxFlags   := ${CXXFLAGS} ${PTHREADCXXFLAGS} $(my Incs))
 $(my Compile    := $(LIBTOOLCOMPILE) $(my CxxFlags))
 
 $(eval TARGETS          $(dwm_ifcwd :=,+=) $(my lib.Lib))
-$(eval CLEANTARGETS     $(dwm_ifcwd :=,+=) $(my lib.Clean) $(my myincdir)/DwmMclogFilterParse.hh $(my myincdir)/DwmMclogConfigParse.hh)
+$(eval CLEANTARGETS     $(dwm_ifcwd :=,+=) $(my lib.Clean) $(my myincdir)/DwmMclogFilterParse.hh $(my myincdir)/DwmMclogConfigParse.hh $(my myincdir)/DwmMclogMessageFilterParse.hh)
 $(eval LTCLEANTARGETS   $(dwm_ifcwd :=,+=) $(my lib.LtClean))
 $(eval DISTCLEANTARGETS $(dwm_ifcwd :=,+=) $(my lib.Deps))
 $(eval TARTARGETS       $(dwm_ifcwd :=,+=) ${TARDIR}/lib/libDwmMclog.la)
