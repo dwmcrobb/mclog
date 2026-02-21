@@ -55,6 +55,7 @@ extern "C" {
 #include "DwmMclogLogger.hh"
 #include "DwmMclogKeyRequester.hh"
 #include "DwmMclogMulticastReceiver.hh"
+#include "DwmMclogMessageFilterDriver.hh"
 
 //----------------------------------------------------------------------------
 //!  
@@ -64,17 +65,31 @@ class MySink
 {
 public:
   MySink()
+      : _filter(nullptr)
   {
+  }
+
+  void SetFilter(const std::string & expr)
+  {
+    _filter = make_unique<Dwm::Mclog::MessageFilterDriver>(expr);
   }
   
   bool Process(const Dwm::Mclog::Message & msg) override
   {
-    std::cout << msg << std::flush;
+    if (! _filter) {
+      std::cout << msg << std::flush;
+    }
+    else {
+      bool  result;
+      if (_filter->parse(&msg, result) && result) {
+        std::cout << msg << std::flush;
+      }
+    }
     return true;
   }
 
 private:
-  //  Dwm::Mclog::MessageSelector  _selector;
+  std::unique_ptr<Dwm::Mclog::MessageFilterDriver>  _filter;
 };
 
 //----------------------------------------------------------------------------
@@ -95,7 +110,7 @@ static void Log(const std::string & facility, const std::string & severity,
 //----------------------------------------------------------------------------
 static void Usage(const char *argv0)
 {
-  std::cerr << "usage: " << argv0 << " [-d]\n";
+  std::cerr << "usage: " << argv0 << " [-d] [F filterExpression]\n";
   return;
 }
 
@@ -104,13 +119,16 @@ static void Usage(const char *argv0)
 //----------------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
-  bool  debug = false;
-  
-  int  optChar;
-  while ((optChar = getopt(argc, argv, "d")) != -1) {
+  bool         debug = false;
+  std::string  filtexpr;
+  int          optChar;
+  while ((optChar = getopt(argc, argv, "dF:")) != -1) {
     switch (optChar) {
       case 'd':
         debug = true;
+        break;
+      case 'F':
+        filtexpr = optarg;
         break;
       default:
         Usage(argv[0]);
@@ -130,6 +148,9 @@ int main(int argc, char *argv[])
     config.service.keyDirectory = keyDir;
     if (mcastRecv.Open(config)) {
       MySink  mysink;
+      if (! filtexpr.empty()) {
+        mysink.SetFilter(filtexpr);
+      }
       mcastRecv.AddSink(&mysink);
       for (;;) {
 #if 1
