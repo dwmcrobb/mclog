@@ -5,3 +5,5 @@ DwmMclogFilterLex.cc
 DwmMclogFilterParse.cc
 DwmMclogFilterParse.hh
 DwmMclogFilterParserLocation.hh
+DwmMclogMessageFilterLex.cc
+DwmMclogMessageFilterParse.cc

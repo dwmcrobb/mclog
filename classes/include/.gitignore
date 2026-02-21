@@ -1,3 +1,4 @@
 DwmMclogConfigParse.hh
 DwmMclogFilterParse.hh
+DwmMclogMessageFilterParse.hh
 DwmMclogVersion.hh
