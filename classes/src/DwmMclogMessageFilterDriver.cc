@@ -39,6 +39,7 @@
 
 #include <cassert>
 #include <sstream>
+#include <stdexcept>
 
 #include "DwmMclogMessageFilterDriver.hh"
 #include "DwmMclogMessageFilterParse.hh"
@@ -51,7 +52,12 @@ namespace Dwm {
     MessageFilterDriver::MessageFilterDriver(const std::string & expr)
         : tokens(), tokenIter(tokens.begin()), tokenized(false),
           expr(expr), parsemtx()
-    { }
+    {
+      if (! is_valid()) {
+        throw std::invalid_argument("Invalid filter expression '"
+                                    + expr + "'");
+      }
+    }
     
     //------------------------------------------------------------------------
     MessageFilterParser::symbol_type MessageFilterDriver::next_token()
@@ -60,6 +66,14 @@ namespace Dwm {
         return MessageFilterParser::make_YYEOF(location);
       }
       return *tokenIter++;
+    }
+
+    //------------------------------------------------------------------------
+    bool MessageFilterDriver::is_valid()
+    {
+      Message  msg;
+      bool     result;
+      return parse(&msg, result);
     }
     
     //------------------------------------------------------------------------
