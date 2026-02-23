@@ -42,15 +42,14 @@
 #include <sstream>
 
 #include "DwmTimeValue64.hh"
+#include "DwmMclogConfig.hh"
 #include "DwmMclogMessage.hh"
-
-#if 0
-#include "DwmMclogFilterDriver.hh"
+#include "DwmMclogMessageFilterDriver.hh"
 
 //----------------------------------------------------------------------------
 //!  
 //----------------------------------------------------------------------------
-static void TestPerformance(Dwm::Mclog::FilterDriver & driver,
+static void TestPerformance(Dwm::Mclog::MessageFilterDriver & driver,
                             const Dwm::Mclog::Message & msg)
 {
   unsigned long        i = 0;
@@ -73,7 +72,6 @@ static void TestPerformance(Dwm::Mclog::FilterDriver & driver,
   
   return;
 }
-#endif
 
 //----------------------------------------------------------------------------
 //!  
@@ -94,23 +92,22 @@ static Dwm::Mclog::Message MakeMessage(const char *host,
 //----------------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
-#if 0
   Dwm::Mclog::Config        config;
   if (config.Parse("inputs/TestFilterDriver1.cfg")) {
-    Dwm::Mclog::FilterDriver  driver(config, "mydaemons");
+    Dwm::Mclog::MessageFilterDriver  driver(config.filters["mydaemons"]);
     Dwm::Mclog::Message  msg = MakeMessage("unittest.rfdm.com", "mcroverd",
                                            Dwm::Mclog::Facility::local0,
                                            Dwm::Mclog::Severity::info,
                                            "TestFilterDriver unit test message");
     TestPerformance(driver, msg);
 
-    Dwm::Mclog::FilterDriver  driver2(config, argv[1]);
+    Dwm::Mclog::MessageFilterDriver  driver2(argv[1]);
     bool  result;
     bool  parserc = driver2.parse(&msg, result);
     std::cout << std::boolalpha
               << "parse: " << parserc
               << "    result: " << result << '\n';
   }
-#endif
+
   return 0;
 }
