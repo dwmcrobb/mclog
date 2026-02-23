@@ -53,6 +53,11 @@ m_facval (kernel|user|mail|daemon|auth|syslog|lpr|news|uucp|cron|authpriv|ftp|lo
   drv.tokens.push_back(tok);
   return tok;
 }
+<INITIAL>msg       {
+  auto tok = MFP::make_MSG(loc);
+  drv.tokens.push_back(tok);
+  return tok;
+}
 <INITIAL>{m_sevval} {
   auto tok = MFP::make_SEVVALUE(Dwm::Mclog::SeverityValue(YYText()),loc);
   drv.tokens.push_back(tok);

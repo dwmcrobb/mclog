@@ -48,7 +48,7 @@
 }
 
 %token AND EQUAL GREATER GREATEROREQ LESS LESSOREQ LPAREN NOT NOTEQ OR RPAREN
-%token FACILITY HOST IDENT SEVERITY
+%token FACILITY HOST IDENT MSG SEVERITY
 %token <Dwm::Mclog::Facility> FACVALUE
 %token <Dwm::Mclog::Severity> SEVVALUE
 %token DEBUG INFO NOTICE WARNING ERR CRIT ALERT EMERG
@@ -80,6 +80,11 @@ Expression: SEVERITY EQUAL SEVVALUE { $$ = (msg->Header().severity() == $3); }
 | SEVERITY GREATEROREQ SEVVALUE { $$ = (msg->Header().severity() <= $3); }
 | FACILITY EQUAL FACVALUE { $$ = (msg->Header().facility() == $3); }
 | FACILITY NOTEQ FACVALUE { $$ = (msg->Header().facility() != $3); }
+| FACILITY LESS FACVALUE { $$ = (msg->Header().facility() < $3); }
+| FACILITY LESSOREQ FACVALUE { $$ = (msg->Header().facility() <= $3); }
+| FACILITY GREATER FACVALUE { $$ = (msg->Header().facility() > $3); }
+| FACILITY GREATEROREQ FACVALUE { $$ = (msg->Header().facility() >= $3); }
+| FACILITY NOTEQ FACVALUE { $$ = (msg->Header().facility() != $3); }
 | HOST EQUAL STRING  { $$ = (msg->Header().origin().hostname() == $3); }
 | HOST NOTEQ STRING  { $$ = (msg->Header().origin().hostname() != $3); }
 | HOST EQUAL REGEX  {
@@ -99,6 +104,16 @@ Expression: SEVERITY EQUAL SEVVALUE { $$ = (msg->Header().severity() == $3); }
 | IDENT NOTEQ REGEX {
   boost::smatch  sm;
   $$ = ! boost::regex_match(msg->Header().origin().appname(), sm, $3);
+}
+| MSG EQUAL STRING { $$ = (msg->Data() == $3); }
+| MSG NOTEQ STRING { $$ = (msg->Data() != $3); }
+| MSG EQUAL REGEX {
+  boost::smatch  sm;
+  $$ = boost::regex_match(msg->Data(), sm, $3);
+}
+| MSG NOTEQ REGEX {
+  boost::smatch  sm;
+  $$ = ! boost::regex_match(msg->Data(), sm, $3);
 }
 | NOT Expression { $$ = (! ($2)); }
 | Expression OR Expression { $$ = (($1) || ($3)); }
