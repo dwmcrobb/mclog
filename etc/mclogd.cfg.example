@@ -26,32 +26,14 @@ loopback {
 };
 
 #------------------------------------------------------------------------------
-#  Selectors are the operands for filters.  They evaluate to true or false
-#  for a given message, based on the match of host, facility, severity
-#  and ident.  'host', 'facility' and 'ident' values are all used as
-#  regular expressions, and both operators '=' and '!=' are permissible
-#  operators.  'minimumSeverity' only accepts the '=' operator, and
-#  must be one of "debug", "info", "notice", "warning", "err", "crit", "alert"
-#  or "emerg" (the same as syslog(3)).
-#
-#  The fields in each selector are logically ANDED (&&).  We don't need
-#  logical 'OR' (||) here because selectors are just the operands for filter
-#  expressions used elsewhere.
 #------------------------------------------------------------------------------
-selectors {
-    myapps = {
-        minimumSeverity = "debug";
-        ident = "TestLogger|mcblock|mccurtain|mcrover|mctally|qmcrover";
-    },
-    mydaemons = {
-        host = ".+\.(mcplex\.net|rfdm\.com)";
-        facility = "local[0-7]";
-        minimumSeverity = "info";
-        ident = "dwmrdapd|mc(block|curtain|rover|tally|weather)d";
-    },
-    notmydaemons = {
-        ident = "sshd";
-    }
+filters {
+    apps = "ident = /TestLogger|mc(block|curtain|rover|tally)|qmcrover/";
+    daemons = "ident = /dwmrdapd|mc(block|curtain|log|rover|tally|weather)d/";
+    myhosts = "host = /.+\.(mcplex\.net|rfdm\.com)/";
+    myapps = "($apps) && ($myhosts)";
+    mydaemons = "($daemons) && ($myhosts)";
+    notmydaemons = "ident = 'sshd'";
 };
 
 #------------------------------------------------------------------------------
@@ -80,7 +62,7 @@ multicast {
     #--------------------------------------------------------------------------
     port = 3456;
 
-    outFilter = "mydaemons";
+    outFilter = "$mydaemons";
 };
 
 #------------------------------------------------------------------------------
@@ -143,8 +125,9 @@ files {
     #  valid choices are "bzip2" (the default) and "gzip".
     #-----------------------------------------------------------------------
     logs {
-        { filter="mydaemons"; path="%H/%I"; user="dwm"; group="staff";
+        { filter="$mydaemons"; path="%H/%I"; user="dwm"; group="staff";
           perms=0644; period=1d; keep=7; compress="bzip2"; },
-        { filter="myapps"; path="%H/myapps"; perms=0600; }
+        { filter="$myapps"; path="%H/myapps"; perms=0600; }
     };
+
 };

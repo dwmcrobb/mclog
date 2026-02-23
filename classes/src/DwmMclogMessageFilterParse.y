@@ -58,6 +58,13 @@
 %token <boost::regex> REGEX
 %type <bool> Expression
 
+%left OR
+%left AND
+%left EQUAL NOTEQ
+%left LESS GREATER LESSOREQ GREATEROREQ
+%left NOT
+%left LPAREN RPAREN
+
 %%
 
 Result: Expression { result = $1; }

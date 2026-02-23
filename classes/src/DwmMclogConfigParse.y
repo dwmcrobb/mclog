@@ -66,7 +66,8 @@
   #include <map>
   #include <string>
   #include <vector>
-  
+  #include <boost/regex.hpp>
+
   #include "DwmIpv4Prefix.hh"
   #include "DwmIpv6Prefix.hh"
   #include "DwmLocalInterfaces.hh"
@@ -144,7 +145,27 @@
     }
     return rc;
   }
-      
+
+  //--------------------------------------------------------------------------
+  static std::string RetainEscapes(std::string value)
+  {
+    return boost::regex_replace(value, boost::regex(std::string("\\\\")),
+                                std::string("\\\\\\\\")); // ,
+  }
+
+  //--------------------------------------------------------------------------
+  static
+  std::string ExpandFilterExpr(std::map<std::string,std::string> & vars,
+                               const std::string & value)
+  {
+    std::string  rc = value;
+    for (const auto & var : vars) {
+      boost::regex  rgx(std::string("\\$") + var.first);
+      rc = boost::regex_replace(rc, rgx, RetainEscapes(var.second));
+    }
+    return rc;
+  }
+
 %}
 
 %define api.prefix {mclogcfg}
@@ -160,9 +181,8 @@
   Dwm::Mclog::LoopbackConfig                *loopbackConfigVal;
   Dwm::Mclog::MulticastConfig               *mcastConfigVal;
   Dwm::Mclog::FilesConfig                   *filesConfigVal;
-  Dwm::Mclog::MessageSelector               *msgSelectorVal;
-  pair<string,Dwm::Mclog::MessageSelector>  *namedSelectorVal;
-  map<string,Dwm::Mclog::MessageSelector>   *selectorsVal;
+  map<string,string>                        *mapStringStringVal;
+  pair<string,string>                       *stringPairVal;
   Dwm::Mclog::LogFileConfig                 *logFileVal;
   vector<Dwm::Mclog::LogFileConfig>         *logFilesVal;
   Dwm::Mclog::RollPeriod                     rollPeriodVal;
@@ -179,10 +199,11 @@
   YY_DECL;
 }
 
-%token COMPRESS FACILITY FILES FILTER GROUP GROUPADDR GROUPADDR6 HOST IDENT
-%token INTFADDR INTFADDR6 INTFNAME KEEP KEYDIRECTORY LISTENV4 LISTENV6
-%token LOGICALOR LOGICALAND LOOPBACK LOGDIRECTORY LOGS MINIMUMSEVERITY
-%token MULTICAST NOT OUTFILTER PATH PERIOD PERMS PORT SELECTORS SERVICE USER
+%token COMPRESS FACILITY FILES FILTER FILTERS GROUP GROUPADDR GROUPADDR6
+%token HOST IDENT INTFADDR INTFADDR6 INTFNAME KEEP KEYDIRECTORY LISTENV4
+%token LISTENV6 LOGICALOR LOGICALAND LOOPBACK LOGDIRECTORY LOGS
+%token MINIMUMSEVERITY MULTICAST NOT OUTFILTER PATH PERIOD PERMS PORT
+%token SERVICE USER
 
 %token<stringVal>  STRING
 %token<intVal>     INTEGER
@@ -199,9 +220,8 @@
 %type<ipv4AddrVal>        GroupAddr IntfAddr
 %type<ipv6AddrVal>        GroupAddr6 IntfAddr6
 %type<boolVal>            ListenV4 ListenV6
-%type<msgSelectorVal>     SelectorSettings
-%type<namedSelectorVal>   Selector
-%type<selectorsVal>       SelectorList
+%type<mapStringStringVal> Filters FilterList
+%type<stringPairVal>      FilterExpr
 %type<logFilesVal>        Logs LogList
 %type<logFileVal>         Log LogSettings
 
@@ -209,7 +229,7 @@
 
 Config: TopStanza | Config TopStanza;
 
-TopStanza: Service | Loopback | Multicast | Files | Selectors;
+TopStanza: Service | Loopback | Multicast | Files | Filters;
 
 Service: SERVICE '{' ServiceSettings '}' ';'
 {
@@ -490,160 +510,38 @@ UDP4Port: INTEGER
     $$ = ntohs(servEntry->s_port);
   }
   else {
-      mclogcfgerror("unknown UDP service");
-      delete $1;
-      return 1;
+    mclogcfgerror("unknown UDP service");
+    delete $1;
+    return 1;
   }
   delete $1;
 };
 
-Selectors: SELECTORS '{' SelectorList '}' ';'
+Filters: FILTERS '{' FilterList '}' ';'
 {
   if (g_config) {
-    g_config->selectors = *($3);
+    g_config->filters = *($3);
   }
   delete $3;
 };
 
-SelectorList: Selector
+FilterList: FilterExpr
 {
-  $$ = new std::map<std::string,Dwm::Mclog::MessageSelector>();
-  $$->insert(*$1);
+  $$ = new std::map<std::string,std::string>();
+  $$->insert({$1->first, ExpandFilterExpr(*($$), $1->second)});
   delete $1;
 }
-| SelectorList ',' Selector
+| FilterList FilterExpr
 {
-  $$->insert(*$3);
-  delete $3;
+  $$->insert({$2->first, ExpandFilterExpr(*($$), $2->second)});
+  delete $2;
 };
 
-Selector: STRING '=' '{' SelectorSettings '}'
+FilterExpr: STRING '=' STRING ';'
 {
-  $$ = new std::pair<std::string,Dwm::Mclog::MessageSelector>(*$1,*$4);
+  $$ = new std::pair<std::string,std::string>(*($1),*($3));
   delete $1;
-  delete $4;
-};
-     
-SelectorSettings: HOST '=' STRING ';'
-{
-  $$ = new Dwm::Mclog::MessageSelector();
-  if (! $$->SourceHost(*$3)) {
-    mclogcfgerror("bad host expression '%s'", $3->c_str());
-    delete $3;
-    delete $$;
-    return 1;
-  }
   delete $3;
-}
-| HOST NOT '=' STRING ';'
-{
-  $$ = new Dwm::Mclog::MessageSelector();
-  if (! $$->SourceHost(*($4), false)) {
-    mclogcfgerror("bad host expression '%s'", $4->c_str());
-    delete $4;
-    delete $$;
-    return 1;
-  }
-  delete $4;
-}
-
-| FACILITY '=' STRING ';'
-{
-  $$ = new Dwm::Mclog::MessageSelector();
-  std::set<Dwm::Mclog::Facility>  facilities;
-  Dwm::Mclog::Facilities(*($3), facilities);
-  $$->Facilities(facilities);
-  delete $3;
-}
-| FACILITY NOT '=' STRING ';'
-{
-  $$ = new Dwm::Mclog::MessageSelector();
-  std::set<Dwm::Mclog::Facility>  facilities;
-  Dwm::Mclog::Facilities(*($4), facilities);
-  $$->Facilities(facilities, false);
-  delete $4;
-}
-| MINIMUMSEVERITY '=' STRING ';'
-{
-  $$ = new Dwm::Mclog::MessageSelector();
-  $$->MinimumSeverity(Dwm::Mclog::SeverityValue(*($3)));
-  delete $3;
-}
-| IDENT '=' STRING ';'
-{
-  $$ = new Dwm::Mclog::MessageSelector();
-  if (! $$->Ident(*$3)) {
-    mclogcfgerror("bad ident expression '%s'", $3->c_str());
-    delete $3;
-    return 1;
-  }
-  delete $3;
-}
-| IDENT NOT '=' STRING ';'
-{
-  $$ = new Dwm::Mclog::MessageSelector();
-  if (! $$->Ident(*($4), false)) {
-    mclogcfgerror("bad ident expression '%s'", $4->c_str());
-    delete $4;
-    delete $$;
-    return 1;
-  }
-  delete $4;
-}
-| SelectorSettings HOST '=' STRING ';'
-{
-  if (! $$->SourceHost(*$4)) {
-    mclogcfgerror("bad host expression '%s'", $4->c_str());
-    delete $4;
-    return 1;
-  }
-  delete $4;
-}
-| SelectorSettings HOST NOT '=' STRING ';'
-{
-  if (! $$->SourceHost(*$5)) {
-    mclogcfgerror("bad host expression '%s'", $5->c_str());
-    delete $5;
-    return 1;
-  }
-  delete $5;
-}
-| SelectorSettings FACILITY '=' STRING ';'
-{
-  std::set<Dwm::Mclog::Facility>  facilities;
-  Dwm::Mclog::Facilities(*($4), facilities);
-  $$->Facilities(facilities);
-  delete $4;
-}
-| SelectorSettings FACILITY NOT '=' STRING ';'
-{
-  std::set<Dwm::Mclog::Facility>  facilities;
-  Dwm::Mclog::Facilities(*($5), facilities);
-  $$->Facilities(facilities, false);
-  delete $5;
-}
-| SelectorSettings MINIMUMSEVERITY '=' STRING ';'
-{
-  $$->MinimumSeverity(Dwm::Mclog::SeverityValue(*($4)));
-  delete $4;
-}
-| SelectorSettings IDENT '=' STRING ';'
-{
-  if (! $$->Ident(*$4)) {
-    mclogcfgerror("bad ident expression '%s'", $4->c_str());
-    delete $4;
-    return 1;
-  }
-  delete $4;
-}
-| SelectorSettings IDENT NOT '=' STRING ';'
-{
-  if (! $$->Ident(*($5), false)) {
-    mclogcfgerror("bad ident expression '%s'", $5->c_str());
-    delete $5;
-    return 1;
-  }
-  delete $5;
 };
 
 OutFilter: OUTFILTER '=' STRING ';'
@@ -782,7 +680,8 @@ LogSettings: Filter
 
 Filter: FILTER '=' STRING ';'
 {
-  $$ = $3;
+    $$ = new std::string(ExpandFilterExpr(g_config->filters, *($3)));
+    delete $3;
 };
 
 Path: PATH '=' STRING ';'

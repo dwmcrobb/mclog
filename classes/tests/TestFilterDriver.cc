@@ -42,6 +42,9 @@
 #include <sstream>
 
 #include "DwmTimeValue64.hh"
+#include "DwmMclogMessage.hh"
+
+#if 0
 #include "DwmMclogFilterDriver.hh"
 
 //----------------------------------------------------------------------------
@@ -70,6 +73,7 @@ static void TestPerformance(Dwm::Mclog::FilterDriver & driver,
   
   return;
 }
+#endif
 
 //----------------------------------------------------------------------------
 //!  
@@ -90,6 +94,7 @@ static Dwm::Mclog::Message MakeMessage(const char *host,
 //----------------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
+#if 0
   Dwm::Mclog::Config        config;
   if (config.Parse("inputs/TestFilterDriver1.cfg")) {
     Dwm::Mclog::FilterDriver  driver(config, "mydaemons");
@@ -106,6 +111,6 @@ int main(int argc, char *argv[])
               << "parse: " << parserc
               << "    result: " << result << '\n';
   }
-  
+#endif
   return 0;
 }

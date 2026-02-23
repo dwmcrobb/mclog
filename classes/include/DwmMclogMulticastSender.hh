@@ -48,7 +48,8 @@
 #include "DwmThreadQueue.hh"
 #include "DwmCredenceKeyStash.hh"
 #include "DwmCredenceKnownKeys.hh"
-#include "DwmMclogFilterDriver.hh"
+#include "DwmMclogConfig.hh"
+#include "DwmMclogMessageFilterDriver.hh"
 #include "DwmMclogMessageSink.hh"
 #include "DwmMclogMessagePacket.hh"
 #include "DwmMclogKeyRequestListener.hh"
@@ -124,7 +125,7 @@ namespace Dwm {
       std::string                    _key;
       Clock::time_point              _nextSendTime;
       KeyRequestListener             _keyRequestListener;
-      std::unique_ptr<FilterDriver>  _filterDriver;
+      std::unique_ptr<MessageFilterDriver>  _filterDriver;
       
       bool DesiredSocketsOpen() const;
       bool OpenSocket();

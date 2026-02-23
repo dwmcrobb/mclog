@@ -43,7 +43,6 @@
 #include "DwmIpv4Address.hh"
 #include "DwmIpv6Address.hh"
 #include "DwmMclogRollPeriod.hh"
-#include "DwmMclogMessageSelector.hh"
 
 namespace Dwm {
 
@@ -157,7 +156,7 @@ namespace Dwm {
       LoopbackConfig                         loopback;
       MulticastConfig                        mcast;
       ServiceConfig                          service;
-      std::map<std::string,MessageSelector>  selectors;
+      std::map<std::string,std::string>      filters;
       FilesConfig                            files;
     };
     

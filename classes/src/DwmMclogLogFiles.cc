@@ -47,8 +47,7 @@ namespace Dwm {
 
     //------------------------------------------------------------------------
     LogFiles::LogFiles()
-        : _mtx(), _selectors(), _filesConfig(), _filteredLogConfigs(),
-          _logFiles()
+        : _mtx(), _filesConfig(), _filteredLogConfigs(), _logFiles()
     {
     }
     
@@ -58,9 +57,6 @@ namespace Dwm {
           _filteredLogConfigs(std::move(logFiles._filteredLogConfigs)),
           _logFiles(std::move(logFiles._logFiles))
     {
-      for (auto & sel : logFiles._selectors) {
-        _selectors.insert(sel);
-      }
     }
 
     //------------------------------------------------------------------------
@@ -88,7 +84,7 @@ namespace Dwm {
       _filesConfig = config.files;
       for (const auto & logcfg : config.files.logs) {
         auto  filtLogCfg =
-          FilteredLogConfig{std::make_unique<FilterDriver>(config,logcfg.filter), logcfg};
+          FilteredLogConfig{std::make_unique<MessageFilterDriver>(logcfg.filter), logcfg};
         _filteredLogConfigs.push_back(std::move(filtLogCfg));
       }
       return;

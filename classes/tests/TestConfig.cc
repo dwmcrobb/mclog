@@ -60,18 +60,24 @@ int main(int argc, char *argv[])
   assert(false == cfg.loopback.ListenIpv4());
   assert(true == cfg.loopback.ListenIpv6());
   assert(3737 == cfg.loopback.port);
-  assert(5 == cfg.selectors.size());
-  assert(cfg.selectors.begin()->first == "myapps");
+  assert(6 == cfg.filters.size());
+  assert(cfg.filters.begin()->first == "apps");
 
-  auto it = cfg.selectors.find("mydaemons");
-  assert(it != cfg.selectors.end());
-  assert(it->second.Facilities().first.size() == 8);
+  auto it = cfg.filters.find("mydaemons");
+  assert(it != cfg.filters.end());
+  assert(it->second == "(ident = /dwmrdapd|mcroverd|mctallyd|mccurtaind|mcblockd/) && (host = /.+\\.(mcplex\\.net|rfdm\\.com)/)");
 
   assert(2 == cfg.files.logs.size());
-  assert(cfg.files.logs[0].filter == "mydaemons");
+  std::cerr << cfg.files.logs[0].filter << '\n';
+  
+  assert(cfg.files.logs[0].filter == "(ident = /dwmrdapd|mcroverd|mctallyd|mccurtaind|mcblockd/) && (host = /.+\\.(mcplex\\.net|rfdm\\.com)/)");
   assert(cfg.files.logs[0].pathPattern == "%H/%I");
-  assert(cfg.files.logs[1].filter == "myapps");
+  assert(cfg.files.logs[1].filter == "(ident = /mcblock|mccurtain|mcrover|mctally|qmcrover/) && (host = /.+\\.(mcplex\\.net|rfdm\\.com)/)");
   assert(cfg.files.logs[1].pathPattern == "%H/myapps");
+
+  for (const auto & filt : cfg.filters) {
+    std::cout << filt.first << " = " << filt.second << '\n';
+  }
   
   return 0;
 }

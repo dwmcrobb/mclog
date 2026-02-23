@@ -51,7 +51,6 @@ extern "C" {
 #include "DwmSysLogger.hh"
 #include "DwmCredenceXChaCha20Poly1305.hh"
 #include "DwmMclogConfig.hh"
-#include "DwmMclogMessageSelector.hh"
 #include "DwmMclogLogger.hh"
 #include "DwmMclogKeyRequester.hh"
 #include "DwmMclogMulticastReceiver.hh"

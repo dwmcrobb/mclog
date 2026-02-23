@@ -118,13 +118,13 @@ m_facval (kernel|user|mail|daemon|auth|syslog|lpr|news|uucp|cron|authpriv|ftp|lo
   drv.tokens.push_back(tok);
   return tok;
 }
-<INITIAL>["]       { BEGIN(x_quoted); }
-<x_quoted>[^"]*    {
+<INITIAL>[']       { BEGIN(x_quoted); }
+<x_quoted>[^']*    {
   auto tok = MFP::make_STRING(YYText(), loc);
   drv.tokens.push_back(tok);
   return tok;
 }
-<x_quoted>["]      { BEGIN(INITIAL); }
+<x_quoted>[']      { BEGIN(INITIAL); }
 <INITIAL>[\/]      { BEGIN(x_regex); }
 <x_regex>[^\/]*    {
   try {

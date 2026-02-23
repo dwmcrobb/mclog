@@ -43,9 +43,10 @@
 #include <map>
 #include <mutex>
 
-#include "DwmMclogFilterDriver.hh"
+#include "DwmMclogMessageFilterDriver.hh"
 #include "DwmMclogLogFile.hh"
 #include "DwmMclogMessageSink.hh"
+#include "DwmMclogConfig.hh"
 
 namespace Dwm {
 
@@ -76,8 +77,9 @@ namespace Dwm {
 
       //----------------------------------------------------------------------
       //!  Note we need an entire configuration because we need the
-      //!  'selectors' in order to evaluate any filters in the 'logs'
+      //!  'filters' in order to evaluate any filters in the 'logs'
       //!  part of the 'files' configuration.
+      //!  dwm xxx: is this still true?  I don't think so...
       //----------------------------------------------------------------------
       void Configure(const Config & config);
 
@@ -94,7 +96,7 @@ namespace Dwm {
       
     private:
       using FilteredLogConfig =
-        std::pair<std::unique_ptr<FilterDriver>,LogFileConfig>;
+        std::pair<std::unique_ptr<MessageFilterDriver>,LogFileConfig>;
 
       //----------------------------------------------------------------------
       //!  Used as the key to cache log file paths.  Motivated mainly by the
@@ -142,7 +144,6 @@ namespace Dwm {
       };
       
       mutable std::mutex                     _mtx;
-      std::map<std::string,MessageSelector>  _selectors;
       FilesConfig                            _filesConfig;
       std::vector<FilteredLogConfig>         _filteredLogConfigs;
       std::map<std::string,LogFile>          _logFiles;

@@ -70,6 +70,7 @@
     { "facility",           FACILITY        },
     { "files",              FILES           },
     { "filter",             FILTER          },
+    { "filters",            FILTERS         },
     { "group",              GROUP           },
     { "groupAddr",          GROUPADDR       },
     { "groupAddr6",         GROUPADDR6      },
@@ -92,7 +93,6 @@
     { "period",             PERIOD          },
     { "perms",              PERMS           },
     { "port",               PORT            },
-    { "selectors",          SELECTORS       },
     { "service",            SERVICE         },
     { "user",               USER            }
   };

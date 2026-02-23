@@ -45,7 +45,7 @@
 
 #include "DwmThreadQueue.hh"
 #include "DwmMclogConfig.hh"
-#include "DwmMclogFilterDriver.hh"
+// #include "DwmMclogMessageFilterDriver.hh"
 #include "DwmMclogLogFiles.hh"
 #include "DwmMclogMessageSink.hh"
 

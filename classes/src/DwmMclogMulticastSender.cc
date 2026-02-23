@@ -202,7 +202,7 @@ namespace Dwm {
       _dstEndpoint = UdpEndpoint(config.mcast.groupAddr, config.mcast.dstPort);
       _dstEndpoint6 = UdpEndpoint(config.mcast.groupAddr6, config.mcast.dstPort);
       if (! config.mcast.outFilter.empty()) {
-        _filterDriver = std::make_unique<FilterDriver>(_config, config.mcast.outFilter);
+        _filterDriver = std::make_unique<MessageFilterDriver>(config.mcast.outFilter);
       }
       else {
         _filterDriver = nullptr;

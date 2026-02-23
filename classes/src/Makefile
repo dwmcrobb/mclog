@@ -17,7 +17,7 @@ $(my CxxFlags   := ${CXXFLAGS} ${PTHREADCXXFLAGS} $(my Incs))
 $(my Compile    := $(LIBTOOLCOMPILE) $(my CxxFlags))
 
 $(eval TARGETS          $(dwm_ifcwd :=,+=) $(my lib.Lib))
-$(eval CLEANTARGETS     $(dwm_ifcwd :=,+=) $(my lib.Clean) $(my myincdir)/DwmMclogFilterParse.hh $(my myincdir)/DwmMclogConfigParse.hh $(my myincdir)/DwmMclogMessageFilterParse.hh)
+$(eval CLEANTARGETS     $(dwm_ifcwd :=,+=) $(my lib.Clean) $(my myincdir)/DwmMclogConfigParse.hh $(my myincdir)/DwmMclogMessageFilterParse.hh)
 $(eval LTCLEANTARGETS   $(dwm_ifcwd :=,+=) $(my lib.LtClean))
 $(eval DISTCLEANTARGETS $(dwm_ifcwd :=,+=) $(my lib.Deps))
 $(eval TARTARGETS       $(dwm_ifcwd :=,+=) ${TARDIR}/lib/libDwmMclog.la)
@@ -27,7 +27,7 @@ $(dwm_include $(abspath $(my mydir)/../../Makefile.rules))
 # generate dependency rule
 $(eval $(dwm_cppdeps $(my mydir)/deps,\
 $(abspath $(my mydir)/../obj),$(my mydir)/%.cc \
-$(my myincdir)/DwmMclogConfigParse.hh $(my myincdir)/DwmMclogFilterParse.hh,\
+$(my myincdir)/DwmMclogConfigParse.hh $(my myincdir)/DwmMclogMessageFilterParse.hh,\
 ${CXX} -MM $(my CxxFlags) $<,.o .lo))
 
 #  only include dependency makefiles if target is not a 'clean' target
