@@ -75,7 +75,6 @@ namespace Dwm {
       std::mutex                               parsemtx;
       
       MessageFilterParser::symbol_type next_token();
-
       bool is_valid();
       bool parse(const Message *msg, bool & result);
     };
