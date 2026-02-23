@@ -83,9 +83,14 @@ namespace Dwm {
       
       _filesConfig = config.files;
       for (const auto & logcfg : config.files.logs) {
-        auto  filtLogCfg =
-          FilteredLogConfig{std::make_unique<MessageFilterDriver>(logcfg.filter), logcfg};
-        _filteredLogConfigs.push_back(std::move(filtLogCfg));
+        try {
+          auto  filtLogCfg =
+            FilteredLogConfig{std::make_unique<MessageFilterDriver>(logcfg.filter), logcfg};
+          _filteredLogConfigs.push_back(std::move(filtLogCfg));
+        }
+        catch (std::invalid_argument & ex) {
+          std::cerr << ex.what() << '\n';
+        }
       }
       return;
     }
