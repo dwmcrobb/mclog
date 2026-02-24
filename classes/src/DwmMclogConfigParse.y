@@ -546,7 +546,8 @@ FilterExpr: STRING '=' STRING ';'
 
 OutFilter: OUTFILTER '=' STRING ';'
 {
-  $$ = $3;
+    $$ = new std::string(ExpandFilterExpr(g_config->filters,*($3)));
+    delete $3;
 };
 
 Logs: LOGS '{' LogList '}' ';'
