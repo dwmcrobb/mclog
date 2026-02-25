@@ -215,6 +215,35 @@ namespace Dwm {
       return os;
     }
 
+    //------------------------------------------------------------------------
+    std::istream & operator >> (std::istream & is, MessageOrigin & origin)
+    {
+      std::lock_guard  lck(origin._mtx);
+      std::string  hn, procInfo;
+      if (is >> hn >> procInfo) {
+        if (hn.size() <= 255) {
+          auto  aidx = procInfo.find_first_of('[');
+          if ((aidx != std::string::npos) && (aidx < 255)) {
+            auto  pidx = procInfo.find_first_of(']');
+            if ((pidx != std::string::npos) && (pidx > aidx + 1)) {
+              origin._hostname = hn;
+              origin._appname = procInfo.substr(0, aidx);
+              origin._procid =
+                std::stoul(procInfo.substr(aidx+1,pidx-(aidx+1)));
+            }
+            else is.setstate(std::ios_base::failbit);
+          }
+          else {
+            is.setstate(std::ios_base::failbit);
+          }
+        }
+        else {
+          is.setstate(std::ios_base::failbit);
+        }
+      }
+      return is;
+    }
+    
   }  // namespace Mclog
 
 }  // namespace Dwm

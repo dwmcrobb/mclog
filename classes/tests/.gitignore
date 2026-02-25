@@ -3,5 +3,11 @@
 TestConfig
 TestFilterDriver
 TestFuzzer
+TestLogFile
 TestLogFiles
 TestLogger
+TestMessageFilter
+TestMessageHeader
+TestMessageOrigin
+TestRollInterval
+TestTimestamp

@@ -110,7 +110,37 @@ namespace Dwm {
       }
       return os;
     }
-    
+
+    //------------------------------------------------------------------------
+    //!  
+    //------------------------------------------------------------------------
+    std::istream & operator >> (std::istream & is, Severity & severity)
+    {
+      static constexpr array<pair<string,Severity>,8> severities = {
+        make_pair("[M]", Severity::emerg),
+        make_pair("[A]", Severity::alert),
+        make_pair("[C]", Severity::crit),
+        make_pair("[E]", Severity::err),
+        make_pair("[W]", Severity::warning),
+        make_pair("[N]", Severity::notice),
+        make_pair("[I]", Severity::info),
+        make_pair("[D]", Severity::debug)
+      };
+      
+      std::string  s;
+      if (is >> s) {
+        if (auto it = ranges::find(severities, s,
+                                   &pair<string,Severity>::first);
+            it != severities.end()) {
+          severity = it->second;
+        }
+        else {
+          is.setstate(std::ios_base::failbit);
+        }
+      }
+      return is;
+    }
+          
   }  // namespace Mclog
 
 }  // namespace Dwm

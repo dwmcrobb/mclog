@@ -80,6 +80,11 @@ namespace Dwm {
       //!  Move assignment
       //----------------------------------------------------------------------
       Timestamp & operator = (Timestamp &&) = default;
+
+      //----------------------------------------------------------------------
+      //!  Default comparisons
+      //----------------------------------------------------------------------
+      bool operator <=> (const Timestamp &) const = default;
       
       //----------------------------------------------------------------------
       //!  Reads the timestamp from the given istream @c is.  Returns @c is.
@@ -103,8 +108,16 @@ namespace Dwm {
       //----------------------------------------------------------------------
       int BZWrite(BZFILE *bzf) const;
 
+      //----------------------------------------------------------------------
+      //!  Reads the timestamp from the given gzFile @c gzf.  Returns the
+      //!  number of bytes read on success, -1 on failure.
+      //----------------------------------------------------------------------
       int Read(gzFile gzf);
 
+      //----------------------------------------------------------------------
+      //!  Writes the timestamp to the given gzFile @c gzf.  Returns the
+      //!  number of bytes written on success, -1 on failure.
+      //----------------------------------------------------------------------
       int Write(gzFile gzf) const;
       
       //----------------------------------------------------------------------
@@ -130,6 +143,12 @@ namespace Dwm {
       //----------------------------------------------------------------------
       friend std::ostream &
       operator << (std::ostream & os, const Timestamp & ts);
+
+      //----------------------------------------------------------------------
+      //!  Reads a timestamp from an istream in human-readable form.
+      //----------------------------------------------------------------------
+      friend std::istream &
+      operator >> (std::istream & is, Timestamp & ts);
       
     private:
       uint64_t  _usecs;

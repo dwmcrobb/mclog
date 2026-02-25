@@ -65,21 +65,9 @@ namespace Dwm {
     //------------------------------------------------------------------------
     std::istream & MessageHeader::Read(std::istream & is)
     {
-      if (_timestamp.Read(is)) {
-        if (StreamIO::Read(is, _facility)) {
-          if (_facility <= Facility::local7) {
-            if (StreamIO::Read(is, _severity)) {
-              if (_severity <= Severity::debug) {
-                _origin.Read(is);
-              }
-              else {
-                is.setstate(std::ios_base::failbit);
-              }
-            }
-          }
-          else {
-            is.setstate(std::ios_base::failbit);
-          }
+      if (StreamIO::ReadV(is, _timestamp, _facility, _severity, _origin)) {
+        if ((Facility::local7 < _facility) || (Severity::debug < _severity)) {
+          is.setstate(std::ios_base::failbit);
         }
       }
       return is;
@@ -88,14 +76,7 @@ namespace Dwm {
     //------------------------------------------------------------------------
     std::ostream & MessageHeader::Write(std::ostream & os) const
     {
-      if (_timestamp.Write(os)) {
-        if (StreamIO::Write(os, _facility)) {
-          if (StreamIO::Write(os, _severity)) {
-            _origin.Write(os);
-          }
-        }
-      }
-      return os;
+      return StreamIO::WriteV(os, _timestamp, _facility, _severity, _origin);
     }
 
     //------------------------------------------------------------------------
@@ -144,11 +125,18 @@ namespace Dwm {
     }
     
     //------------------------------------------------------------------------
-    std::ostream &                                                     
-    operator << (std::ostream & os, const MessageHeader & hdr)
+    std::ostream & operator << (std::ostream & os, const MessageHeader & hdr)
     {
-      os << hdr._timestamp << ' ' << hdr._origin << ": " << hdr._severity;
+      os << hdr._timestamp << ' ' << hdr._facility << ' ' << hdr._origin
+         << ": " << hdr._severity;
       return os;
+    }
+
+    //------------------------------------------------------------------------
+    std::istream & operator >> (std::istream & is, MessageHeader & hdr)
+    {
+      is >> hdr._timestamp >> hdr._facility >> hdr._origin >> hdr._severity;
+      return is;
     }
     
   }  // namespace Mclog

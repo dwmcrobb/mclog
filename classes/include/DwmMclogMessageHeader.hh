@@ -149,6 +149,13 @@ namespace Dwm {
       //----------------------------------------------------------------------
       friend std::ostream &
       operator << (std::ostream & os, const MessageHeader & hdr);
+
+      //----------------------------------------------------------------------
+      //!  Reads a message header from an istream in the form we use for
+      //!  human consumption.
+      //----------------------------------------------------------------------
+      friend std::istream &
+      operator >> (std::istream & is, MessageHeader & hdr);
       
     private:
       Timestamp                   _timestamp;

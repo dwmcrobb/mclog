@@ -72,6 +72,11 @@ namespace Dwm {
     std::ostream & operator << (std::ostream & os, const Severity & severity);
 
     //------------------------------------------------------------------------
+    //!  Read a Severity from an istream in human-readable form (e.g. "[I]").
+    //------------------------------------------------------------------------
+    std::istream & operator >> (std::istream & is, Severity & severity);
+    
+    //------------------------------------------------------------------------
     //!  Given a @c severityName, returns the corresponding Severity.  Valid
     //!  @c severityyName values: "debug", "info", "notice", "warning", "err",
     //!  "crit", "alert" and "emerg".  If @c severityyName is not a valid

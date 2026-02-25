@@ -176,6 +176,12 @@ namespace Dwm {
       //----------------------------------------------------------------------
       friend std::ostream & operator << (std::ostream & os,
                                          const MessageOrigin & origin);
+
+      //----------------------------------------------------------------------
+      //!  Reads the origin from an istream in human-readable form.
+      //----------------------------------------------------------------------
+      friend std::istream & operator >> (std::istream & is,
+                                         MessageOrigin & origin);
       
     private:
       mutable std::mutex          _mtx;
