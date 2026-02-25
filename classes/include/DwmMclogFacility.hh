@@ -89,7 +89,7 @@ namespace Dwm {
 
     //------------------------------------------------------------------------
     //!  Reads the given @c facility from the given istream @c is in human
-    //!  readable form (string rerepresentation, e.g. "local0").
+    //!  readable form (string representation, e.g. "local0").
     //------------------------------------------------------------------------
     std::istream & operator >> (std::istream & is, Facility & facility);
     
