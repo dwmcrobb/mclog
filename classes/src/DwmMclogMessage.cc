@@ -112,7 +112,24 @@ namespace Dwm {
       os << msg._header << ' ' << msg._message << '\n';
       return os;
     }
-    
+
+    //------------------------------------------------------------------------
+    std::istream & operator >> (std::istream & is, Message & msg)
+    {
+      if (is >> msg._header) {
+        is >> std::ws;
+        std::string  s;
+        std::getline(is, s);
+        if (s.size() <= 1500) {
+          msg._message = s;
+        }
+        else {
+          is.setstate(std::ios_base::failbit);
+        }
+      }
+      return is;
+    }
+      
   }  // namespace Mclog
 
 }  // namespace Dwm

@@ -91,6 +91,11 @@ namespace Dwm {
       Message(const MessageHeader & header, const std::string & message);
 
       //----------------------------------------------------------------------
+      //!  operator ==
+      //----------------------------------------------------------------------
+      bool operator == (const Message &) const = default;
+      
+      //----------------------------------------------------------------------
       //!  Returns a const reference to the contained message header.
       //----------------------------------------------------------------------
       const MessageHeader & Header() const
@@ -148,6 +153,13 @@ namespace Dwm {
       //----------------------------------------------------------------------
       friend std::ostream &
       operator << (std::ostream & os, const Message & msg);
+
+      //----------------------------------------------------------------------
+      //!  Reads @c msg from the given istream @c is in the form used for
+      //!  human consumption.
+      //----------------------------------------------------------------------
+      friend std::istream &
+      operator >> (std::istream & is, Message & msg);
       
     private:
       MessageHeader                _header;

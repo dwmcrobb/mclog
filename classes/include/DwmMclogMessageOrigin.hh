@@ -88,6 +88,11 @@ namespace Dwm {
       MessageOrigin(const char *hostname, const char *appname, pid_t pid);
 
       //----------------------------------------------------------------------
+      //!  operator ==
+      //----------------------------------------------------------------------
+      bool operator == (const MessageOrigin & origin) const;
+      
+      //----------------------------------------------------------------------
       //!  Returns the origin hostname.
       //----------------------------------------------------------------------
       const std::string & hostname() const

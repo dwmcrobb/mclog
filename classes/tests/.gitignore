@@ -6,6 +6,7 @@ TestFuzzer
 TestLogFile
 TestLogFiles
 TestLogger
+TestMessage
 TestMessageFilter
 TestMessageHeader
 TestMessageOrigin

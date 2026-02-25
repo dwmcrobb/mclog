@@ -88,7 +88,16 @@ namespace Dwm {
       }
       return *this;
     }
-    
+
+    //------------------------------------------------------------------------
+    bool MessageOrigin::operator == (const MessageOrigin & origin) const
+    {
+      std::scoped_lock  lck(_mtx, origin._mtx);
+      return ((_hostname == origin._hostname)
+              && (_appname == origin._appname)
+              && (_procid == origin._procid));
+    }
+
     //------------------------------------------------------------------------
     static bool IsValidHostname(const std::string & hn)
     {

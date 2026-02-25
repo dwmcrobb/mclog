@@ -78,6 +78,11 @@ namespace Dwm {
           : _timestamp(), _facility(facility), _severity(severity),
             _origin(origin)
       {}
+
+      //----------------------------------------------------------------------
+      //!  operator ==
+      //----------------------------------------------------------------------
+      bool operator == (const MessageHeader & hdr) const = default;
       
       //----------------------------------------------------------------------
       //!  Returns the timestamp.
