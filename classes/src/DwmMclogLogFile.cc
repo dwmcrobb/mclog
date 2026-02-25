@@ -81,10 +81,10 @@ namespace Dwm {
     
     //------------------------------------------------------------------------
     LogFile::LogFile(const std::string & path, mode_t permissions,
-                     RollPeriod period, uint32_t keep)
+                     RollPeriod period, uint32_t keep, FileFormat format)
         : _mtx(), _path(path), _permissions(permissions), _keep(keep),
           _ofs(), _rollInterval(period), _user(getuid()), _group(getgid()),
-          _compress("bzip2")
+          _compress("bzip2"), _format(format)
     {}
 
     //------------------------------------------------------------------------
@@ -100,6 +100,7 @@ namespace Dwm {
       _user = logFile._user;
       _group = logFile._group;
       _compress = logFile._compress;
+      _format = logFile._format;
     }
 
     //------------------------------------------------------------------------
@@ -115,6 +116,7 @@ namespace Dwm {
         _user = logFile._user;
         _group = logFile._group;
         _compress = std::move(logFile._compress);
+        _format = logFile._format;
       }
       return *this;
     }
@@ -297,8 +299,15 @@ namespace Dwm {
             MCLOG(Severity::info, "LogFile {} rolled", _path.string());
           }
         }
-        if (_ofs << msg << std::flush) {
-          rc = true;
+        if (_format == FileFormat::binary) {
+          if (msg.Write(_ofs)) {
+            rc = (_ofs.flush() ? true : false);
+          }
+        }
+        else {
+          if (_ofs << msg << std::flush) {
+            rc = true;
+          }
         }
       }
       return rc;

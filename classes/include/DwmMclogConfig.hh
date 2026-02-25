@@ -42,6 +42,7 @@
 
 #include "DwmIpv4Address.hh"
 #include "DwmIpv6Address.hh"
+#include "DwmMclogFileFormat.hh"
 #include "DwmMclogRollPeriod.hh"
 
 namespace Dwm {
@@ -122,6 +123,7 @@ namespace Dwm {
       std::string  user;
       std::string  group;
       std::string  compress;
+      FileFormat   format;
     };
     
     //------------------------------------------------------------------------

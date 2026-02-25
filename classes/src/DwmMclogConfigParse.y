@@ -186,6 +186,7 @@
   Dwm::Mclog::LogFileConfig                 *logFileVal;
   vector<Dwm::Mclog::LogFileConfig>         *logFilesVal;
   Dwm::Mclog::RollPeriod                     rollPeriodVal;
+  Dwm::Mclog::FileFormat                     fileFormatVal;
   bool                                       boolVal;
 }
 
@@ -199,11 +200,11 @@
   YY_DECL;
 }
 
-%token COMPRESS FACILITY FILES FILTER FILTERS GROUP GROUPADDR GROUPADDR6
-%token HOST IDENT INTFADDR INTFADDR6 INTFNAME KEEP KEYDIRECTORY LISTENV4
-%token LISTENV6 LOGICALOR LOGICALAND LOOPBACK LOGDIRECTORY LOGS
+%token BINARY COMPRESS FACILITY FILES FILTER FILTERS FORMAT GROUP GROUPADDR
+%token GROUPADDR6 HOST IDENT INTFADDR INTFADDR6 INTFNAME KEEP KEYDIRECTORY
+%token LISTENV4 LISTENV6 LOGICALOR LOGICALAND LOOPBACK LOGDIRECTORY LOGS
 %token MINIMUMSEVERITY MULTICAST NOT OUTFILTER PATH PERIOD PERMS PORT
-%token SERVICE USER
+%token SERVICE TEXT USER
 
 %token<stringVal>  STRING
 %token<intVal>     INTEGER
@@ -212,6 +213,7 @@
 %type<stringVal>          Filter IntfName KeyDirectory LogDirectory
 %type<intVal>             Keep Permissions
 %type<rollPeriodVal>      RollPeriod
+%type<fileFormatVal>      Format
 %type<stringVal>          Compress Group OutFilter Path User
 %type<serviceConfigVal>   ServiceSettings
 %type<loopbackConfigVal>  LoopbackSettings
@@ -629,6 +631,11 @@ LogSettings: Filter
   $$->compress = *($1);
   delete $1;
 }
+| Format
+{
+  $$ = new Dwm::Mclog::LogFileConfig();
+  $$->format = $1;
+}
 | LogSettings Filter
 {
   $$->filter = *($2);
@@ -677,6 +684,10 @@ LogSettings: Filter
 {
   $$->compress = *($2);
   delete $2;
+}
+| LogSettings Format
+{
+  $$->format = $2;
 };
 
 Filter: FILTER '=' STRING ';'
@@ -719,6 +730,15 @@ Group: GROUP '=' STRING ';'
 Compress: COMPRESS '=' STRING ';'
 {
   $$ = $3;
+};
+
+Format: FORMAT '=' TEXT ';'
+{
+  $$ = Dwm::Mclog::FileFormat::text;
+}
+| FORMAT '=' BINARY ';'
+{
+  $$ = Dwm::Mclog::FileFormat::binary;
 };
 
 %%
@@ -788,6 +808,7 @@ namespace Dwm {
       user.clear();
       group.clear();
       compress = "bzip2";
+      format = FileFormat::text;
     }
     
     //-----------------------------------------------------------------------

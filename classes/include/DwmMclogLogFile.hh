@@ -46,6 +46,7 @@
 #include <string>
 
 #include "DwmMclogMessageSink.hh"
+#include "DwmMclogFileFormat.hh"
 #include "DwmMclogRollInterval.hh"
 
 namespace Dwm {
@@ -70,7 +71,8 @@ namespace Dwm {
       //!  period and number of files to keep (active file + archives).
       //----------------------------------------------------------------------
       LogFile(const std::string & path, mode_t permissions = 0644,
-              RollPeriod period = RollPeriod::days_1, uint32_t keep = 7);
+              RollPeriod period = RollPeriod::days_1, uint32_t keep = 7,
+              FileFormat format = FileFormat::text);
 
       //----------------------------------------------------------------------
       //!  Copy construction is invalid.
@@ -153,6 +155,7 @@ namespace Dwm {
       uid_t                  _user;
       gid_t                  _group;
       std::string            _compress;
+      FileFormat             _format;
       
       //----------------------------------------------------------------------
       //!  
