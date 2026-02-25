@@ -104,6 +104,16 @@ namespace Dwm {
       os << FacilityName(facility);
       return os;
     }
+
+    //------------------------------------------------------------------------
+    std::istream & operator >> (std::istream & is, Facility & facility)
+    {
+      std::string  s;
+      if (is >> s) {
+        facility = FacilityValue(s);
+      }
+      return is;
+    }
     
     //------------------------------------------------------------------------
     void Facilities(const std::string & rgxstr,

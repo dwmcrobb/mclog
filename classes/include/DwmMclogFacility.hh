@@ -88,6 +88,12 @@ namespace Dwm {
     std::ostream & operator << (std::ostream & os, const Facility & facility);
 
     //------------------------------------------------------------------------
+    //!  Reads the given @c facility from the given istream @c is in human
+    //!  readable form (string rerepresentation, e.g. "local0").
+    //------------------------------------------------------------------------
+    std::istream & operator >> (std::istream & is, Facility & facility);
+    
+    //------------------------------------------------------------------------
     //!  Returns a string representation of the given @c facility.
     //------------------------------------------------------------------------
     std::string FacilityName(Facility facility);
