@@ -49,6 +49,49 @@
 
 using namespace std;
 
+static const std::vector<const char *>  g_msgHosts = {
+  "foo.rfdm.com",  "foo.mcplex.net",  "bar.rfdm.com",  "bar.mcplex.net"
+};
+
+static const std::vector<const char *>  g_msgApps = {
+  "app1",  "daemon1",  "app2",  "daemon2"
+};
+
+static const std::vector<Dwm::Mclog::Facility>  g_msgFacilities = {
+  Dwm::Mclog::Facility::user,    Dwm::Mclog::Facility::daemon,
+  Dwm::Mclog::Facility::local0,  Dwm::Mclog::Facility::local7
+};
+
+static const std::vector<Dwm::Mclog::Severity>  g_msgSeverities = {
+  Dwm::Mclog::Severity::emerg,    Dwm::Mclog::Severity::alert,
+  Dwm::Mclog::Severity::crit,     Dwm::Mclog::Severity::err,
+  Dwm::Mclog::Severity::warning,  Dwm::Mclog::Severity::notice,
+  Dwm::Mclog::Severity::info,     Dwm::Mclog::Severity::debug
+};
+
+//----------------------------------------------------------------------------
+//!  
+//----------------------------------------------------------------------------
+static size_t MakeMessages(std::vector<Dwm::Mclog::Message> & messages)
+{
+  messages.clear();
+  for (const auto & host : g_msgHosts) {
+    for (const auto & app : g_msgApps) {
+      for (const auto & facility : g_msgFacilities) {
+        for (const auto & severity : g_msgSeverities) {
+          Dwm::Mclog::MessageOrigin  origin(host, app, getpid());
+          Dwm::Mclog::MessageHeader  header(facility, severity, origin);
+          std::string  msgdata(std::string(host) + " " + std::string(app) + " ");
+          msgdata += Dwm::Mclog::FacilityName(facility) + " ";
+          msgdata += Dwm::Mclog::SeverityName(severity);
+          messages.push_back(Dwm::Mclog::Message(header, msgdata));
+        }
+      }
+    }
+  }
+  return messages.size();
+}
+
 //----------------------------------------------------------------------------
 //!  
 //----------------------------------------------------------------------------
@@ -96,46 +139,48 @@ static Dwm::Mclog::Message MakeMessage(const char *host,
 static void TestMatches()
 {
   std::vector<Dwm::Mclog::Message>  msgvec;
-  msgvec.push_back(MakeMessage("unittest.mcplex.net", "mcroverd",
-                               Dwm::Mclog::Facility::local0,
-                               Dwm::Mclog::Severity::info,
-                               "match unittest mcroverd local0 info"));
-  msgvec.push_back(MakeMessage("foo.mcplex.net", "mcroverd",
-                               Dwm::Mclog::Facility::local0,
-                               Dwm::Mclog::Severity::info,
-                               "match foo mcroverd local0 info"));
-
-  Dwm::Mclog::MessageFilterDriver  driver1("msg = /match .+/");
-  for (const auto & msg : msgvec) {
-    bool  result;
-    if (UnitAssert(driver1.parse(&msg, result))) {
-      UnitAssert(result);
-    }
-  }
-
-  size_t  numMatches = 0;
-  Dwm::Mclog::MessageFilterDriver  driver2("host = 'foo.mcplex.net'");
-  for (const auto & msg : msgvec) {
-    bool  result = false;
-    if (UnitAssert(driver2.parse(&msg, result))) {
-      if (result) {
-        ++numMatches;
+  if (UnitAssert(MakeMessages(msgvec) > 0)) {
+    Dwm::Mclog::MessageFilterDriver  driver1("msg = /foo\\.mcplex\\.net .+/");
+    size_t  count = 0;
+    size_t  expectedCount = (g_msgApps.size() * g_msgFacilities.size()
+                             * g_msgSeverities.size());
+    for (const auto & msg : msgvec) {
+      bool  result = false;
+      if (driver1.parse(&msg, result)) {
+        if (result) {
+          ++count;
+        }
       }
     }
-  }
-  UnitAssert(1 == numMatches);
-
-  numMatches = 0;
-  Dwm::Mclog::MessageFilterDriver  driver3("ident = 'mcroverd' && host = /.+\.mcplex\.net/");                                                                                       for (const auto & msg : msgvec) {
-    bool  result = false;
-    if (UnitAssert(driver3.parse(&msg, result))) {
-      if (result) {
-        ++numMatches;
+    UnitAssert(expectedCount == count);
+    
+    count = 0;
+    Dwm::Mclog::MessageFilterDriver  driver2("host = 'foo.mcplex.net'");
+    for (const auto & msg : msgvec) {
+      bool  result = false;
+      if (driver2.parse(&msg, result)) {
+        if (result) {
+          ++count;
+        }
       }
     }
+    UnitAssert(expectedCount == count);
+
+    expectedCount = (2 * g_msgApps.size() * g_msgFacilities.size());
+    count = 0;
+    Dwm::Mclog::MessageFilterDriver
+      driver3("host = /.+\\.rfdm\\.com/ && severity = info");
+    for (const auto & msg : msgvec) {
+      bool  result = false;
+      if (driver3.parse(&msg, result)) {
+        if (result) {
+          ++count;
+        }
+      }
+    }
+    UnitAssert(expectedCount == count);
+    
   }
-  UnitAssert(2 == numMatches);
-                        
   return;
 }
 
