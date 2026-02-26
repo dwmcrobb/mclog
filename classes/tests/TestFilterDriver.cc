@@ -42,9 +42,12 @@
 #include <sstream>
 
 #include "DwmTimeValue64.hh"
+#include "DwmUnitAssert.hh"
 #include "DwmMclogConfig.hh"
 #include "DwmMclogMessage.hh"
 #include "DwmMclogMessageFilterDriver.hh"
+
+using namespace std;
 
 //----------------------------------------------------------------------------
 //!  
@@ -90,24 +93,93 @@ static Dwm::Mclog::Message MakeMessage(const char *host,
 //----------------------------------------------------------------------------
 //!  
 //----------------------------------------------------------------------------
-int main(int argc, char *argv[])
+static void TestMatches()
 {
-  Dwm::Mclog::Config        config;
-  if (config.Parse("inputs/TestFilterDriver1.cfg")) {
-    Dwm::Mclog::MessageFilterDriver  driver(config.filters["mydaemons"]);
-    Dwm::Mclog::Message  msg = MakeMessage("unittest.rfdm.com", "mcroverd",
-                                           Dwm::Mclog::Facility::local0,
-                                           Dwm::Mclog::Severity::info,
-                                           "TestFilterDriver unit test message");
-    TestPerformance(driver, msg);
+  std::vector<Dwm::Mclog::Message>  msgvec;
+  msgvec.push_back(MakeMessage("unittest.mcplex.net", "mcroverd",
+                               Dwm::Mclog::Facility::local0,
+                               Dwm::Mclog::Severity::info,
+                               "match unittest mcroverd local0 info"));
+  msgvec.push_back(MakeMessage("foo.mcplex.net", "mcroverd",
+                               Dwm::Mclog::Facility::local0,
+                               Dwm::Mclog::Severity::info,
+                               "match foo mcroverd local0 info"));
 
-    Dwm::Mclog::MessageFilterDriver  driver2(argv[1]);
+  Dwm::Mclog::MessageFilterDriver  driver1("msg = /match .+/");
+  for (const auto & msg : msgvec) {
     bool  result;
-    bool  parserc = driver2.parse(&msg, result);
-    std::cout << std::boolalpha
-              << "parse: " << parserc
-              << "    result: " << result << '\n';
+    if (UnitAssert(driver1.parse(&msg, result))) {
+      UnitAssert(result);
+    }
   }
 
-  return 0;
+  size_t  numMatches = 0;
+  Dwm::Mclog::MessageFilterDriver  driver2("host = 'foo.mcplex.net'");
+  for (const auto & msg : msgvec) {
+    bool  result = false;
+    if (UnitAssert(driver2.parse(&msg, result))) {
+      if (result) {
+        ++numMatches;
+      }
+    }
+  }
+  UnitAssert(1 == numMatches);
+
+  numMatches = 0;
+  Dwm::Mclog::MessageFilterDriver  driver3("ident = 'mcroverd' && host = /.+\.mcplex\.net/");                                                                                       for (const auto & msg : msgvec) {
+    bool  result = false;
+    if (UnitAssert(driver3.parse(&msg, result))) {
+      if (result) {
+        ++numMatches;
+      }
+    }
+  }
+  UnitAssert(2 == numMatches);
+                        
+  return;
+}
+
+//----------------------------------------------------------------------------
+//!  
+//----------------------------------------------------------------------------
+int main(int argc, char *argv[])
+{
+  using Dwm::Assertions;
+
+  bool testPerformance = false;
+  int  optchar;
+  while ((optchar = getopt(argc, argv, "p")) != -1) {
+    switch (optchar) {
+      case 'p':
+        testPerformance = true;
+        break;
+      default:
+        break;
+    }
+  }
+
+  TestMatches();
+  
+  if (testPerformance) {
+    Dwm::Mclog::Config        config;
+    if (config.Parse("inputs/TestFilterDriver1.cfg")) {
+      Dwm::Mclog::MessageFilterDriver  driver(config.filters["daemons"]);
+      Dwm::Mclog::Message  msg = MakeMessage("unittest.rfdm.com", "mcroverd",
+                                             Dwm::Mclog::Facility::local0,
+                                             Dwm::Mclog::Severity::info,
+                                             "TestFilterDriver unit test message");
+      TestPerformance(driver, msg);
+    }
+  }
+
+  int  rc = 1;
+  if (Assertions::Total().Failed()) {
+    Assertions::Print(cerr, true);
+  }
+  else {
+    cout << Assertions::Total() << " passed" << endl;
+    rc = 0;
+  }
+  return rc;
+
 }
