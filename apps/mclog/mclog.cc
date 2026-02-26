@@ -49,6 +49,7 @@ extern "C" {
 #include "DwmIpv4Address.hh"
 #include "DwmStreamIO.hh"
 #include "DwmSysLogger.hh"
+#include "DwmTimeValue64.hh"
 #include "DwmCredenceXChaCha20Poly1305.hh"
 #include "DwmMclogConfig.hh"
 #include "DwmMclogLogger.hh"
@@ -91,16 +92,128 @@ private:
   std::unique_ptr<Dwm::Mclog::MessageFilterDriver>  _filter;
 };
 
+#if 0
 //----------------------------------------------------------------------------
 //!  
 //----------------------------------------------------------------------------
-static void Log(const std::string & facility, const std::string & severity,
-                std::string && msg)
+static void TestIstreamOperatorPerformance()
 {
-  Dwm::Mclog::logger.Open(Dwm::Mclog::FacilityValue(facility));
-  Dwm::Mclog::logger.LogLocations(false);
-  Dwm::Mclog::logger.Log(Dwm::Mclog::SeverityValue(severity), std::move(msg));
-  Dwm::Mclog::logger.Close();
+  std::ifstream  is("/tmp/messages2");
+  if (is) {
+    Dwm::Mclog::Message  msg;
+    size_t  count = 0;
+    Dwm::TimeValue64  startTime(true);
+    while (is >> msg) {
+      ++count;
+    }
+    Dwm::TimeValue64  endTime(true);
+    endTime -= startTime;
+    std::cerr << count << " messages (" << count / (double)endTime
+              << " messages/sec)\n";
+    is.close();
+  }
+  return;
+}
+
+//----------------------------------------------------------------------------
+//!  
+//----------------------------------------------------------------------------
+static void TestBinaryReadPerformance()
+{
+  std::ifstream  is("/tmp/mclog_msgs/myapps");
+  if (is) {
+    Dwm::Mclog::Message  msg;
+    size_t  count = 0;
+    Dwm::TimeValue64  startTime(true);
+    while (msg.Read(is)) {
+      ++count;
+    }
+    Dwm::TimeValue64  endTime(true);
+    endTime -= startTime;
+    std::cerr << count << " messages (" << count / (double)endTime
+              << " messages/sec)\n";
+    is.close();
+  }
+  return;
+}
+#endif
+
+//----------------------------------------------------------------------------
+//!  
+//----------------------------------------------------------------------------
+void ProcessBZ2File(const char *filename,
+                    std::shared_ptr<Dwm::Mclog::MessageFilterDriver> filter)
+{
+  BZFILE  *bzf = BZ2_bzopen(filename, "rb");
+  if (bzf) {
+    Dwm::Mclog::Message  msg;
+    bool                 filterResult;
+    while (msg.BZRead(bzf) > 0) {
+      if ((! filter) || (filter->parse(&msg, filterResult) && filterResult)) {
+        std::cout << msg;
+      }
+    }
+    BZ2_bzclose(bzf);
+  }
+  return;
+}
+
+//----------------------------------------------------------------------------
+//!  
+//----------------------------------------------------------------------------
+void ProcessGZFile(const char *filename,
+                   std::shared_ptr<Dwm::Mclog::MessageFilterDriver> filter)
+{
+  gzFile  gzf = gzopen(filename, "rb");
+  if (gzf) {
+    Dwm::Mclog::Message  msg;
+    bool                 filterResult;
+    while (msg.Read(gzf) > 0) {
+      if ((! filter) || (filter->parse(&msg, filterResult) && filterResult)) {
+        std::cout << msg;
+      }
+    }
+    gzclose(gzf);
+  }
+  return;
+}
+
+//----------------------------------------------------------------------------
+//!  
+//----------------------------------------------------------------------------
+void ProcessBinaryFile(const char *filename,
+                       std::shared_ptr<Dwm::Mclog::MessageFilterDriver> filter)
+{
+  std::ifstream  is(filename);
+  if (is) {
+    Dwm::Mclog::Message  msg;
+    bool                 filterResult;
+    while (msg.Read(is)) {
+      if ((! filter) || (filter->parse(&msg, filterResult) && filterResult)) {
+        std::cout << msg;
+      }
+    }
+    is.close();
+  }
+  return;
+}
+
+//----------------------------------------------------------------------------
+//!  
+//----------------------------------------------------------------------------
+void ProcessFile(const std::filesystem::path & path,
+                 std::shared_ptr<Dwm::Mclog::MessageFilterDriver> filter)
+{
+  auto  ext = path.extension();
+  if (ext.string() == ".bz2") {
+    ProcessBZ2File(path.string().c_str(), filter);
+  }
+  else if (ext.string() == ".gz") {
+    ProcessGZFile(path.string().c_str(), filter);
+  }
+  else {
+    ProcessBinaryFile(path.string().c_str(), filter);
+  }
   return;
 }
 
@@ -109,7 +222,8 @@ static void Log(const std::string & facility, const std::string & severity,
 //----------------------------------------------------------------------------
 static void Usage(const char *argv0)
 {
-  std::cerr << "usage: " << argv0 << " [-d] [F filterExpression]\n";
+  std::cerr << "usage: " << argv0
+            << " [-d] [-F filterExpression] [files...]\n";
   return;
 }
 
@@ -136,8 +250,23 @@ int main(int argc, char *argv[])
     }
   }
 
+  std::shared_ptr<Dwm::Mclog::MessageFilterDriver>  filter{nullptr};
+  
+  if (! filtexpr.empty()) {
+    filter = make_shared<Dwm::Mclog::MessageFilterDriver>(filtexpr);
+  }
+
+  if (optind < argc) {
+    for (int i = optind; i < argc; ++i) {
+      ProcessFile(argv[i], filter);
+    }
+    return 0;
+  }
+
+  Dwm::Mclog::OstreamSink  cerrSink(std::cerr);
   if (debug) {
     Dwm::SysLogger::Open("mclog", LOG_PERROR, LOG_USER);
+    Dwm::Mclog::logger.Open(Dwm::Mclog::Facility::user, {&cerrSink}, "mclog");
   }
   
   std::string  keyDir("~/.credence");
