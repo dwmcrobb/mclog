@@ -37,47 +37,58 @@
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
 
+#include "DwmUnitAssert.hh"
 #include "DwmMclogConfig.hh"
+
+using namespace std;
 
 //----------------------------------------------------------------------------
 //!  
 //----------------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
+  using Dwm::Assertions;
+  
   Dwm::Mclog::Config  cfg;
   
-  assert(cfg.Parse("inputs/TestConfig1.cfg"));
-  assert(cfg.service.keyDirectory == "/usr/local/etc/mclogd");
-  assert(cfg.mcast.groupAddr == Dwm::Ipv4Address("239.108.111.103"));
-  assert(cfg.mcast.groupAddr6 == Dwm::Ipv6Address("ff02::006d:636c:6f67"));
-  assert(cfg.mcast.intfAddr == Dwm::Ipv4Address("192.168.168.42"));
-  assert(cfg.mcast.intfAddr6 == Dwm::Ipv6Address("fd60:3019:f4a:6aaf::39"));
-  assert(cfg.mcast.intfName == "en0");
-  assert(cfg.mcast.dstPort == 3456);
-  assert(cfg.mcast.outFilter == "mydaemons || myapps");
+  if (UnitAssert(cfg.Parse("inputs/TestConfig1.cfg"))) {
+    UnitAssert(cfg.service.keyDirectory == "/usr/local/etc/mclogd");
+    UnitAssert(cfg.mcast.groupAddr == Dwm::Ipv4Address("239.108.111.103"));
+    UnitAssert(cfg.mcast.groupAddr6 == Dwm::Ipv6Address("ff02::006d:636c:6f67"));
+    UnitAssert(cfg.mcast.intfAddr == Dwm::Ipv4Address("192.168.168.42"));
+    UnitAssert(cfg.mcast.intfAddr6 == Dwm::Ipv6Address("fd60:3019:f4a:6aaf::39"));
+    UnitAssert(cfg.mcast.intfName == "en0");
+    UnitAssert(cfg.mcast.dstPort == 3456);
+    UnitAssert(cfg.mcast.outFilter
+               == "(" + cfg.filters["mydaemons"] + ") || ("
+               + cfg.filters["myapps"] + ")");
   
-  assert(cfg.files.logDirectory == "/usr/local/var/logs");
-  assert(false == cfg.loopback.ListenIpv4());
-  assert(true == cfg.loopback.ListenIpv6());
-  assert(3737 == cfg.loopback.port);
-  assert(6 == cfg.filters.size());
-  assert(cfg.filters.begin()->first == "apps");
+    UnitAssert(cfg.files.logDirectory == "/usr/local/var/logs");
+    UnitAssert(false == cfg.loopback.ListenIpv4());
+    UnitAssert(true == cfg.loopback.ListenIpv6());
+    UnitAssert(3737 == cfg.loopback.port);
+    UnitAssert(6 == cfg.filters.size());
+    UnitAssert(cfg.filters.begin()->first == "apps");
 
-  auto it = cfg.filters.find("mydaemons");
-  assert(it != cfg.filters.end());
-  assert(it->second == "(ident = /dwmrdapd|mcroverd|mctallyd|mccurtaind|mcblockd/) && (host = /.+\\.(mcplex\\.net|rfdm\\.com)/)");
-
-  assert(2 == cfg.files.logs.size());
-  std::cerr << cfg.files.logs[0].filter << '\n';
-  
-  assert(cfg.files.logs[0].filter == "(ident = /dwmrdapd|mcroverd|mctallyd|mccurtaind|mcblockd/) && (host = /.+\\.(mcplex\\.net|rfdm\\.com)/)");
-  assert(cfg.files.logs[0].pathPattern == "%H/%I");
-  assert(cfg.files.logs[1].filter == "(ident = /mcblock|mccurtain|mcrover|mctally|qmcrover/) && (host = /.+\\.(mcplex\\.net|rfdm\\.com)/)");
-  assert(cfg.files.logs[1].pathPattern == "%H/myapps");
-
-  for (const auto & filt : cfg.filters) {
-    std::cout << filt.first << " = " << filt.second << '\n';
+    auto it = cfg.filters.find("mydaemons");
+    if (UnitAssert(it != cfg.filters.end())) {
+      assert(it->second == "(ident = /dwmrdapd|mcroverd|mctallyd|mccurtaind|mcblockd/) && (host = /.+\\.(mcplex\\.net|rfdm\\.com)/)");
+    }
+    if (UnitAssert(2 == cfg.files.logs.size())) {
+      UnitAssert(cfg.files.logs[0].filter == "(ident = /dwmrdapd|mcroverd|mctallyd|mccurtaind|mcblockd/) && (host = /.+\\.(mcplex\\.net|rfdm\\.com)/)");
+      UnitAssert(cfg.files.logs[0].pathPattern == "%H/%I");
+      UnitAssert(cfg.files.logs[1].filter == "(ident = /mcblock|mccurtain|mcrover|mctally|qmcrover/) && (host = /.+\\.(mcplex\\.net|rfdm\\.com)/)");
+      UnitAssert(cfg.files.logs[1].pathPattern == "%H/myapps");
+    }
   }
-  
-  return 0;
+
+  int  rc = 1;
+  if (Assertions::Total().Failed()) {
+    Assertions::Print(cerr, true);
+  }
+  else {
+    cout << Assertions::Total() << " passed" << endl;
+    rc = 0;
+  }
+  return rc;
 }
