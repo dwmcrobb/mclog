@@ -162,6 +162,40 @@ static void TestBZ2IO()
 //----------------------------------------------------------------------------
 //!  
 //----------------------------------------------------------------------------
+static void TestGZIO()
+{
+  vector<Dwm::Mclog::Message>  msgvec1;
+  for (const auto & data : g_msgData) {
+    msgvec1.push_back(MakeMessage(data));
+  }
+  gzFile gzf = gzopen("./TestMessage.gz", "wb");
+  if (UnitAssert(gzf)) {
+    for (const auto & msg : msgvec1) {
+      msg.Write(gzf);
+    }
+    gzclose(gzf);
+    gzf = gzopen("./TestMessage.gz", "rb");
+    if (gzf) {
+      vector<Dwm::Mclog::Message>  msgvec2;
+      Dwm::Mclog::Message  msg;
+      while (msg.Read(gzf) > 0) {
+        msgvec2.push_back(msg);
+      }
+      gzclose(gzf);
+      if (UnitAssert(msgvec2.size() == msgvec1.size())) {
+        for (size_t i = 0; i < msgvec1.size(); ++i) {
+          UnitAssert(msgvec2[i] == msgvec1[i]);
+        }
+      }
+    }
+    std::remove("./TestMessage.gz");
+  }
+  return;
+}
+
+//----------------------------------------------------------------------------
+//!  
+//----------------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
   using Dwm::Assertions;
@@ -169,6 +203,7 @@ int main(int argc, char *argv[])
   TestStreamOperators();
   TestStreamIO();
   TestBZ2IO();
+  TestGZIO();
   
   int  rc = 1;
   if (Assertions::Total().Failed()) {
