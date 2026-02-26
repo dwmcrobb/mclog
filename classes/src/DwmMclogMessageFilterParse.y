@@ -47,7 +47,8 @@
     }
 }
 
-%token AND EQUAL GREATER GREATEROREQ LESS LESSOREQ LPAREN NOT NOTEQ OR RPAREN
+%token AND EQUAL GREATER GREATEROREQ LESS LESSOREQ LPAREN NOT NOTEQ OR QUOTE
+%token RPAREN SLASH
 %token FACILITY HOST IDENT MSG SEVERITY
 %token <Dwm::Mclog::Facility> FACVALUE
 %token <Dwm::Mclog::Severity> SEVVALUE
@@ -57,6 +58,8 @@
 %token <std::string> STRING
 %token <boost::regex> REGEX
 %type <bool> Expression
+%type <std::string> QuotedString
+%type <boost::regex> Regex
 
 %left OR
 %left AND
@@ -85,33 +88,33 @@ Expression: SEVERITY EQUAL SEVVALUE { $$ = (msg->Header().severity() == $3); }
 | FACILITY GREATER FACVALUE { $$ = (msg->Header().facility() > $3); }
 | FACILITY GREATEROREQ FACVALUE { $$ = (msg->Header().facility() >= $3); }
 | FACILITY NOTEQ FACVALUE { $$ = (msg->Header().facility() != $3); }
-| HOST EQUAL STRING  { $$ = (msg->Header().origin().hostname() == $3); }
-| HOST NOTEQ STRING  { $$ = (msg->Header().origin().hostname() != $3); }
-| HOST EQUAL REGEX  {
+| HOST EQUAL QuotedString { $$ = (msg->Header().origin().hostname() == $3); }
+| HOST NOTEQ QuotedString { $$ = (msg->Header().origin().hostname() != $3); }
+| HOST EQUAL Regex  {
     boost::smatch  sm;
     $$ = boost::regex_match(msg->Header().origin().hostname(), sm, $3);
 }
-| HOST NOTEQ REGEX  {
+| HOST NOTEQ Regex  {
     boost::smatch  sm;
     $$ = ! boost::regex_match(msg->Header().origin().hostname(), sm, $3);
 }
-| IDENT EQUAL STRING { $$ = (msg->Header().origin().appname() == $3); }
-| IDENT NOTEQ STRING { $$ = (msg->Header().origin().appname() != $3); }
-| IDENT EQUAL REGEX {
+| IDENT EQUAL QuotedString { $$ = (msg->Header().origin().appname() == $3); }
+| IDENT NOTEQ QuotedString { $$ = (msg->Header().origin().appname() != $3); }
+| IDENT EQUAL Regex {
   boost::smatch  sm;
   $$ = boost::regex_match(msg->Header().origin().appname(), sm, $3);
 }
-| IDENT NOTEQ REGEX {
+| IDENT NOTEQ Regex {
   boost::smatch  sm;
   $$ = ! boost::regex_match(msg->Header().origin().appname(), sm, $3);
 }
-| MSG EQUAL STRING { $$ = (msg->Data() == $3); }
-| MSG NOTEQ STRING { $$ = (msg->Data() != $3); }
-| MSG EQUAL REGEX {
+| MSG EQUAL QuotedString { $$ = (msg->Data() == $3); }
+| MSG NOTEQ QuotedString { $$ = (msg->Data() != $3); }
+| MSG EQUAL Regex {
   boost::smatch  sm;
   $$ = boost::regex_match(msg->Data(), sm, $3);
 }
-| MSG NOTEQ REGEX {
+| MSG NOTEQ Regex {
   boost::smatch  sm;
   $$ = ! boost::regex_match(msg->Data(), sm, $3);
 }
@@ -120,6 +123,10 @@ Expression: SEVERITY EQUAL SEVVALUE { $$ = (msg->Header().severity() == $3); }
 | Expression AND Expression { $$ = (($1) && ($3)); }
 | LPAREN Expression RPAREN { $$ = $2; }
 ;
+
+QuotedString: QUOTE STRING QUOTE  { $$ = $2; };
+
+Regex: SLASH REGEX SLASH { $$ = $2; };
 
 %%
 

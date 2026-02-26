@@ -123,14 +123,29 @@ m_facval (kernel|user|mail|daemon|auth|syslog|lpr|news|uucp|cron|authpriv|ftp|lo
   drv.tokens.push_back(tok);
   return tok;
 }
-<INITIAL>[']       { BEGIN(x_quoted); }
+<INITIAL>[']       {
+  BEGIN(x_quoted);
+  auto tok = MFP::make_QUOTE(loc);
+  drv.tokens.push_back(tok);
+  return tok;
+}
 <x_quoted>[^']*    {
   auto tok = MFP::make_STRING(YYText(), loc);
   drv.tokens.push_back(tok);
   return tok;
 }
-<x_quoted>[']      { BEGIN(INITIAL); }
-<INITIAL>[\/]      { BEGIN(x_regex); }
+<x_quoted>[']      {
+  BEGIN(INITIAL);
+  auto tok = MFP::make_QUOTE(loc);
+  drv.tokens.push_back(tok);
+  return tok;
+}
+<INITIAL>[\/]      {
+  BEGIN(x_regex);
+  auto tok = MFP::make_SLASH(loc);
+  drv.tokens.push_back(tok);
+  return tok;
+}
 <x_regex>[^\/]*    {
   try {
     auto tok = MFP::make_REGEX(boost::regex(YYText()), loc);
@@ -145,7 +160,12 @@ m_facval (kernel|user|mail|daemon|auth|syslog|lpr|news|uucp|cron|authpriv|ftp|lo
     return tok;
   }
 }
-<x_regex>[\/]      { BEGIN(INITIAL); }
+<x_regex>[\/]      {
+  BEGIN(INITIAL);
+  auto tok = MFP::make_SLASH(loc);
+  drv.tokens.push_back(tok);
+  return tok;
+}
   
 <INITIAL>[ \t\r]+  { loc.step(); }
 <INITIAL>\n+       { loc.lines(yyleng); loc.step(); }
