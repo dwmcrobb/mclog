@@ -54,6 +54,15 @@ struct MessageData
   std::string            msg;
 };
 
+static const std::vector<MessageData>  g_msgData = {
+  { "spark.rfdm.com",  "app1", Dwm::Mclog::Facility::daemon,
+    Dwm::Mclog::Severity::debug, "app1 daemon debug from spark" },
+  { "foo.rfdm.com",    "app1", Dwm::Mclog::Facility::daemon,
+    Dwm::Mclog::Severity::debug, "app1 daemon debug from foo" },
+  { "bar.rfdm.com",    "app2", Dwm::Mclog::Facility::user,
+    Dwm::Mclog::Severity::info, "app2 user info from bar" }
+};
+
 //----------------------------------------------------------------------------
 //!  
 //----------------------------------------------------------------------------
@@ -69,17 +78,8 @@ static Dwm::Mclog::Message MakeMessage(const MessageData & msgData)
 //----------------------------------------------------------------------------
 static void TestStreamOperators()
 {
-  static const std::vector<MessageData>  msgData = {
-    { "spark.rfdm.com",  "app1", Dwm::Mclog::Facility::daemon,
-      Dwm::Mclog::Severity::debug, "app1 daemon debug from spark" },
-    { "foo.rfdm.com",    "app1", Dwm::Mclog::Facility::daemon,
-      Dwm::Mclog::Severity::debug, "app1 daemon debug from foo" },
-    { "bar.rfdm.com",    "app2", Dwm::Mclog::Facility::user,
-      Dwm::Mclog::Severity::info, "app2 user info from bar" }
-  };
-
   vector<Dwm::Mclog::Message>  msgvec1;
-  for (const auto & data : msgData) {
+  for (const auto & data : g_msgData) {
     msgvec1.push_back(MakeMessage(data));
   }
   std::stringstream  ss;
@@ -102,12 +102,74 @@ static void TestStreamOperators()
 //----------------------------------------------------------------------------
 //!  
 //----------------------------------------------------------------------------
+static void TestStreamIO()
+{
+  vector<Dwm::Mclog::Message>  msgvec1;
+  for (const auto & data : g_msgData) {
+    msgvec1.push_back(MakeMessage(data));
+  }
+  std::stringstream  ss;
+  for (const auto & msg : msgvec1) {
+    msg.Write(ss);
+  }
+  vector<Dwm::Mclog::Message>  msgvec2;
+  Dwm::Mclog::Message  msg;
+  while (msg.Read(ss)) {
+    msgvec2.push_back(msg);
+  }
+  if (UnitAssert(msgvec2.size() == msgvec1.size())) {
+    for (size_t i = 0; i < msgvec1.size(); ++i) {
+      UnitAssert(msgvec2[i] == msgvec1[i]);
+    }
+  }
+  return;
+}
+
+//----------------------------------------------------------------------------
+//!  
+//----------------------------------------------------------------------------
+static void TestBZ2IO()
+{
+  vector<Dwm::Mclog::Message>  msgvec1;
+  for (const auto & data : g_msgData) {
+    msgvec1.push_back(MakeMessage(data));
+  }
+  BZFILE *bzf = BZ2_bzopen("./TestMessage.bz2", "wb");
+  if (UnitAssert(bzf)) {
+    for (const auto & msg : msgvec1) {
+      msg.BZWrite(bzf);
+    }
+    BZ2_bzclose(bzf);
+    bzf = BZ2_bzopen("./TestMessage.bz2", "rb");
+    if (bzf) {
+      vector<Dwm::Mclog::Message>  msgvec2;
+      Dwm::Mclog::Message  msg;
+      while (msg.BZRead(bzf) > 0) {
+        msgvec2.push_back(msg);
+      }
+      BZ2_bzclose(bzf);
+      if (UnitAssert(msgvec2.size() == msgvec1.size())) {
+        for (size_t i = 0; i < msgvec1.size(); ++i) {
+          UnitAssert(msgvec2[i] == msgvec1[i]);
+        }
+      }
+    }
+    std::remove("./TestMessage.bz2");
+  }
+  return;
+}
+
+//----------------------------------------------------------------------------
+//!  
+//----------------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
   using Dwm::Assertions;
 
   TestStreamOperators();
-
+  TestStreamIO();
+  TestBZ2IO();
+  
   int  rc = 1;
   if (Assertions::Total().Failed()) {
     Assertions::Print(cerr, true);
