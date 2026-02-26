@@ -42,35 +42,47 @@
 
 using namespace std;
 
+static const std::vector<const char *>  g_msgHosts = {
+  "foo.rfdm.com",  "foo.mcplex.net",  "bar.rfdm.com",  "bar.mcplex.net"
+};
+
+static const std::vector<const char *>  g_msgApps = {
+  "app1",  "daemon1",  "app2",  "daemon2"
+};
+
+static const std::vector<Dwm::Mclog::Facility>  g_msgFacilities = {
+  Dwm::Mclog::Facility::user,    Dwm::Mclog::Facility::daemon,
+  Dwm::Mclog::Facility::local0,  Dwm::Mclog::Facility::local7
+};
+
+static const std::vector<Dwm::Mclog::Severity>  g_msgSeverities = {
+  Dwm::Mclog::Severity::emerg,    Dwm::Mclog::Severity::alert,
+  Dwm::Mclog::Severity::crit,     Dwm::Mclog::Severity::err,
+  Dwm::Mclog::Severity::warning,  Dwm::Mclog::Severity::notice,
+  Dwm::Mclog::Severity::info,     Dwm::Mclog::Severity::debug
+};
+
 //----------------------------------------------------------------------------
 //!  
 //----------------------------------------------------------------------------
-struct MessageData 
+static size_t MakeMessages(std::vector<Dwm::Mclog::Message> & messages)
 {
-  const char            *host;
-  const char            *appname;
-  Dwm::Mclog::Facility   facility;
-  Dwm::Mclog::Severity   severity;
-  std::string            msg;
-};
-
-static const std::vector<MessageData>  g_msgData = {
-  { "spark.rfdm.com",  "app1", Dwm::Mclog::Facility::daemon,
-    Dwm::Mclog::Severity::debug, "app1 daemon debug from spark" },
-  { "foo.rfdm.com",    "app1", Dwm::Mclog::Facility::daemon,
-    Dwm::Mclog::Severity::debug, "app1 daemon debug from foo" },
-  { "bar.rfdm.com",    "app2", Dwm::Mclog::Facility::user,
-    Dwm::Mclog::Severity::info, "app2 user info from bar" }
-};
-
-//----------------------------------------------------------------------------
-//!  
-//----------------------------------------------------------------------------
-static Dwm::Mclog::Message MakeMessage(const MessageData & msgData)
-{
-  Dwm::Mclog::MessageOrigin  origin(msgData.host, msgData.appname, getpid());
-  Dwm::Mclog::MessageHeader  header(msgData.facility, msgData.severity, origin);
-  return Dwm::Mclog::Message(header, msgData.msg);
+  messages.clear();
+  for (const auto & host : g_msgHosts) {
+    for (const auto & app : g_msgApps) {
+      for (const auto & facility : g_msgFacilities) {
+        for (const auto & severity : g_msgSeverities) {
+          Dwm::Mclog::MessageOrigin  origin(host, app, getpid());
+          Dwm::Mclog::MessageHeader  header(facility, severity, origin);
+          std::string  msgdata(std::string(host) + " " + std::string(app) + " ");
+          msgdata += Dwm::Mclog::FacilityName(facility) + " ";
+          msgdata += Dwm::Mclog::SeverityName(severity);
+          messages.push_back(Dwm::Mclog::Message(header, msgdata));
+        }
+      }
+    }
+  }
+  return messages.size();
 }
 
 //----------------------------------------------------------------------------
@@ -79,21 +91,20 @@ static Dwm::Mclog::Message MakeMessage(const MessageData & msgData)
 static void TestStreamOperators()
 {
   vector<Dwm::Mclog::Message>  msgvec1;
-  for (const auto & data : g_msgData) {
-    msgvec1.push_back(MakeMessage(data));
-  }
-  std::stringstream  ss;
-  for (const auto & msg : msgvec1) {
-    ss << msg;
-  }
-  vector<Dwm::Mclog::Message>  msgvec2;
-  Dwm::Mclog::Message  msg;
-  while (ss >> msg) {
-    msgvec2.push_back(msg);
-  }
-  if (UnitAssert(msgvec2.size() == msgvec1.size())) {
-    for (size_t i = 0; i < msgvec1.size(); ++i) {
-      UnitAssert(msgvec2[i] == msgvec1[i]);
+  if (UnitAssert(MakeMessages(msgvec1) > 0)) {
+    std::stringstream  ss;
+    for (const auto & msg : msgvec1) {
+      ss << msg;
+    }
+    vector<Dwm::Mclog::Message>  msgvec2;
+    Dwm::Mclog::Message  msg;
+    while (ss >> msg) {
+      msgvec2.push_back(msg);
+    }
+    if (UnitAssert(msgvec2.size() == msgvec1.size())) {
+      for (size_t i = 0; i < msgvec1.size(); ++i) {
+        UnitAssert(msgvec2[i] == msgvec1[i]);
+      }
     }
   }
   return;
@@ -105,21 +116,20 @@ static void TestStreamOperators()
 static void TestStreamIO()
 {
   vector<Dwm::Mclog::Message>  msgvec1;
-  for (const auto & data : g_msgData) {
-    msgvec1.push_back(MakeMessage(data));
-  }
-  std::stringstream  ss;
-  for (const auto & msg : msgvec1) {
-    msg.Write(ss);
-  }
-  vector<Dwm::Mclog::Message>  msgvec2;
-  Dwm::Mclog::Message  msg;
-  while (msg.Read(ss)) {
-    msgvec2.push_back(msg);
-  }
-  if (UnitAssert(msgvec2.size() == msgvec1.size())) {
-    for (size_t i = 0; i < msgvec1.size(); ++i) {
-      UnitAssert(msgvec2[i] == msgvec1[i]);
+  if (UnitAssert(MakeMessages(msgvec1) > 0)) {
+    std::stringstream  ss;
+    for (const auto & msg : msgvec1) {
+      msg.Write(ss);
+    }
+    vector<Dwm::Mclog::Message>  msgvec2;
+    Dwm::Mclog::Message  msg;
+    while (msg.Read(ss)) {
+      msgvec2.push_back(msg);
+    }
+    if (UnitAssert(msgvec2.size() == msgvec1.size())) {
+      for (size_t i = 0; i < msgvec1.size(); ++i) {
+        UnitAssert(msgvec2[i] == msgvec1[i]);
+      }
     }
   }
   return;
@@ -131,30 +141,29 @@ static void TestStreamIO()
 static void TestBZ2IO()
 {
   vector<Dwm::Mclog::Message>  msgvec1;
-  for (const auto & data : g_msgData) {
-    msgvec1.push_back(MakeMessage(data));
-  }
-  BZFILE *bzf = BZ2_bzopen("./TestMessage.bz2", "wb");
-  if (UnitAssert(bzf)) {
-    for (const auto & msg : msgvec1) {
-      msg.BZWrite(bzf);
-    }
-    BZ2_bzclose(bzf);
-    bzf = BZ2_bzopen("./TestMessage.bz2", "rb");
-    if (bzf) {
-      vector<Dwm::Mclog::Message>  msgvec2;
-      Dwm::Mclog::Message  msg;
-      while (msg.BZRead(bzf) > 0) {
-        msgvec2.push_back(msg);
+  if (UnitAssert(MakeMessages(msgvec1) > 0)) {
+    BZFILE *bzf = BZ2_bzopen("./TestMessage.bz2", "wb");
+    if (UnitAssert(bzf)) {
+      for (const auto & msg : msgvec1) {
+        msg.BZWrite(bzf);
       }
       BZ2_bzclose(bzf);
-      if (UnitAssert(msgvec2.size() == msgvec1.size())) {
-        for (size_t i = 0; i < msgvec1.size(); ++i) {
-          UnitAssert(msgvec2[i] == msgvec1[i]);
+      bzf = BZ2_bzopen("./TestMessage.bz2", "rb");
+      if (bzf) {
+        vector<Dwm::Mclog::Message>  msgvec2;
+        Dwm::Mclog::Message  msg;
+        while (msg.BZRead(bzf) > 0) {
+          msgvec2.push_back(msg);
+        }
+        BZ2_bzclose(bzf);
+        if (UnitAssert(msgvec2.size() == msgvec1.size())) {
+          for (size_t i = 0; i < msgvec1.size(); ++i) {
+            UnitAssert(msgvec2[i] == msgvec1[i]);
+          }
         }
       }
+      std::remove("./TestMessage.bz2");
     }
-    std::remove("./TestMessage.bz2");
   }
   return;
 }
@@ -165,30 +174,29 @@ static void TestBZ2IO()
 static void TestGZIO()
 {
   vector<Dwm::Mclog::Message>  msgvec1;
-  for (const auto & data : g_msgData) {
-    msgvec1.push_back(MakeMessage(data));
-  }
-  gzFile gzf = gzopen("./TestMessage.gz", "wb");
-  if (UnitAssert(gzf)) {
-    for (const auto & msg : msgvec1) {
-      msg.Write(gzf);
-    }
-    gzclose(gzf);
-    gzf = gzopen("./TestMessage.gz", "rb");
-    if (gzf) {
-      vector<Dwm::Mclog::Message>  msgvec2;
-      Dwm::Mclog::Message  msg;
-      while (msg.Read(gzf) > 0) {
-        msgvec2.push_back(msg);
+  if (UnitAssert(MakeMessages(msgvec1) > 0)) {
+    gzFile gzf = gzopen("./TestMessage.gz", "wb");
+    if (UnitAssert(gzf)) {
+      for (const auto & msg : msgvec1) {
+        msg.Write(gzf);
       }
       gzclose(gzf);
-      if (UnitAssert(msgvec2.size() == msgvec1.size())) {
-        for (size_t i = 0; i < msgvec1.size(); ++i) {
-          UnitAssert(msgvec2[i] == msgvec1[i]);
+      gzf = gzopen("./TestMessage.gz", "rb");
+      if (gzf) {
+        vector<Dwm::Mclog::Message>  msgvec2;
+        Dwm::Mclog::Message  msg;
+        while (msg.Read(gzf) > 0) {
+          msgvec2.push_back(msg);
+        }
+        gzclose(gzf);
+        if (UnitAssert(msgvec2.size() == msgvec1.size())) {
+          for (size_t i = 0; i < msgvec1.size(); ++i) {
+            UnitAssert(msgvec2[i] == msgvec1[i]);
+          }
         }
       }
+      std::remove("./TestMessage.gz");
     }
-    std::remove("./TestMessage.gz");
   }
   return;
 }
