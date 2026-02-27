@@ -182,18 +182,28 @@ void ProcessGZFile(const char *filename,
 //----------------------------------------------------------------------------
 //!  
 //----------------------------------------------------------------------------
+void ProcessIstream(std::istream & is,
+                    std::shared_ptr<Dwm::Mclog::MessageFilterDriver> filter)
+{
+  Dwm::Mclog::Message  msg;
+  bool                 filterResult;
+  while (msg.Read(is)) {
+    if ((! filter) || (filter->parse(&msg, filterResult) && filterResult)) {
+      std::cout << msg;
+    }
+  }
+  return;
+}
+
+//----------------------------------------------------------------------------
+//!  
+//----------------------------------------------------------------------------
 void ProcessBinaryFile(const char *filename,
                        std::shared_ptr<Dwm::Mclog::MessageFilterDriver> filter)
 {
   std::ifstream  is(filename);
   if (is) {
-    Dwm::Mclog::Message  msg;
-    bool                 filterResult;
-    while (msg.Read(is)) {
-      if ((! filter) || (filter->parse(&msg, filterResult) && filterResult)) {
-        std::cout << msg;
-      }
-    }
+    ProcessIstream(is, filter);
     is.close();
   }
   return;
@@ -205,15 +215,20 @@ void ProcessBinaryFile(const char *filename,
 void ProcessFile(const std::filesystem::path & path,
                  std::shared_ptr<Dwm::Mclog::MessageFilterDriver> filter)
 {
-  auto  ext = path.extension();
-  if (ext.string() == ".bz2") {
-    ProcessBZ2File(path.string().c_str(), filter);
-  }
-  else if (ext.string() == ".gz") {
-    ProcessGZFile(path.string().c_str(), filter);
+  if (path.string() == "-") {
+    ProcessIstream(std::cin, filter);
   }
   else {
-    ProcessBinaryFile(path.string().c_str(), filter);
+    auto  ext = path.extension();
+    if (ext.string() == ".bz2") {
+      ProcessBZ2File(path.string().c_str(), filter);
+    }
+    else if (ext.string() == ".gz") {
+      ProcessGZFile(path.string().c_str(), filter);
+    }
+    else {
+      ProcessBinaryFile(path.string().c_str(), filter);
+    }
   }
   return;
 }
