@@ -1,3 +1,46 @@
+Feb 25, 2026:
+
+I am now using a more general filtering language everywhere.  It's a bit
+slower in some cases, but it's much more flexible and allows easy
+command-line filter expressions.
+
+As part of this work, I have been doing some simple performance measurements
+between binary and text log files.  As expected, reading the text files with
+the istream input operator is much slower than reading the binary files.
+In fact it's almost exactly 20 times slower on my Mac Studio M1 Ultra.
+From binary files, I can read about 5.3 million Messages per second.  From
+the text files, it's around 260,000 Messages per second.
+
+While I think it's good to have support for the text files, I'm
+starting to think I don't want them as the default mclogd output.
+Further, I might not want them as mclogd output at all.  How did I
+reach this conclusion?
+
+Well, if I always use binary files, 'mclog' can just as easily read from
+the archived log files (.bz2 and .gz) as it can the current log file,
+since I have support for compressed files in the Message class.  And it
+can assume how to read the file based on the extension (or probe the
+file by trying to read from it, though that isn't fun or fast).
+
+But if I continue to support text files, I probably need to write a
+lexer+parser for them.  I suspect much of the time consumption of the
+istream input operators is in the timestamp parsing.  Of course I don't
+expect any massive speedups; searching for terminals one byte at a time
+as is necessary for processing a text file is inherently much slower
+than reading blobs of known length from the binary files.  The timestamp
+might not actually be the worst offender; it is fixed width so I read it
+into a fixed-size buffer.  But I then use sscanf() and timegm() and some
+sanity checking and basic arithmetic to get the final result (microseconds
+since the UNIX Epoch).  But that's the thing; the binary file has the
+timestamp as the microseconds since the UNIX Epoch in native form (well,
+as an EncodedU64).  At most, a 9 byte encoding (1 byte for flags/length,
+8 bytes for the value).  The text file requires 31 bytes for the timestamp
+string.  The binary files use native single-byte encodings for facility
+and severity, instead of strings.  The strings in the binary files are
+length-encoded, and hence can be read without hunting for terminals (space,
+newline, etc.).
+
+#------------------------------------------------------------------------------
 Feb 19, 2026:
 
 Now that I have bzip2 and gzip I/O, I'd like to have a more general filtering
