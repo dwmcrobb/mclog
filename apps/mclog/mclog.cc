@@ -44,6 +44,7 @@ extern "C" {
   #include <unistd.h>
 }
 
+#include <filesystem>
 #include <fstream>
 
 #include "DwmIpv4Address.hh"
