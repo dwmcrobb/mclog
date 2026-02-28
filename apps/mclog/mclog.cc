@@ -40,23 +40,18 @@
 //---------------------------------------------------------------------------
 
 extern "C" {
-  #include <sys/socket.h>
   #include <unistd.h>
 }
 
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 
-#include "DwmIpv4Address.hh"
-#include "DwmStreamIO.hh"
-#include "DwmSysLogger.hh"
-#include "DwmTimeValue64.hh"
-#include "DwmCredenceXChaCha20Poly1305.hh"
 #include "DwmMclogConfig.hh"
 #include "DwmMclogLogger.hh"
-#include "DwmMclogKeyRequester.hh"
 #include "DwmMclogMulticastReceiver.hh"
 #include "DwmMclogMessageFilterDriver.hh"
+#include "DwmMclogSettings.hh"
 
 //----------------------------------------------------------------------------
 //!  
@@ -92,52 +87,6 @@ public:
 private:
   std::unique_ptr<Dwm::Mclog::MessageFilterDriver>  _filter;
 };
-
-#if 0
-//----------------------------------------------------------------------------
-//!  
-//----------------------------------------------------------------------------
-static void TestIstreamOperatorPerformance()
-{
-  std::ifstream  is("/tmp/messages2");
-  if (is) {
-    Dwm::Mclog::Message  msg;
-    size_t  count = 0;
-    Dwm::TimeValue64  startTime(true);
-    while (is >> msg) {
-      ++count;
-    }
-    Dwm::TimeValue64  endTime(true);
-    endTime -= startTime;
-    std::cerr << count << " messages (" << count / (double)endTime
-              << " messages/sec)\n";
-    is.close();
-  }
-  return;
-}
-
-//----------------------------------------------------------------------------
-//!  
-//----------------------------------------------------------------------------
-static void TestBinaryReadPerformance()
-{
-  std::ifstream  is("/tmp/mclog_msgs/myapps");
-  if (is) {
-    Dwm::Mclog::Message  msg;
-    size_t  count = 0;
-    Dwm::TimeValue64  startTime(true);
-    while (msg.Read(is)) {
-      ++count;
-    }
-    Dwm::TimeValue64  endTime(true);
-    endTime -= startTime;
-    std::cerr << count << " messages (" << count / (double)endTime
-              << " messages/sec)\n";
-    is.close();
-  }
-  return;
-}
-#endif
 
 //----------------------------------------------------------------------------
 //!  
@@ -239,7 +188,7 @@ void ProcessFile(const std::filesystem::path & path,
 static void Usage(const char *argv0)
 {
   std::cerr << "usage: " << argv0
-            << " [-d] [-F filterExpression] [files...]\n";
+            << " [-c configFile] [-d] [-F filterExpression] [files...]\n";
   return;
 }
 
@@ -249,10 +198,14 @@ static void Usage(const char *argv0)
 int main(int argc, char *argv[])
 {
   bool         debug = false;
+  std::string  configFile{MCLOGD_DEFAULT_CONFIG_PATH};
   std::string  filtexpr;
   int          optChar;
-  while ((optChar = getopt(argc, argv, "dF:")) != -1) {
+  while ((optChar = getopt(argc, argv, "c:dF:")) != -1) {
     switch (optChar) {
+      case 'c':
+        configFile = optarg;
+        break;
       case 'd':
         debug = true;
         break;
@@ -267,28 +220,28 @@ int main(int argc, char *argv[])
   }
 
   std::shared_ptr<Dwm::Mclog::MessageFilterDriver>  filter{nullptr};
-  
   if (! filtexpr.empty()) {
     filter = make_shared<Dwm::Mclog::MessageFilterDriver>(filtexpr);
   }
 
   if (optind < argc) {
+    //  We've been given filenames on command line.  Process them and
+    //  then exit.
     for (int i = optind; i < argc; ++i) {
       ProcessFile(argv[i], filter);
     }
-    return 0;
+    exit(0);
   }
 
   Dwm::Mclog::OstreamSink  cerrSink(std::cerr);
   if (debug) {
-    Dwm::SysLogger::Open("mclog", LOG_PERROR, LOG_USER);
     Dwm::Mclog::logger.Open(Dwm::Mclog::Facility::user, {&cerrSink}, "mclog");
   }
   
   std::string  keyDir("~/.credence");
   Dwm::Mclog::MulticastReceiver  mcastRecv;
   Dwm::Mclog::Config  config;
-  if (config.Parse("/usr/local/etc/mclogd.cfg")) {
+  if (config.Parse(configFile)) {
     config.service.keyDirectory = keyDir;
     if (mcastRecv.Open(config)) {
       MySink  mysink;
@@ -297,16 +250,7 @@ int main(int argc, char *argv[])
       }
       mcastRecv.AddSink(&mysink);
       for (;;) {
-#if 1
         sleep(60);
-#else
-        msgQueue.WaitForNotEmpty();
-        while (! msgQueue.Empty()) {
-          Dwm::Mclog::Message  msg;
-          msgQueue.PopFront(msg);
-          std::cout << msg;
-        }
-#endif
       }
     }
   }
