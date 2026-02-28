@@ -1,0 +1,62 @@
+\chapter{Filtering}
+
+\begin{tabular}{rccccccl}
+  \texttt{facility} & $=$ & $!=$ & $<$ & $<=$ & $>$ & $>=$ & \textit{facility} \\
+  \texttt{host}     & & & $=$ & $!=$ & & & \textit{string} or \textit{regexp} \\
+  \texttt{ident}    & & & $=$ & $!=$ & & & \textit{string} or \textit{regexp} \\
+  \texttt{msg}      & & & $=$ & $!=$ & & & \textit{string} or \textit{regexp} \\
+  \texttt{severity} & $=$ & $!=$ & $<$ & $<=$ & $>$ & $>=$ & \textit{severity}
+\end{tabular}
+
+\begin{minipage}{\linewidth}
+\section{Pseudo BNF}
+\begin{verbatim}
+
+  expression: "(" expression ")"
+    | "!" expression
+    | expression "||" expression
+    | expression "&&" expression
+    | "facility" equality_op facility_value
+    | "facility" numerical_op facility_value
+    | "severity" equality_op severity_value
+    | "severity" numerical_op severity_value
+    | "host" equality_op quoted_string
+    | "host" equality_op regular_expression
+    | "ident" equality_op quoted_string
+    | "ident" equality_op regular_expression
+    | "msg" equality_op quoted_string
+    | "msg" equality_op regular_expression;
+
+  numerical_op: "<" | "<=" | ">" | ">=";
+  equality_op: "=" | "!=";
+  quoted_string: "'" [^']* "'";
+  regular_expression: "/" [^/]* "/";
+
+  facility_value: kernel | user | mail | daemon | auth | syslog
+    | lpr | news | uucp | cron | authpriv | ftp | local0 | local1
+    | local2 | local3 | local4 | local5 | local6 | local7;
+
+  severity_value: debug | info | notice | warning | err | crit
+    | alert | emerg;
+\end{verbatim}
+\end{minipage}
+
+\section{Examples}
+\begin{verbatim}
+host = 'foo.rfdm.com' && severity > info
+\end{verbatim}
+selects messages from \texttt{foo.rfdm.com} with a severity greater
+than \texttt{info}.
+
+\begin{verbatim}
+ident = /(mcweatherd|mctallyd)/ && msg = /.*authenticate.*/
+\end{verbatim}
+selects messages with an \texttt{ident} of \texttt{mcweatherd} or
+\texttt{mctallyd} and message text containing \texttt{authenticate}.
+
+\begin{verbatim}
+host = /.+\.mcplex\.net/ && (facility = local0 || facility == local1)
+\end{verbatim}
+
+selects messages from any host in the \texttt{mcplex.net} domain with
+a facility of \texttt{local0} or \texttt{local1}.
