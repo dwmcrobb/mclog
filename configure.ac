@@ -106,6 +106,7 @@ AC_SUBST(BUILD_DOCS)
 
 AC_CONFIG_FILES([Makefile.vars packaging/debcontrol
                  packaging/fbsd_manifest packaging/mclog.pc
+		 classes/include/DwmMclogSettings.hh
 		 classes/include/DwmMclogVersion.hh
 		 etc/macos/net.mcplex.mclogd.plist])
 AC_CONFIG_FILES([etc/macos/scripts/postinstall],
