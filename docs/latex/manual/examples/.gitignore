@@ -1,3 +1,5 @@
 *.o
 .libs/**
 Example01_loopback
+Example02_LogFile
+Example03_cerr
