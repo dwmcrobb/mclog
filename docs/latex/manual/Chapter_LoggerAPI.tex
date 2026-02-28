@@ -50,7 +50,8 @@ given as the second argument of the \texttt{Open()} member of the logger.
 
 \begin{verbatim}
   LogFile(const std::string & path, mode_t permissions = 0644,
-          RollPeriod period = RollPeriod::days_1, uint32_t keep = 7)
+          RollPeriod period = RollPeriod::days_1, uint32_t keep = 7,
+          FileFormat format = FileFormat::text)
 \end{verbatim}
 
 \subsection{Dwm::Mclog::OstreamSink}
