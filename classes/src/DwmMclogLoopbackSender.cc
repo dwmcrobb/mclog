@@ -51,7 +51,8 @@ namespace Dwm {
 
     //------------------------------------------------------------------------
     LoopbackSender::LoopbackSender()
-        : _run(false), _ofd(-1), _msgs(), _thread(), _nextSendTime()
+        : _run(false), _ofd(-1), _msgs(), _thread(), _nextSendTime(),
+          _running(false)
     {
       Start();
     }
@@ -131,12 +132,16 @@ namespace Dwm {
     {
       bool  rc = false;
       if (! _run.load()) {
-        _run.store(true);
-        _thread = std::thread(&LoopbackSender::Run, this);
+        if (OpenSocket()) {
+          _run.store(true);
+          _thread = std::thread(&LoopbackSender::Run, this);
+          while (! _running) {
+          }
 #if (defined(__FreeBSD__) || defined(__linux__))
           pthread_setname_np(_thread.native_handle(), "LoopbackSender");
 #endif
-        rc = true;
+          rc = true;
+        }
       }
       return rc;
     }
@@ -169,39 +174,39 @@ namespace Dwm {
 #if (__APPLE__)
       pthread_setname_np("LoopbackSender");
 #endif
-      if (OpenSocket()) {
       char           buf[1200];
       MessagePacket  pkt(buf, sizeof(buf));
       Message        msg;
-        while (_run) {
-          if (_msgs.ConditionTimedWait(std::chrono::seconds(1))) {
-            auto  now = Clock::now();
-            while (_msgs.PopFront(msg)) {
-              if (! pkt.Add(msg)) {
-                if (! SendPacket(pkt)) {
-                  Syslog(LOG_ERR, "SendPacket() failed");
-                }
-                _nextSendTime = now + std::chrono::milliseconds(1000);
-                pkt.Add(msg);
-              }
-            }
-          }
-          else {
-            auto  now = Clock::now();
-            if (pkt.HasPayload()) {
+      _running.store(true);
+      while (_run) {
+        if (_msgs.ConditionTimedWait(std::chrono::seconds(1))) {
+          auto  now = Clock::now();
+          while (_msgs.PopFront(msg)) {
+            if (! pkt.Add(msg)) {
               if (! SendPacket(pkt)) {
                 Syslog(LOG_ERR, "SendPacket() failed");
               }
               _nextSendTime = now + std::chrono::milliseconds(1000);
+              pkt.Add(msg);
             }
           }
         }
-        if (pkt.HasPayload()) {
-          if (! SendPacket(pkt)) {
-            Syslog(LOG_ERR, "SendPacket() failed");
+        else {
+          auto  now = Clock::now();
+          if (pkt.HasPayload()) {
+            if (! SendPacket(pkt)) {
+              Syslog(LOG_ERR, "SendPacket() failed");
+            }
+            _nextSendTime = now + std::chrono::milliseconds(1000);
           }
         }
       }
+      if (pkt.HasPayload()) {
+        if (! SendPacket(pkt)) {
+          Syslog(LOG_ERR, "SendPacket() failed");
+        }
+      }
+      _running.store(false);
       return;
     }
     

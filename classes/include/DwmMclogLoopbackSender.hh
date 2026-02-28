@@ -93,7 +93,8 @@ namespace Dwm {
       Thread::Queue<Message>  _msgs;
       std::thread             _thread;
       Clock::time_point       _nextSendTime;
-
+      std::atomic<bool>       _running;
+      
       void Run();
       bool OpenSocket();
       bool SendPacket(MessagePacket & pkt);
