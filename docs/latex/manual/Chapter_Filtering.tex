@@ -4,33 +4,34 @@
   \texttt{facility} & $=$ & $!=$ & $<$ & $<=$ & $>$ & $>=$ & \textit{facility} \\
   \texttt{host}     & & & $=$ & $!=$ & & & \textit{string} or \textit{regexp} \\
   \texttt{ident}    & & & $=$ & $!=$ & & & \textit{string} or \textit{regexp} \\
+  \texttt{pid}      & $=$ & $!=$ & $<$ & $<=$ & $>$ & $>=$ & \textit{uint32\_t} \\
   \texttt{msg}      & & & $=$ & $!=$ & & & \textit{string} or \textit{regexp} \\
   \texttt{severity} & $=$ & $!=$ & $<$ & $<=$ & $>$ & $>=$ & \textit{severity}
 \end{tabular}
 
 \begin{minipage}{\linewidth}
-\section{Pseudo BNF}
+\section{Pseudo EBNF}
 \begin{verbatim}
 
   expression: "(" expression ")"
     | "!" expression
     | expression "||" expression
     | expression "&&" expression
-    | "facility" equality_op facility_value
     | "facility" numerical_op facility_value
-    | "severity" equality_op severity_value
     | "severity" numerical_op severity_value
     | "host" equality_op quoted_string
     | "host" equality_op regular_expression
     | "ident" equality_op quoted_string
     | "ident" equality_op regular_expression
+    | "pid" numerical_op unsigned_int
     | "msg" equality_op quoted_string
     | "msg" equality_op regular_expression;
 
-  numerical_op: "<" | "<=" | ">" | ">=";
+  numerical_op: "<" | "<=" | ">" | ">=" | equality_op;
   equality_op: "=" | "!=";
   quoted_string: "'" [^']* "'";
   regular_expression: "/" [^/]* "/";
+  unsigned_int: [0-9]{1,10};
 
   facility_value: kernel | user | mail | daemon | auth | syslog
     | lpr | news | uucp | cron | authpriv | ftp | local0 | local1
