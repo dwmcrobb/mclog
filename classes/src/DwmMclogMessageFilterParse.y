@@ -49,9 +49,10 @@
 
 %token AND EQUAL GREATER GREATEROREQ LESS LESSOREQ LPAREN NOT NOTEQ OR QUOTE
 %token RPAREN SLASH
-%token FACILITY HOST IDENT MSG SEVERITY
+%token FACILITY HOST IDENT PID MSG SEVERITY
 %token <Dwm::Mclog::Facility> FACVALUE
 %token <Dwm::Mclog::Severity> SEVVALUE
+%token <uint32_t> UINT32
 %token DEBUG INFO NOTICE WARNING ERR CRIT ALERT EMERG
 %token KERNEL USER MAIL DAEMON AUTH SYSLOG LPR NEWS UUCP CRON AUTHPRIV FTP
 %token LOCAL0 LOCAL1 LOCAL2 LOCAL3 LOCAL4 LOCAL5 LOCAL6 LOCAL7
@@ -87,7 +88,12 @@ Expression: SEVERITY EQUAL SEVVALUE { $$ = (msg->Header().severity() == $3); }
 | FACILITY LESSOREQ FACVALUE { $$ = (msg->Header().facility() <= $3); }
 | FACILITY GREATER FACVALUE { $$ = (msg->Header().facility() > $3); }
 | FACILITY GREATEROREQ FACVALUE { $$ = (msg->Header().facility() >= $3); }
-| FACILITY NOTEQ FACVALUE { $$ = (msg->Header().facility() != $3); }
+| PID EQUAL UINT32 { $$ = (msg->Header().origin().processid() == $3); }
+| PID NOTEQ UINT32 { $$ = (msg->Header().origin().processid() != $3); }
+| PID LESS UINT32 { $$ = (msg->Header().origin().processid() < $3); }
+| PID LESSOREQ UINT32 { $$ = (msg->Header().origin().processid() <= $3); }
+| PID GREATER UINT32 { $$ = (msg->Header().origin().processid() > $3); }
+| PID GREATEROREQ UINT32 { $$ = (msg->Header().origin().processid() >= $3); }
 | HOST EQUAL QuotedString { $$ = (msg->Header().origin().hostname() == $3); }
 | HOST NOTEQ QuotedString { $$ = (msg->Header().origin().hostname() != $3); }
 | HOST EQUAL Regex  {

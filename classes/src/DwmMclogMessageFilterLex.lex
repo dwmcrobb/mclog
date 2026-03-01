@@ -68,6 +68,26 @@ m_facval (kernel|user|mail|daemon|auth|syslog|lpr|news|uucp|cron|authpriv|ftp|lo
   drv.tokens.push_back(tok);
   return tok;
 }
+<INITIAL>[0-9]{1,10} {
+  try {
+    auto  val = std::stoul(YYText());
+    auto  tok = MFP::make_UINT32(val,loc);
+    drv.tokens.push_back(tok);
+    return tok;
+  }
+  catch (std::exception & bex) {
+    std::cerr << "Bad number '" << YYText() << "': "
+              << bex.what() << '\n';
+    auto tok = MessageFilterParser::make_YYerror(loc);
+    drv.tokens.push_back(tok);
+    return tok;
+  }
+}
+<INITIAL>pid {
+  auto tok = MFP::make_PID(loc);
+  drv.tokens.push_back(tok);
+  return tok;
+}
 <INITIAL>"<="      {
   auto tok = MFP::make_LESSOREQ(loc);
   drv.tokens.push_back(tok);
