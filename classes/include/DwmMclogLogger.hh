@@ -120,6 +120,18 @@ namespace Dwm {
                 const char *ident = nullptr);
 
       //----------------------------------------------------------------------
+      //!  Same as above, but with the @c facility specified as a string.
+      //!  @c facility must be one of "kernel", "user", "mail", "daemon",
+      //!  "auth", "syslog", "lpr", "news", "uucp", "cron", "authpriv",
+      //!  "ftp", "local0", "local1", "local2", "local3", "local4", "local5",
+      //!  "local6" or "local7".
+      //----------------------------------------------------------------------
+      bool Open(const std::string & facility,
+                const std::vector<MessageSink *> & sinks = {},
+                const char *ident = nullptr)
+      { return Open(FacilityValue(facility), sinks, ident); }
+      
+      //----------------------------------------------------------------------
       //!  Adds the given @c sinks to the contained @c sinks to which the
       //!  loggr will send messages.  Note that all @c sinks must be valid
       //!  for as long as they might be used by the Logger.  Before
@@ -150,7 +162,15 @@ namespace Dwm {
       //----------------------------------------------------------------------
       Severity MinimumSeverity(Severity minSeverity)
       { return _minimumSeverity = minSeverity; }
-        
+
+      //----------------------------------------------------------------------
+      //!  Set the minimum severity that will be logged.  @c minSeverity
+      //!  must be one of "debug", "info", "notice", "warning", "err", "crit",
+      //!  "alert" or "emerg".
+      //----------------------------------------------------------------------
+      Severity MinimumSeverity(const std::string & minSeverity)
+      { return _minimumSeverity = SeverityValue(minSeverity); }
+      
       //----------------------------------------------------------------------
       //!  
       //----------------------------------------------------------------------
