@@ -71,7 +71,7 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
-    void LogFiles::Configure(const Config & config)
+    void LogFiles::Configure(const FilesConfig & filesConfig)
     {
       std::lock_guard  lck(_mtx);
       for (auto & logFile : _logFiles) {
@@ -81,8 +81,8 @@ namespace Dwm {
       _filteredLogConfigs.clear();
       _logPathCache.clear();
       
-      _filesConfig = config.files;
-      for (const auto & logcfg : config.files.logs) {
+      _filesConfig = filesConfig;
+      for (const auto & logcfg : _filesConfig.logs) {
         try {
           auto  filtLogCfg =
             FilteredLogConfig{std::make_unique<MessageFilterDriver>(logcfg.filter), logcfg};

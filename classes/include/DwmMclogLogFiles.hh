@@ -76,12 +76,9 @@ namespace Dwm {
       ~LogFiles();
 
       //----------------------------------------------------------------------
-      //!  Note we need an entire configuration because we need the
-      //!  'filters' in order to evaluate any filters in the 'logs'
-      //!  part of the 'files' configuration.
-      //!  dwm xxx: is this still true?  I don't think so...
+      //!  Configure the log files using the given FilesConfig @c filesConfig.
       //----------------------------------------------------------------------
-      void Configure(const Config & config);
+      void Configure(const FilesConfig & filesConfig);
 
       //----------------------------------------------------------------------
       //!  Process (log) the given @c msg.  Returns true on success, false

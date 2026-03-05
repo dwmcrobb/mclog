@@ -52,16 +52,16 @@ namespace Dwm {
     }
     
     //------------------------------------------------------------------------
-    bool FileLogger::Start(const Config & cfg)
+    bool FileLogger::Start(const FilesConfig & filescfg)
     {
       using namespace std;
 
-      if (cfg.files.logs.empty()) {
+      if (filescfg.logs.empty()) {
         return true;
       }
 
       bool rc = true;
-      _logFiles.Configure(cfg);
+      _logFiles.Configure(filescfg);
       _run = true;
       _thread = std::thread(&FileLogger::Run, this);
 #if (defined(__FreeBSD__) || defined(__linux__))
@@ -71,11 +71,11 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
-    bool FileLogger::Restart(const Config & config)
+    bool FileLogger::Restart(const FilesConfig & filescfg)
     {
       bool  rc = false;
       Stop();
-      return Start(config);
+      return Start(filescfg);
     }
 
     //------------------------------------------------------------------------

@@ -45,7 +45,6 @@
 
 #include "DwmThreadQueue.hh"
 #include "DwmMclogConfig.hh"
-// #include "DwmMclogMessageFilterDriver.hh"
 #include "DwmMclogLogFiles.hh"
 #include "DwmMclogMessageSink.hh"
 
@@ -66,16 +65,16 @@ namespace Dwm {
       FileLogger();
       
       //----------------------------------------------------------------------
-      //!  Starts the FileLogger using the given @c config.  Returns true on
+      //!  Starts the FileLogger using the given @c filescfg.  Returns true on
       //!  success, false on failure.
       //----------------------------------------------------------------------
-      bool Start(const Config & config);
+      bool Start(const FilesConfig & filescfg);
       
       //----------------------------------------------------------------------
-      //!  Restarts the FileLogger using the given @c config.  Returns true
+      //!  Restarts the FileLogger using the given @c filescfg.  Returns true
       //!  on success, false on failure.
       //----------------------------------------------------------------------
-      bool Restart(const Config & config);
+      bool Restart(const FilesConfig & filescfg);
       
       //----------------------------------------------------------------------
       //!  Stops the FileLogger.  Returns true on success, false on failure.

@@ -65,7 +65,7 @@ static bool Restart(const std::string & configPath)
   g_loopbackReceiver.Stop();
   
   if (g_config.Parse("/usr/local/etc/mclogd.cfg")) {
-    if (g_fileLogger.Restart(g_config)) {
+    if (g_fileLogger.Restart(g_config.files)) {
       if (g_mcastSender.Restart(g_config)) {
         if (g_mcastReceiver.Restart(g_config)) {
           rc = g_loopbackReceiver.Restart(g_config);
@@ -207,7 +207,7 @@ int main(int argc, char *argv[])
   if (g_config.Parse(configPath)) {
     SavePID(pidFile);
     g_mcastSender.Open(g_config);
-    g_fileLogger.Start(g_config);
+    g_fileLogger.Start(g_config.files);
     g_loopbackReceiver.AddSink(&g_mcastSender);
     g_loopbackReceiver.AddSink(&g_fileLogger);
     g_loopbackReceiver.Start(g_config);
