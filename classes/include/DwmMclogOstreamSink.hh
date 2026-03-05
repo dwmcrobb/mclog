@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 //!  @file DwmMclogOstreamSink.hh
 //!  @author Daniel W. McRobb
-//!  @brief NOT YET DOCUMENTED
+//!  @brief Dwm::Mclog::OstreamSink class
 //---------------------------------------------------------------------------
 
 #ifndef _DWMMCLOGOSTREAMSINK_HH_
@@ -50,26 +50,31 @@ namespace Dwm {
   namespace Mclog {
 
     //------------------------------------------------------------------------
-    //!  
+    //!  A MessageSink wrapper around a std::ostream.
     //------------------------------------------------------------------------
     class OstreamSink
       : public MessageSink 
     {
     public:
       //----------------------------------------------------------------------
-      //!  
+      //!  No default construction; we need an ostream reference.
       //----------------------------------------------------------------------
       OstreamSink() = delete;
       
       //----------------------------------------------------------------------
-      //!  
+      //!  Construct from a reference to an ostream.  Note we keep the
+      //!  ostream as a reference (they can't be copied), so the caller
+      //!  must ensure that the given ostream @c os outlives their use
+      //!  of the @c OstreamSink.
       //----------------------------------------------------------------------
       OstreamSink(std::ostream & os)
           : _mtx(), _os(os)
       {}
 
       //----------------------------------------------------------------------
-      //!  
+      //!  Process the given message @c msg.  This will cause the @c msg to
+      //!  be written to the ostream in human-readable form.  Returns true
+      //!  on success, false on failure.
       //----------------------------------------------------------------------
       bool Process(const Message & msg)
       {
