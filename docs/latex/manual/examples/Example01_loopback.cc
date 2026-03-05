@@ -2,10 +2,10 @@
 
 int main(int argc, char *argv[])
 {
-  using Dwm::Mclog::Facility, Dwm::Mclog::Severity;
+  using Dwm::Mclog::Facility, Dwm::Mclog::Severity, Dwm::Mclog::logger;
   
-  Dwm::Mclog::logger.Open(Facility::user);
+  logger.Open(Facility::user);
   MCLOG(Severity::info, "Hello!");
-  Dwm::Mclog::logger.Close();
+  logger.Close();
   return 0;
 }

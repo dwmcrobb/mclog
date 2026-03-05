@@ -6,10 +6,15 @@
   bool Open(Facility facility = Facility::user,
             const std::vector<MessageSink *> & sinks = {},
             const char *ident = nullptr)
+
+  bool Open(const std::string & facility,
+                const std::vector<MessageSink *> & sinks = {},
+                const char *ident = nullptr)
 \end{verbatim}
 
 If \texttt{sinks} is empty, the logger will send all log messages
-to the loopback address.
+to the loopback address where it is expected to be processed by
+\textit{mclogd}.
 
 If \texttt{ident} is \texttt{nullptr}, the logger will use the ident
 given by the runtime.  On macOS and FreeBSD, this comes from
@@ -60,6 +65,11 @@ given as the second argument of the \texttt{Open()} member of the logger.
   OstreamSink(std::ostream & os)
 \end{verbatim}
 
+\texttt{OstreamSink} may be used to create a \texttt{MessageSink} from
+a \texttt{std::ostream}.  Note that \texttt{OstreamSink} does not
+participate in lifetime management of \texttt{os}.  The caller must
+ensure that \texttt{os} outlives the \texttt{OstreamSink}.
+
 \subsection{Dwm::Mclog::SyslogSink}
 
 \begin{verbatim}
@@ -67,13 +77,33 @@ given as the second argument of the \texttt{Open()} member of the logger.
 \end{verbatim}
 
 \section{Sending log messages}
+The \texttt{MCLOG} macro is used to log a message.
 
 \section{Closing the logger}
+\begin{verbatim}
+  bool Close()
+\end{verbatim}
 
 \section{Examples}
 
+\begin{minipage}{\linewidth}
+\subsection{Logging to \textit{mclogd}}
+The program in listing~\ref{lst:loopback} sends a log message to
+\textit{mclogd} on the local host.  This is far and away my most
+common usage.
+
 \lstinputlisting[language=c++,caption={\texttt{loopback.cc}},captionpos=b,label={lst:loopback}]{examples/Example01_loopback.cc}
+\end{minipage}
+
+\begin{minipage}{\linewidth}
+\subsection{Logging to a \texttt{LogFile}}
+The program in listing~\ref{lst:logfile} writes a log message to a \texttt{LogFile} in the current directory.
 
 \lstinputlisting[language=c++,caption={\texttt{logfile.cc}},captionpos=b,label={lst:logfile}]{examples/Example02_LogFile.cc}
+\end{minipage}
 
+\begin{minipage}{\linewidth}
+The program in listing~\ref{lst:cerr} writes a log message to \texttt{std::cerr}.
+\subsection{Logging to \texttt{cerr}}
 \lstinputlisting[language=c++,caption={\texttt{cerr.cc}},captionpos=b,label={lst:cerr}]{examples/Example03_cerr.cc}
+\end{minipage}
