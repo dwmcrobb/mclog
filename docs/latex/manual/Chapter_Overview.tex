@@ -6,6 +6,23 @@ transport, and built-in log file rollover.
 
 \section{Components}
 \subsection{mclogd}
+\textit{mclogd} is a daemon that can accept log messages on the
+loopback interface of the host, accept encrypted log messages via
+multicast, send encrypted log messages via multicast, and of course
+save log messages to files.  For most applications using mclog,
+\textit{mclogd} is the log message destination (via the loopback
+interface).
+
 \subsection{syslog-like API}
+The main mclog API for applications is comprised of three functions:
+\texttt{logger.Open()} to open the logger, \texttt{logger.Close()}
+to close the logger, and the \texttt{MCLOG()} macro to submit log
+messages to the logger.  You must \texttt{\#include "DwmMclogLogger.hh"}
+and link against \texttt{libDwmMclog} to utilize the API.
+
 \subsection{mclogger}
+
 \subsection{mclog}
+\textit{mclog} is a command line utility that can display log messages
+as they are received via multicast.  It can also display messages from
+binary log files saved by \textit{mclogd}.
