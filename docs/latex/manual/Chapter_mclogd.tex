@@ -1,9 +1,18 @@
 \chapter{mclogd}
 
-\section{Receiving Messages on the looopback address}
+\section{Receiving log messages on the looopback address}
 
-\section{Receiving Messages via multicast}
+\section{Receiving log messages via multicast}
 
-\section{Sending Messages via multicast}
+\section{Sending log messages via multicast}
 
-\section{Saving Messages to files}
+\section{Saving log messages to files}
+\textit{mclogd} saves log messages received via the loopback
+and multicast to local files.  Filters may be used to select
+which messages are saved to a given log file path.  Log file
+paths may use message contents in their construction:
+\texttt{\%H} will be replaced with the source hostname,
+\texttt{\%I} will be replaced with the application identifier
+(program name), and \texttt{\%F} will be replaced with the
+log facility (\texttt{daemon}, \texttt{user}, \texttt{local0},
+et. al.).
