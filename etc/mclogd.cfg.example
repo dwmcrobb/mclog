@@ -112,6 +112,18 @@ files {
     #      1d          (1 day)
     #      7d          (7 days)
     #
+    #  'size' is the size (in bytes) at which we will roll over the
+    #  log file.  We will roll over a log file when the period passes
+    #  or the log file size exceeds 'size', whichever occurs first.
+    #  'size' is an integer, which may be followed by a prefix
+    #  multiplier (for example, 10k is 10,000 bytes):
+    #      k     1,000
+    #      K     1,024
+    #      m     1,000,000
+    #      M     1,048,576
+    #      g     1,000,000,000
+    #      G     1,073,741,824
+    #
     #  'keep' is the number of log files to keep during rollover.  The
     #  default is 7.
     #
@@ -126,7 +138,7 @@ files {
     #-----------------------------------------------------------------------
     logs {
         { filter="$mydaemons"; path="%H/%I"; user="dwm"; group="staff";
-          perms=0644; period=1d; keep=7; compress="bzip2"; },
+          perms=0644; period=1d; size=500k; keep=7; compress="bzip2"; },
         { filter="$myapps"; path="%H/myapps"; perms=0600; }
     };
 
