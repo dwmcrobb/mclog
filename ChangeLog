@@ -1,3 +1,16 @@
+2026-03-13  Daniel W. McRobb  <dwm@spark.mcplex.net>
+
+	* classes/include/DwmMclogConfig.hh
+	classes/include/DwmMclogLogFile.hh
+	classes/src/DwmMclogConfigLex.lex
+	classes/src/DwmMclogConfigParse.y
+	classes/src/DwmMclogLogFile.cc
+	classes/src/DwmMclogLogFiles.cc
+	classes/tests/TestConfig.cc
+	classes/tests/inputs/TestConfig1.cfg:
+	Add 'size' configuration for log files.  This sets a maximum
+	size for the log file before it is rolled over.
+
 2026-03-10  dwm  <dwm@nomnom.mcplex.net>
 
 	* tagged as mclog-0.0.8
