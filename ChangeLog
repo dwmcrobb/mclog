@@ -1,5 +1,9 @@
 2026-03-13  Daniel W. McRobb  <dwm@spark.mcplex.net>
 
+	* tagged as mclog-0.0.10
+
+	* etc/mclogd.cfg.example: Add size information for logs.
+
 	* tagged as mclog-0.0.9
 
 	* classes/include/DwmMclogConfig.hh,
