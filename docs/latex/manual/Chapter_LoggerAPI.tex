@@ -52,6 +52,7 @@ to a file, with configurable rollover period, permissions and number of
 archives to keep.  If all you need is a log file, and/or do not want or
 need networked logging, it is a good choice of sink in the list of sinks
 given as the second argument of the \texttt{Open()} member of the logger.
+It is declared in the \texttt{DwmMclogLogFile.hh} header file.
 
 \begin{verbatim}
   LogFile(const std::string & path, mode_t permissions = 0644,
@@ -68,7 +69,8 @@ given as the second argument of the \texttt{Open()} member of the logger.
 \texttt{OstreamSink} may be used to create a \texttt{MessageSink} from
 a \texttt{std::ostream}.  Note that \texttt{OstreamSink} does not
 participate in lifetime management of \texttt{os}.  The caller must
-ensure that \texttt{os} outlives the \texttt{OstreamSink}.
+ensure that \texttt{os} outlives the \texttt{OstreamSink}.  It is declared
+in the \texttt{DwmMclogOstreamSink.hh} header file.
 
 \subsection{Dwm::Mclog::SyslogSink}
 

@@ -56,7 +56,7 @@ selects messages with an \texttt{ident} of \texttt{mcweatherd} or
 \texttt{mctallyd} and message text containing \texttt{authenticate}.
 
 \begin{verbatim}
-host = /.+\.mcplex\.net/ && (facility = local0 || facility == local1)
+host = /.+\.mcplex\.net/ && (facility = local0 || facility = local1)
 \end{verbatim}
 
 selects messages from any host in the \texttt{mcplex.net} domain with

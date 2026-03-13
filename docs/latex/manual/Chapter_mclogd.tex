@@ -1,10 +1,25 @@
 \chapter{mclogd}
 
 \section{Receiving log messages on the looopback address}
+\textit{mclogd} can accept unencrypted log messages on the loopback
+address (\texttt{127.0.0.1} and/or \texttt{::1}).  This is how it
+receives log messages from applications on the local host.
 
 \section{Receiving log messages via multicast}
+\textit{mclogd} can receive encrypted log messages via multicast.
+This is how \textit{mclogd} receives log messages from instances of
+\textit{mclogd} running on other hosts.  Note that in order to
+decrypt these messages, \textit{mclogd} must request the decryption
+key from each multicast source, and in the process must prove
+identity via signature using \texttt{Credence} and must be known by
+the remote \textit{mclogd} instance.
 
 \section{Sending log messages via multicast}
+\textit{mclogd} can send encrypted log messages via multicast.
+This is how \textit{mclogd} sends log messages to instances of
+\textit{mclogd} on other hosts.  Receivers must request the decryption
+key from a given instance of \textit{mclogd}, and must prove they
+are a trusted identity via signature using \texttt{Credence}.
 
 \section{Saving log messages to files}
 \textit{mclogd} saves log messages received via the loopback

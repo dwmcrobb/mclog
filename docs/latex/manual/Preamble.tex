@@ -1,6 +1,6 @@
 \usepackage{emoji}
 \usepackage{lmodern}
-\setemojifont{Apple Color Emoji}
+% \setemojifont{Apple Color Emoji}
 \setmainfont[Scale=1.2]{Latin Modern Sans}
 \usepackage{fontspec}
 \usepackage{newunicodechar}
@@ -30,17 +30,6 @@
 % \usepackage[scaled]{beramono}
 % \renewcommand{\ttdefault}{beramono}
 % \renewcommand{\familydefault}{\sfdefault}
-
-\directlua{luaotfload.add_fallback
-   ("emojifallback",
-    {
-      "AppleColorEmoji:mode=harf;"
-    }
-   )}
-
-\setmonofont{Fira Code}[
-  RawFeature={fallback=emojifallback}
-]
 
 \titleformat{\chapter}[display]
             {\normalfont\huge\bfseries}
@@ -202,4 +191,3 @@ fourByteEmpty/.style={draw,fill=blue!10,minimum height=20pt,text depth=10pt,text
   \end{mdframed}
 }
 
-\newcommand{\whiteCheckMark}{\emoji{white-check-mark}}
