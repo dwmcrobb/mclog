@@ -81,10 +81,11 @@ namespace Dwm {
     
     //------------------------------------------------------------------------
     LogFile::LogFile(const std::string & path, mode_t permissions,
-                     RollPeriod period, uint32_t keep, FileFormat format)
+                     RollPeriod period, int64_t maxsize, uint32_t keep,
+                     FileFormat format)
         : _mtx(), _path(path), _permissions(permissions), _keep(keep),
-          _ofs(), _rollInterval(period), _user(getuid()), _group(getgid()),
-          _compress("bzip2"), _format(format)
+          _ofs(), _rollInterval(period), _rollSize(maxsize), _user(getuid()),
+          _group(getgid()), _compress("bzip2"), _format(format)
     {}
 
     //------------------------------------------------------------------------
@@ -97,6 +98,7 @@ namespace Dwm {
       _keep = logFile._keep;
       _ofs = std::move(logFile._ofs);
       _rollInterval = logFile._rollInterval;
+      _rollSize = logFile._rollSize;
       _user = logFile._user;
       _group = logFile._group;
       _compress = logFile._compress;
@@ -113,6 +115,7 @@ namespace Dwm {
         _keep = logFile._keep;
         _ofs = std::move(logFile._ofs);
         _rollInterval = logFile._rollInterval;
+        _rollSize = logFile._rollSize;
         _user = logFile._user;
         _group = logFile._group;
         _compress = std::move(logFile._compress);
@@ -314,8 +317,15 @@ namespace Dwm {
     }
 
     //------------------------------------------------------------------------
-    bool LogFile::RollCriteriaMet(const Message & msg) const
+    bool LogFile::RollCriteriaMet(const Message & msg)
     {
+      if (_rollSize > 0) {
+        if (_ofs.is_open()) {
+          if (_ofs.tellp() >= _rollSize) {
+            return true;
+          }
+        }
+      }
       if (msg.Header().timestamp().Secs() >= _rollInterval.EndTime()) {
         return (time((time_t *)0) >= _rollInterval.EndTime());
       }

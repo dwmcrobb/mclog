@@ -77,6 +77,7 @@ int main(int argc, char *argv[])
     if (UnitAssert(2 == cfg.files.logs.size())) {
       UnitAssert(cfg.files.logs[0].filter == "(ident = /dwmrdapd|mcroverd|mctallyd|mccurtaind|mcblockd/) && (host = /.+\\.(mcplex\\.net|rfdm\\.com)/)");
       UnitAssert(cfg.files.logs[0].pathPattern == "%H/%I");
+      UnitAssert(cfg.files.logs[0].size == 10000000);
       UnitAssert(cfg.files.logs[1].filter == "(ident = /mcblock|mccurtain|mcrover|mctally|qmcrover/) && (host = /.+\\.(mcplex\\.net|rfdm\\.com)/)");
       UnitAssert(cfg.files.logs[1].pathPattern == "%H/myapps");
     }

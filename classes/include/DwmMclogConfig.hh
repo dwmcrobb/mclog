@@ -115,15 +115,16 @@ namespace Dwm {
       LogFileConfig & operator = (const LogFileConfig &) = default;
       void Init();
       
-      std::string  filter;        // filter expression
-      std::string  pathPattern;   // path pattern (can contain %H, %I, %F)
-      mode_t       permissions;   // file permissions (octal)
-      RollPeriod   period;        // time between rollovers
-      uint32_t     keep;          // number of log files to keep when rolling
-      std::string  user;
-      std::string  group;
-      std::string  compress;
-      FileFormat   format;
+      std::string  filter;        //! filter expression
+      std::string  pathPattern;   //! path pattern (can contain %H, %I, %F)
+      mode_t       permissions;   //! file permissions (octal)
+      RollPeriod   period;        //! time between rollovers
+      int64_t      size;          //! max log file size before rollover
+      uint32_t     keep;          //! number of log files to keep when rolling
+      std::string  user;          //! log file owner
+      std::string  group;         //! log file group
+      std::string  compress;      //! compression ('bzip2' or 'gzip')
+      FileFormat   format;        //! 'text' or 'binary'
     };
     
     //------------------------------------------------------------------------

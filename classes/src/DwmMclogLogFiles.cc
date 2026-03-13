@@ -109,8 +109,8 @@ namespace Dwm {
           }
           else {
             LogFile  logFile(lp.first, lp.second.permissions,
-                             lp.second.period, lp.second.keep,
-                             lp.second.format);
+                             lp.second.period, lp.second.size,
+                             lp.second.keep, lp.second.format);
             logFile.User(lp.second.user);
             logFile.Group(lp.second.group);
             logFile.Compression(lp.second.compress);

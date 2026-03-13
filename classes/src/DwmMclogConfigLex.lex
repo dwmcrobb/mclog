@@ -96,6 +96,7 @@
     { "perms",              PERMS           },
     { "port",               PORT            },
     { "service",            SERVICE         },
+    { "size",               SIZE            },
     { "text",               TEXT            },
     { "user",               USER            }
   };

@@ -71,8 +71,8 @@ namespace Dwm {
       //!  period and number of files to keep (active file + archives).
       //----------------------------------------------------------------------
       LogFile(const std::string & path, mode_t permissions = 0644,
-              RollPeriod period = RollPeriod::days_1, uint32_t keep = 7,
-              FileFormat format = FileFormat::text);
+              RollPeriod period = RollPeriod::days_1, int64_t maxsize = 0,
+              uint32_t keep = 7, FileFormat format = FileFormat::text);
 
       //----------------------------------------------------------------------
       //!  Copy construction is invalid.
@@ -152,6 +152,7 @@ namespace Dwm {
       uint32_t               _keep;
       std::ofstream          _ofs;
       RollInterval           _rollInterval;
+      int64_t                _rollSize;
       uid_t                  _user;
       gid_t                  _group;
       std::string            _compress;
@@ -183,7 +184,7 @@ namespace Dwm {
       bool EnsureParentDirectory() const;
       bool SetPermissions() const;
       bool SetOwnership() const;
-      bool RollCriteriaMet(const Message & msg) const;
+      bool RollCriteriaMet(const Message & msg);
       void RollArchives() const;
       void RollCurrent();
       void Roll();

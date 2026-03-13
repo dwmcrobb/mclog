@@ -166,6 +166,36 @@
     return rc;
   }
 
+  //--------------------------------------------------------------------------
+  static uint64_t LogSize(const std::string & s)
+  {
+    const std::map<char,uint64_t>  multipliers = {
+      { 'k', 1000 },
+      { 'K', 1024 },
+      { 'm', 1000000 },
+      { 'M', 1048576 },
+      { 'g', 1000000000 },
+      { 'G', 1073741824 }
+    };
+    
+    uint64_t     val = 0;
+    boost::regex   rgx("([0-9]+)([kKmMgG]*)");
+    boost::smatch  sm;
+    if (boost::regex_match(s, sm, rgx)) {
+      if (sm.size() == 3) {
+        try { val = std::stoul(sm[1].str()); }
+        catch (...) { val = 0; }
+        if (! sm[2].str().empty()) {
+          auto it = multipliers.find(sm[2].str()[0]);
+          if (it != multipliers.end()) {
+            val *= it->second;
+          }
+        }
+      }
+    }
+    return val;
+  }
+      
 %}
 
 %define api.prefix {mclogcfg}
@@ -186,6 +216,7 @@
   Dwm::Mclog::LogFileConfig                 *logFileVal;
   vector<Dwm::Mclog::LogFileConfig>         *logFilesVal;
   Dwm::Mclog::RollPeriod                     rollPeriodVal;
+  int64_t                                    int64Val;
   Dwm::Mclog::FileFormat                     fileFormatVal;
   bool                                       boolVal;
 }
@@ -204,7 +235,7 @@
 %token GROUPADDR6 HOST IDENT INTFADDR INTFADDR6 INTFNAME KEEP KEYDIRECTORY
 %token LISTENV4 LISTENV6 LOGICALOR LOGICALAND LOOPBACK LOGDIRECTORY LOGS
 %token MINIMUMSEVERITY MULTICAST NOT OUTFILTER PATH PERIOD PERMS PORT
-%token SERVICE TEXT USER
+%token SERVICE SIZE TEXT USER
 
 %token<stringVal>  STRING
 %token<intVal>     INTEGER
@@ -226,6 +257,7 @@
 %type<stringPairVal>      FilterExpr
 %type<logFilesVal>        Logs LogList
 %type<logFileVal>         Log LogSettings
+%type<int64Val>           RollSize
 
 %%
 
@@ -602,6 +634,11 @@ LogSettings: Filter
   $$ = new Dwm::Mclog::LogFileConfig();
   $$->period = $1;
 }
+| RollSize
+{
+  $$ = new Dwm::Mclog::LogFileConfig();
+  $$->size = $1;
+}
 | Keep
 {
   $$ = new Dwm::Mclog::LogFileConfig();
@@ -660,6 +697,10 @@ LogSettings: Filter
 {
   $$->period = $2;
 }
+| LogSettings RollSize
+{
+  $$->size = $2;
+}
 | LogSettings Keep
 {
   $$->keep = 7;
@@ -709,6 +750,12 @@ Permissions: PERMS '=' INTEGER ';'
 RollPeriod: PERIOD '=' STRING ';'
 {
   $$ = Dwm::Mclog::GetRollPeriod(*($3));
+  delete $3;
+};
+
+RollSize: SIZE '=' STRING ';'
+{
+  $$ = LogSize(*($3));
   delete $3;
 };
 
@@ -804,6 +851,7 @@ namespace Dwm {
       pathPattern = "%H/%I";
       permissions = 0644;
       period = RollPeriod::days_1;
+      size = 0;
       keep = 7;
       user.clear();
       group.clear();
