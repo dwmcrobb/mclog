@@ -1,3 +1,10 @@
+2026-03-17  dwm  <dwm@ria.mcplex.net>
+
+	* tagged as mclog-0.0.11
+
+	* etc/freebsd/rc.d/mclogd: Add explicit mclogd_start to see if it
+	fixes the restart during installation.
+
 2026-03-13  Daniel W. McRobb  <dwm@spark.mcplex.net>
 
 	* tagged as mclog-0.0.10
