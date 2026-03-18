@@ -19,6 +19,13 @@ pidfile=${mclogd_pidfile:="/var/run/mclogd.pid"}
 command="/usr/local/sbin/mclogd"
 command_args="-c ${mclogd_config} -p ${pidfile}"
 
+start_cmd=mclogd_start
+
+mclogd_start() {
+    checkyesno mclogd_enable && echo "Starting mclogd." && \
+        ${command} ${command_args}
+}
+
 start_precmd=mclogd_precmd
 
 mclogd_precmd()
