@@ -74,12 +74,12 @@ if [ $(mclogd_known_to_user) = "false" ]; then
     add_mclogd_to_user_known_keys
 fi
 
-# And restart mclogd if desired.
+# And remind to restart mclogd if it is enabled.
 . /etc/rc.conf
 case ${mclogd_enable} in
     [Yy][Ee][Ss])
-        /usr/local/etc/rc.d/mclogd restart
-      ;;
+        echo "You may want to 'service mclogd restart'."
+        ;;
     *)
-      ;;
+        ;;
 esac
