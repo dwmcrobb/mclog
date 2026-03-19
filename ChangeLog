@@ -1,3 +1,7 @@
+2026-03-19  Daniel W. McRobb  <dwm@spark.mcplex.net>
+
+	* tagged as mclog-0.0.12
+
 2026-03-19  dwm  <dwm@ria.mcplex.net>
 
 	* etc/freebsd/rc.d/mclogd: Minor cleanup: I don't need precmd.
