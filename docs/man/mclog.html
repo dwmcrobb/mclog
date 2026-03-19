@@ -4,102 +4,94 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="stylesheet" href="./mclog.css" type="text/css" media="all"/>
-  <title>mctally(1)</title>
+  <title>mclog(1)</title>
 </head>
 <body>
-<div class="head" role="doc-pageheader" aria-label="Manual header
-  line"><span class="head-ltitle">mctally(1)</span>
-  <span class="head-vol">FreeBSD General Commands Manual</span>
-  <span class="head-rtitle">mctally(1)</span></div>
-<main class="manual-text">
+<table class="head">
+  <tr>
+    <td class="head-ltitle">mclog(1)</td>
+    <td class="head-vol">General Commands Manual</td>
+    <td class="head-rtitle">mclog(1)</td>
+  </tr>
+</table>
+<div class="manual-text">
 <section class="Sh">
-<h2 class="Sh" id="NAME"><a class="permalink" href="#NAME">NAME</a></h2>
-<p class="Pp"><code class="Nm">mctally</code> &#x2014;
-    <span class="Nd" role="doc-subtitle">request list of installed packages
-    matching a regular expression</span></p>
+<h1 class="Sh" id="NAME"><a class="permalink" href="#NAME">NAME</a></h1>
+<p class="Pp"><code class="Nm">mclog</code> &#x2014; <span class="Nd">view log
+    messages from multicast or files</span></p>
 </section>
 <section class="Sh">
-<h2 class="Sh" id="SYNOPSIS"><a class="permalink" href="#SYNOPSIS">SYNOPSIS</a></h2>
+<h1 class="Sh" id="SYNOPSIS"><a class="permalink" href="#SYNOPSIS">SYNOPSIS</a></h1>
 <table class="Nm">
   <tr>
-    <td><code class="Nm">mctally</code></td>
-    <td>[<code class="Fl">-h</code> <var class="Ar">host(s)</var>]
-      [<code class="Fl">-a</code>] [<code class="Fl">-l</code>]
-      [<code class="Fl">-p</code> <var class="Ar">port</var>]
-      [<code class="Fl">-t</code>] [<code class="Fl">-u</code>]
-      [<code class="Fl">-v</code>] [packages_regex]</td>
+    <td><code class="Nm">mclog</code></td>
+    <td>[<code class="Fl">-c</code> <var class="Ar">configFile</var>]
+      [<code class="Fl">-F</code> <var class="Ar">filterExpression</var>]
+      [<code class="Fl">-d</code>] [<var class="Ar">files...</var>]</td>
   </tr>
 </table>
 </section>
 <section class="Sh">
-<h2 class="Sh" id="DESCRIPTION"><a class="permalink" href="#DESCRIPTION">DESCRIPTION</a></h2>
-<p class="Pp"><code class="Nm">mctally</code> requests installed package
-    information from one or more hosts via <a class="Xr" aria-label="mctallyd,
-    section 8">mctallyd(8)</a>. It can also request load averages, active
-    logins, uptime and uname information.</p>
+<h1 class="Sh" id="DESCRIPTION"><a class="permalink" href="#DESCRIPTION">DESCRIPTION</a></h1>
+<p class="Pp"><code class="Nm">mclog</code> may be used to view log messages
+    multicasted from instances of <a class="Xr">mclogd(8)</a>. It may also be
+    used to view binary log files that were written by
+    <a class="Xr">mclogd(8)</a>.</p>
 <p class="Pp">The following command line options are available:</p>
 <dl class="Bl-tag">
-  <dt id="h"><a class="permalink" href="#h"><code class="Fl">-h</code></a>
-    <var class="Ar">host(s)</var></dt>
-  <dd>Specify the <a class="Xr" aria-label="mctallyd, section 8">mctallyd(8)</a>
-      host(s) to be queried. If not specified, localhost is queried.</dd>
-  <dt id="a"><a class="permalink" href="#a"><code class="Fl">-a</code></a></dt>
-  <dd>Request load averages.</dd>
-  <dt id="l"><a class="permalink" href="#l"><code class="Fl">-l</code></a></dt>
-  <dd>Request active logins.</dd>
-  <dt id="p"><a class="permalink" href="#p"><code class="Fl">-p</code></a>
-    <var class="Ar">port</var></dt>
-  <dd>Specify the TCP port where <a class="Xr" aria-label="mctallyd, section
-      8">mctallyd(8)</a> is listening.</dd>
-  <dt id="t"><a class="permalink" href="#t"><code class="Fl">-t</code></a></dt>
-  <dd>Request uptime.</dd>
-  <dt id="u"><a class="permalink" href="#u"><code class="Fl">-u</code></a></dt>
-  <dd>Request uname information.</dd>
-  <dt id="v"><a class="permalink" href="#v"><code class="Fl">-v</code></a></dt>
-  <dd>Display the version of mctally.</dd>
-  <dt>packages_regex</dt>
-  <dd>Request a list of installed packages whose name matches
-      <i>packages_regex</i>. <i>packages_regex</i> is an ECMAScript regular
-      expression.</dd>
+  <dt id="c"><a class="permalink" href="#c"><code class="Fl">-c</code></a>
+    <var class="Ar">configFile</var></dt>
+  <dd>Specify the path to the <a class="Xr">mclogd(8)</a> configuration file.
+      The default is /usr/local/etc/mclogd.cfg</dd>
+  <dt id="F"><a class="permalink" href="#F"><code class="Fl">-F</code></a>
+    <var class="Ar">filterExpression</var></dt>
+  <dd>Only display messages which match the given <i>filterExpression</i>.</dd>
+  <dt id="d"><a class="permalink" href="#d"><code class="Fl">-d</code></a></dt>
+  <dd>Enable debugging messages on stderr.</dd>
+  <dt><var class="Ar">files...</var></dt>
+  <dd>If present, <code class="Nm">mclog</code> will read messages from the
+      given files. If not present, <code class="Nm">mclog</code> will read
+      messages that were multicasted by <a class="Xr">mclogd(8)</a>.</dd>
 </dl>
 </section>
 <section class="Sh">
-<h2 class="Sh" id="FILES"><a class="permalink" href="#FILES">FILES</a></h2>
-<p class="Pp"><code class="Nm">mctally</code> uses libCredence for encryption
-    and authentication. Hence it requires credence key files.</p>
+<h1 class="Sh" id="FILES"><a class="permalink" href="#FILES">FILES</a></h1>
+<p class="Pp"><code class="Nm">mclog</code> uses libCredence for encryption and
+    authentication. Hence it requires credence key files.</p>
 <dl class="Bl-tag">
   <dt><span class="Pa">~/.credence/id_ed25519</span></dt>
   <dd>The user's credence private key file, created with
-      <a class="Xr" aria-label="credence, section 1">credence(1)</a>. This file
-      should be owned by the user and have permissions 0600. It must contain the
-      private part of an Ed25519 RSA key pair.</dd>
+      <a class="Xr">credence(1)</a>. This file should be owned by the user and
+      have permissions 0600. It must contain the private part of an Ed25519 RSA
+      key pair.</dd>
   <dt><span class="Pa">~/.credence/id_ed25519.pub</span></dt>
   <dd>The user's credence public key file, created with
-      <a class="Xr" aria-label="credence, section 1">credence(1)</a>. This file
-      should be owned by the user and have permissions 0600. It must contain the
-      public part of an Ed25519 key pair.</dd>
+      <a class="Xr">credence(1)</a>. This file should be owned by the user and
+      have permissions 0600. It must contain the public part of an Ed25519 key
+      pair.</dd>
   <dt><span class="Pa">~/.credence/known_keys</span></dt>
   <dd>The user's credence known services file. This file must contain the public
-      keys of <a class="Xr" aria-label="mctallyd, section 8">mctallyd(8)</a>
-      from the <a class="Xr" aria-label="mctallyd, section 8">mctallyd(8)</a>
+      keys of <a class="Xr">mclogd(8)</a> from the <a class="Xr">mclogd(8)</a>
       hosts being queried (one per line). It is used to authenticate instances
-      of <a class="Xr" aria-label="mctallyd, section 8">mctallyd(8)</a>.</dd>
+      of <a class="Xr">mclogd(8)</a>.</dd>
 </dl>
 </section>
 <section class="Sh">
-<h2 class="Sh" id="SEE_ALSO"><a class="permalink" href="#SEE_ALSO">SEE
-  ALSO</a></h2>
-<p class="Pp"><a class="Xr" aria-label="mctallyd, section 8">mctallyd(8)</a>,
-    <a class="Xr" aria-label="credence, section 1">credence(1)</a></p>
+<h1 class="Sh" id="SEE_ALSO"><a class="permalink" href="#SEE_ALSO">SEE
+  ALSO</a></h1>
+<p class="Pp"><a class="Xr">mclogd(8)</a>, <a class="Xr">credence(1)</a></p>
 </section>
 <section class="Sh">
-<h2 class="Sh" id="COPYRIGHT"><a class="permalink" href="#COPYRIGHT">COPYRIGHT</a></h2>
+<h1 class="Sh" id="COPYRIGHT"><a class="permalink" href="#COPYRIGHT">COPYRIGHT</a></h1>
 <p class="Pp">Copyright (c) 2024 Daniel W. McRobb
     <a class="Mt" href="mailto:dwm@mcplex.net">dwm@mcplex.net</a></p>
 </section>
-</main>
-<div class="foot" role="doc-pagefooter" aria-label="Manual footer
-  line"><span class="foot-left"></span><span class="foot-date">January 2,
-  2024</span> <span class="foot-os">mcplex.net</span></div>
+</div>
+<table class="foot">
+  <tr>
+    <td class="foot-date">March 2, 2026</td>
+    <td class="foot-os">mcplex.net</td>
+  </tr>
+</table>
 </body>
 </html>

@@ -51,6 +51,7 @@ extern "C" {
 #include "DwmMclogMulticastSender.hh"
 #include "DwmMclogMulticastReceiver.hh"
 #include "DwmMclogFileLogger.hh"
+#include "DwmMclogSettings.hh"
 
 static Dwm::Mclog::Config             g_config;
 static Dwm::Mclog::LoopbackReceiver   g_loopbackReceiver;
@@ -66,7 +67,7 @@ static bool Restart(const std::string & configPath)
   bool  rc = false;
   g_loopbackReceiver.Stop();
   
-  if (g_config.Parse("/usr/local/etc/mclogd.cfg")) {
+  if (g_config.Parse(configPath)) {
     if (g_fileLogger.Restart(g_config.files)) {
       if (g_mcastSender.Restart(g_config)) {
         if (g_mcastReceiver.Restart(g_config)) {
@@ -163,7 +164,7 @@ int main(int argc, char *argv[])
 {
   bool         daemonize = true, debug = false;
   std::string  pidFile("/var/run/mclogd.pid");
-  std::string  configPath("/usr/local/etc/mclogd.cfg");
+  std::string  configPath(MCLOGD_DEFAULT_CONFIG_PATH);
   
   int  optChar;
   while ((optChar = getopt(argc, argv, "c:dDp:")) != -1) {
