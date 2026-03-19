@@ -42,6 +42,8 @@ extern "C" {
   #include <unistd.h>
 }
 
+#include <cstdlib>
+
 #include "DwmDaemonUtils.hh"
 #include "DwmSignal.hh"
 #include "DwmMclogLogger.hh"
@@ -206,6 +208,7 @@ int main(int argc, char *argv[])
   
   if (g_config.Parse(configPath)) {
     SavePID(pidFile);
+    atexit(RemovePID);
     g_mcastSender.Open(g_config);
     g_fileLogger.Start(g_config.files);
     g_loopbackReceiver.AddSink(&g_mcastSender);
@@ -225,7 +228,6 @@ int main(int argc, char *argv[])
         g_mcastSender.Close();
         g_fileLogger.Stop();
         g_mcastReceiver.Close();
-        RemovePID();
         exit(0);
       }
     }
