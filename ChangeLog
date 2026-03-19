@@ -1,5 +1,7 @@
 2026-03-19  dwm  <dwm@ria.mcplex.net>
 
+	* etc/freebsd/rc.d/mclogd: Minor cleanup: I don't need precmd.
+
 	* etc/freebsd/+POST_INSTALL.in: Don't try to restart mclogd, just
 	emit a reminder.
 
