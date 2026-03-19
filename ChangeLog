@@ -1,3 +1,7 @@
+2026-03-19  dwm  <dwm@ria.mcplex.net>
+
+	* apps/mclogd/mclogd.cc: Use atexit() to remove our PID file.
+
 2026-03-17  dwm  <dwm@ria.mcplex.net>
 
 	* tagged as mclog-0.0.11
