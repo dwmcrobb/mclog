@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="stylesheet" href="./mclog.css" type="text/css" media="all"/>
+  <title>mclogd(1)</title>
+</head>
+<body>
+<div class="head" role="doc-pageheader" aria-label="Manual header
+  line"><span class="head-ltitle">mclogd(1)</span>
+  <span class="head-vol">FreeBSD General Commands Manual</span>
+  <span class="head-rtitle">mclogd(1)</span></div>
+<main class="manual-text">
+<section class="Sh">
+<h2 class="Sh" id="NAME"><a class="permalink" href="#NAME">NAME</a></h2>
+<p class="Pp"><code class="Nm">mclogd</code> &#x2014;
+    <span class="Nd" role="doc-subtitle">logging daemon</span></p>
+</section>
+<section class="Sh">
+<h2 class="Sh" id="SYNOPSIS"><a class="permalink" href="#SYNOPSIS">SYNOPSIS</a></h2>
+<table class="Nm">
+  <tr>
+    <td><code class="Nm">mclogd</code></td>
+    <td>[<code class="Fl">-c</code> <var class="Ar">configFile</var>]
+      [<code class="Fl">-d</code>] [<code class="Fl">-p</code>
+      <var class="Ar">pidFile</var>]</td>
+  </tr>
+</table>
+</section>
+<section class="Sh">
+<h2 class="Sh" id="DESCRIPTION"><a class="permalink" href="#DESCRIPTION">DESCRIPTION</a></h2>
+<p class="Pp"><code class="Nm">mclogd</code> saves log messages received via the
+    loopback interface and/or encrypted multicast to files, and sends log
+    messages via encrypted multicast.</p>
+<p class="Pp">The following command line options are available:</p>
+<dl class="Bl-tag">
+  <dt id="c"><a class="permalink" href="#c"><code class="Fl">-c</code></a>
+    <var class="Ar">configFile</var></dt>
+  <dd>Specify the <a class="Xr" aria-label="mclogd, section 8">mclogd(8)</a>
+      configuration file. If not specified, /usr/local/etc/mclogd.cfg is
+    used.</dd>
+  <dt id="d"><a class="permalink" href="#d"><code class="Fl">-d</code></a></dt>
+  <dd>Do not daemonize. Useful for debugging.</dd>
+  <dt id="p"><a class="permalink" href="#p"><code class="Fl">-p</code></a>
+    <var class="Ar">pidFile</var></dt>
+  <dd>Specify the path to the file where <a class="Xr" aria-label="mclogd,
+      section 8">mclogd(8)</a> should store its process ID.</dd>
+</dl>
+</section>
+<section class="Sh">
+<h2 class="Sh" id="STARTING_AT_BOOT"><a class="permalink" href="#STARTING_AT_BOOT">STARTING
+  AT BOOT</a></h2>
+<section class="Ss">
+<h3 class="Ss" id="FreeBSD"><a class="permalink" href="#FreeBSD">FreeBSD</a></h3>
+<p class="Pp">/usr/local/etc/rc.d/mclogd is installed as part of the FreeBSD
+    package. It is a standard FreeBSD start/stop script. To enable
+    <a class="Xr" aria-label="mclogd, section 8">mclogd(8)</a> at boot, set
+    <i>mclogd_enable</i> to &quot;YES&quot; in <i>/etc/rc.conf</i>:</p>
+<p class="Pp"></p>
+<div class="Bd Bd-indent">mclogd_enable=&quot;YES&quot;</div>
+</section>
+<section class="Ss">
+<h3 class="Ss" id="Linux_(with_systemd)"><a class="permalink" href="#Linux_(with_systemd)">Linux
+  (with systemd)</a></h3>
+<p class="Pp">/etc/systemd/system/mclogd.service is installed as part of the
+    Linux package. It is a standard systemd service configuration file. To
+    enable <a class="Xr" aria-label="mclogd, section 8">mclogd(8)</a> at
+  boot:</p>
+<p class="Pp"></p>
+<div class="Bd Bd-indent">systemctl enable mclogd</div>
+<p class="Pp">To start it once enabled without rebooting:</p>
+<p class="Pp"></p>
+<div class="Bd Bd-indent">systemctl start mclogd</div>
+</section>
+<section class="Ss">
+<h3 class="Ss" id="macOS"><a class="permalink" href="#macOS">macOS</a></h3>
+<p class="Pp">/Library/LaunchDaemons/net.mcplex.mclogd.plist is installed as
+    part of the macOS package. It should be started during installation, but if
+    not, it can be started with:</p>
+<p class="Pp"></p>
+<div class="Bd Bd-indent">launchctl load -w
+  /Library/LaunchDaemons/net.mcplex.mclogd.plist</div>
+</section>
+</section>
+<section class="Sh">
+<h2 class="Sh" id="FILES"><a class="permalink" href="#FILES">FILES</a></h2>
+<section class="Ss">
+<h3 class="Ss" id="CONFIGURATION_FILE"><a class="permalink" href="#CONFIGURATION_FILE">CONFIGURATION
+  FILE</a></h3>
+<p class="Pp">The standard location of the configuration file is
+    <i>/usr/local/etc/mclogd.cfg</i></p>
+<p class="Pp">An example configuration is included in
+    <i>/usr/local/etc/mclogd.cfg.example</i></p>
+<p class="Pp"><code class="Nm">mclogd</code> will reload the configuration on
+    the reception of SIGHUP.</p>
+</section>
+<section class="Ss">
+<h3 class="Ss" id="CREDENCE_KEY_FILES"><a class="permalink" href="#CREDENCE_KEY_FILES">CREDENCE
+  KEY FILES</a></h3>
+<p class="Pp"><code class="Nm">mclogd</code> uses libCredence for encryption and
+    authentication. Hence it requires credence key files. The location of these
+    key files is specified as the <i>keyDirectory</i> in the
+    <code class="Nm">mclogd</code> configuration file. See the
+    <a class="Xr" aria-label="credence, section 1">credence(1)</a> manpage for
+    information on creating the public and private key files.</p>
+<dl class="Bl-tag">
+  <dt><span class="Pa">&lt;keyDirectory&gt;/id_ed25519</span></dt>
+  <dd>The <a class="Xr" aria-label="mclogd, section 8">mclogd(8)</a> private key
+      file, created with <a class="Xr" aria-label="credence, section
+      1">credence(1)</a>. This file should be owned by root and have permissions
+      0600. It must contain the private part of an Ed25519 RSA key pair.</dd>
+  <dt><span class="Pa">&lt;keyDirectory&gt;/id_ed25519.pub</span></dt>
+  <dd><a class="Xr" aria-label="mclogd, section 8's">mclogd(8's)</a> public key
+      file, created with <a class="Xr" aria-label="credence, section
+      1">credence(1)</a>. This file should be owned by root and have permissions
+      0600. It must contain the public part of an Ed25519 key pair.</dd>
+  <dt><span class="Pa">&lt;keyDirectory&gt;/known_keys</span></dt>
+  <dd>This file must contain the public keys of users allowed to query
+      <a class="Xr" aria-label="mclogd, section 8">mclogd(8)</a> with
+      <a class="Xr" aria-label="mclog, section 1">mclog(1)</a> (one per
+    line).</dd>
+</dl>
+</section>
+</section>
+<section class="Sh">
+<h2 class="Sh" id="SEE_ALSO"><a class="permalink" href="#SEE_ALSO">SEE
+  ALSO</a></h2>
+<p class="Pp"><a class="Xr" aria-label="mclog, section 1">mclog(1)</a>,
+    <a class="Xr" aria-label="credence, section 1">credence(1)</a></p>
+</section>
+<section class="Sh">
+<h2 class="Sh" id="COPYRIGHT"><a class="permalink" href="#COPYRIGHT">COPYRIGHT</a></h2>
+<p class="Pp">Copyright (c) 2026 Daniel W. McRobb
+    <a class="Mt" href="mailto:dwm@mcplex.net">dwm@mcplex.net</a></p>
+</section>
+</main>
+<div class="foot" role="doc-pagefooter" aria-label="Manual footer
+  line"><span class="foot-left"></span><span class="foot-date">March 2,
+  2026</span> <span class="foot-os">mcplex.net</span></div>
+</body>
+</html>

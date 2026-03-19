@@ -1,0 +1,70 @@
+.Dd March 2, 2026
+.Dt mclog 1
+.Os mcplex.net
+.Sh NAME
+.Nm mclog
+.Nd view log messages from multicast or files
+.Sh SYNOPSIS
+.Nm
+.Op Fl c Ar configFile
+.Op Fl F Ar filterExpression
+.Op Fl d
+.Op Ar files...
+.Sh DESCRIPTION
+.Nm
+may be used to view log messages multicasted from instances of
+.Xr mclogd 8 .  It may also be used to view binary log files that
+were written by
+.Xr mclogd 8 .
+.Pp
+The following command line options are available:
+.Pp
+.Bl -tag -width indent
+.It Fl c Ar configFile
+Specify the path to the
+.Xr mclogd 8
+configuration file.  The default is @prefix@/etc/mclogd.cfg
+.It Fl F Ar filterExpression
+Only display messages which match the given \fIfilterExpression\fR.
+.It Fl d
+Enable debugging messages on stderr.
+.It Ar files...
+If present,
+.Nm
+will read messages from the given files.  If not present,
+.Nm
+will read messages that were multicasted by
+.Xr mclogd 8 .
+.El
+.Sh FILES
+.Nm
+uses libCredence for encryption and authentication.  Hence it
+requires credence key files.
+.Bl -tag -width indent
+.It Pa ~/.credence/id_ed25519
+The user's credence private key file, created with
+.Xr credence 1 .  This file should be owned by the user and have
+permissions 0600.  It must contain the private part of an Ed25519
+RSA key pair.
+.It Pa ~/.credence/id_ed25519.pub
+The user's credence public key file, created with
+.Xr credence 1 .  This file should be owned by the user and have
+permissions 0600.  It must contain the public part of an Ed25519 key pair.
+.It Pa ~/.credence/known_keys
+The user's credence known services file.  This file must contain the public
+keys of
+.Xr mclogd 8
+from the
+.Xr mclogd 8
+hosts being queried (one per line).  It is used to authenticate instances
+of
+.Xr mclogd 8 .
+.El
+.Sh SEE ALSO
+.Xr mclogd 8 ,
+.Xr credence 1
+.Sh COPYRIGHT
+Copyright (c) 2024 Daniel W. McRobb
+.Mt dwm@mcplex.net
+.Pp
+

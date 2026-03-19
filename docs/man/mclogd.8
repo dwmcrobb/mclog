@@ -1,0 +1,103 @@
+.Dd March 2, 2026
+.Dt mclogd 1
+.Os mcplex.net
+.Sh NAME
+.Nm mclogd
+.Nd logging daemon
+.Sh SYNOPSIS
+.Nm
+.Op Fl c Ar configFile
+.Op Fl d
+.Op Fl p Ar pidFile
+.Sh DESCRIPTION
+.Nm
+saves log messages received via the loopback interface and/or
+encrypted multicast to files, and sends log messages via
+encrypted multicast.
+.Pp
+The following command line options are available:
+.Pp
+.Bl -tag -width indent
+.It Fl c Ar configFile
+Specify the
+.Xr mclogd 8
+configuration file.  If not specified, /usr/local/etc/mclogd.cfg is
+used.
+.It Fl d
+Do not daemonize.  Useful for debugging.
+.It Fl p Ar pidFile
+Specify the path to the file where
+.Xr mclogd 8 should store its process ID.
+.El
+.Sh STARTING AT BOOT
+.Ss FreeBSD
+/usr/local/etc/rc.d/mclogd is installed as part of the FreeBSD
+package.  It is a standard FreeBSD start/stop script.  To enable
+.Xr mclogd 8
+at boot, set \fImclogd_enable\fR to "YES" in \fI/etc/rc.conf\fR:
+.Pp
+.D1 mclogd_enable="YES"
+.Ss Linux (with systemd)
+/etc/systemd/system/mclogd.service is installed as part of the
+Linux package.  It is a standard systemd service configuration
+file.  To enable
+.Xr mclogd 8
+at boot:
+.Pp
+.D1 systemctl enable mclogd
+.Pp
+To start it once enabled without rebooting:
+.Pp
+.D1 systemctl start mclogd
+.Ss macOS
+/Library/LaunchDaemons/net.mcplex.mclogd.plist is installed as
+part of the macOS package.  It should be started during installation,
+but if not, it can be started with:
+.Pp
+.D1 launchctl load -w /Library/LaunchDaemons/net.mcplex.mclogd.plist
+.Sh FILES
+.Ss CONFIGURATION FILE
+The standard location of the configuration file is
+\fI/usr/local/etc/mclogd.cfg\fR
+.Pp
+An example configuration is included in
+\fI/usr/local/etc/mclogd.cfg.example\fR
+.Pp
+.Nm
+will reload the configuration on the reception of SIGHUP.
+.Ss CREDENCE KEY FILES
+.Nm
+uses libCredence for encryption and authentication.  Hence it
+requires credence key files.  The location of these key files is specified
+as the \fIkeyDirectory\fR in the
+.Nm
+configuration file.  See the
+.Xr credence 1 manpage for information on creating the public and private
+key files.
+.Bl -tag -width indent
+.It Pa <keyDirectory>/id_ed25519
+The
+.Xr mclogd 8 private key file, created with
+.Xr credence 1 .  This file should be owned by root and have
+permissions 0600.  It must contain the private part of an Ed25519
+RSA key pair.
+.It Pa <keyDirectory>/id_ed25519.pub
+.Xr mclogd 8's public key file, created with
+.Xr credence 1 .  This file should be owned by root and have
+permissions 0600.  It must contain the public part of an Ed25519 key pair.
+.It Pa <keyDirectory>/known_keys
+This file must contain the public keys of users allowed to query
+.Xr mclogd 8
+with
+.Xr mclog 1
+(one per line).
+.El
+.Pp
+.Sh SEE ALSO
+.Xr mclog 1 ,
+.Xr credence 1
+.Sh COPYRIGHT
+Copyright (c) 2026 Daniel W. McRobb
+.Mt dwm@mcplex.net
+.Pp
+
