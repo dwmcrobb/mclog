@@ -109,6 +109,7 @@ AC_CONFIG_FILES([Makefile.vars packaging/debcontrol
 		 classes/include/DwmMclogSettings.hh
 		 classes/include/DwmMclogVersion.hh
 		 docs/man/mclog.1
+		 docs/man/mclogd.cfg.5
 		 etc/macos/net.mcplex.mclogd.plist])
 AC_CONFIG_FILES([etc/macos/scripts/postinstall],
 		[chmod a+x etc/macos/scripts/postinstall])

@@ -1,5 +1,7 @@
 2026-03-20  Daniel W. McRobb  <dwm@spark.mcplex.net>
 
+	* doc/man: Work on manpages.
+
 	* classes/include/DwmMclogConfig.hh: Set
 	LoopbackConfig::listenIpv4 to true by default.
 

@@ -5597,7 +5597,7 @@ fi
 
 
 
-ac_config_files="$ac_config_files Makefile.vars packaging/debcontrol packaging/fbsd_manifest packaging/mclog.pc classes/include/DwmMclogSettings.hh classes/include/DwmMclogVersion.hh docs/man/mclog.1 etc/macos/net.mcplex.mclogd.plist"
+ac_config_files="$ac_config_files Makefile.vars packaging/debcontrol packaging/fbsd_manifest packaging/mclog.pc classes/include/DwmMclogSettings.hh classes/include/DwmMclogVersion.hh docs/man/mclog.1 docs/man/mclogd.cfg.5 etc/macos/net.mcplex.mclogd.plist"
 
 ac_config_files="$ac_config_files etc/macos/scripts/postinstall"
 
@@ -6315,6 +6315,7 @@ do
     "classes/include/DwmMclogSettings.hh") CONFIG_FILES="$CONFIG_FILES classes/include/DwmMclogSettings.hh" ;;
     "classes/include/DwmMclogVersion.hh") CONFIG_FILES="$CONFIG_FILES classes/include/DwmMclogVersion.hh" ;;
     "docs/man/mclog.1") CONFIG_FILES="$CONFIG_FILES docs/man/mclog.1" ;;
+    "docs/man/mclogd.cfg.5") CONFIG_FILES="$CONFIG_FILES docs/man/mclogd.cfg.5" ;;
     "etc/macos/net.mcplex.mclogd.plist") CONFIG_FILES="$CONFIG_FILES etc/macos/net.mcplex.mclogd.plist" ;;
     "etc/macos/scripts/postinstall") CONFIG_FILES="$CONFIG_FILES etc/macos/scripts/postinstall" ;;
     "etc/macos/scripts/preinstall") CONFIG_FILES="$CONFIG_FILES etc/macos/scripts/preinstall" ;;

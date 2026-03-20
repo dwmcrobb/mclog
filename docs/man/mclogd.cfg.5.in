@@ -1,0 +1,176 @@
+.Dd Mar 7, 2026
+.Dt mclogd.cfg 5
+.Os
+.Sh NAME
+.Nm mclogd.cfg
+.Nd mclogd configuration file.
+.Sh SYNOPSIS
+.Nm
+.Sh DESCRIPTION
+.Nm
+is the configuration file for
+.Xr mclogd 8 .
+Its default location is \fI@prefix@/etc/mclogd.cfg\fR and an example can be
+found in \fI@prefix@/etc/mclogd.cfg.example\fR
+
+.Sh FILE FORMAT
+.Nm
+contains multiple stanzas.  Each stanza contains attributes (name:value pairs)
+or sub-stanzas.  Stanzas are opened with a name and \fB{\fR and closed with
+a \fB}\fR.  Attribute notation is \fIname: value;\fR
+.Pp
+Comments start with \fB#\fR and continue to the end of the line.  Empty
+lines are ignored.
+.Ss "service" \fRstanza
+The service stanza contains settings for authentication.
+.Bl -tag -width "   " indent
+.It \fB keyDirectory = \fIpath\fR;
+The credence key directory.
+.El
+.Pp
+An example service stanza is shown below.
+.Pp
+.Bd -literal
+    service {
+        keyDirectory = "/usr/local/etc/mclogd";
+    };
+.Ed
+.Ss loopback\fR stanza
+The loopback stanza is used to enable listening on the IPv4 loopback and/or
+IPV6 loopback, and on which UDP port to listen.
+.Bl -tag -width "   " indent
+.It \fB listenV4 = \fIboolean\fR;
+Should
+.Xr mclogd 8
+listen on the IPv4 loopback address?  The default is \fItrue\fR.
+.It \fB listenV6 = \fIboolean\fR;
+Should
+.Xr mclogd 8
+listen on the IPv6 loopback address?  The default is \fIfalse\fR.
+.It \fB port = \fIport\fR;
+The UDP port on which
+.Xr mclogd 8
+should listen for local messages (via the loopback address).  The default
+value is 3737.
+.El
+.Pp
+An example loopback stanza is below.
+.Pp
+.Bd -literal
+    loopback {
+       listenV4 = true;    # listen on 127.0.0.1?
+       listenV6 = false;   # listen on ::1?
+       port = 3737;        # port on which to listen (default 3737)
+    };
+.Ed
+.Ss filters stanza
+.Pp
+An example filters stanza is shown below.
+.Pp
+.Bd -literal
+    filters {
+        apps = "ident = /mc(block|curtain|rover|tally)|qmcrover/";
+        daemons = "ident = /mc(block|curtain|log|rover|tally|weather)d/";
+        myhosts = "host = /.+\.(mcplex\.net|rfdm\.com)/";
+        myapps = "($apps) && ($myhosts)";
+        mydaemons = "($daemons) && ($myhosts)";
+    };
+.Ed
+.Ss multicast stanza
+.Pp
+For IPv4 multicast, two settings are needed: \fIintfAddr\fR and
+\fIgroupAddr\fR.
+.Pp
+.Bl -tag -width "   " indent
+.It \fB intfAddr = \(dq\fI<IPv4 address>\fR\(dq;
+The IPv4 address of the interface on which
+.Xr mclogd 8
+should send and receive IPv4 multicast messages.
+.It \fB groupAddr = \(dq\fI<IPv4 multicast address>\fR\(dq;
+The IPv4 multicast group address to which we will send log messages we
+received via the loopback and from which we will receive log messages
+from other instances of
+.Xr mclogd 8 via multicast.
+The default value is 239.108.111.103
+.El
+.Pp
+For IPv6 multicast, three settings are needed: \fIintfAddr6\fR,
+\fIgroupAddr6\fR and \fIintfName\fR.
+.Pp
+.Bl -tag -width "   " indent
+.It \fB intfAddr6 = \(dq\fI<IPv6 address>\fR\(dq;
+The IPv6 address of the interface on which
+.Xr mclogd 8
+should send and receive IPv6 multicast messages.
+.It \fB groupAddr6 = \(dq\fI<IPv6 multicast address>\fR\(dq;
+The IPv4 multicast group address to which we will send log messages we
+received via the loopback and from which we will receive log messages
+from other instances of
+.Xr mclogd 8 via multicast.
+.It \fB intfName = \(dq\fI<interface name>\fR\(dq;
+The name of the interface on which we will send and receive IPv6
+multicast messages.  This interface must have the address specified
+as \fIintfAddr6\fR.
+.El
+.Pp
+Both IPv4 and IPv6 multicast utilize the same UDP port number and
+output filter expression.
+.Pp
+.Bl -tag -width "   " indent
+.It \fB port = \fI<port number>\fR;
+The port number to use for sending and receiving multicast messages.
+the default is 3737.
+.It \fB outFilter = \(dq\fI<filter expression>\fR\(dq;
+A filter expression to select the log messages which
+.Xr mclogd 8
+will send via multicast.  The default value is empty, which will cause
+.Xr mclogd 8
+to send all local messages (received on the loopback) to the IPv4 and
+IPv6 multicast groups.
+.El
+.Pp
+An example multicast stanza is shown below.
+.Bd -literal
+   multicast {
+      #------------------------------------------------------------------
+      #  For IPv4, we need the interface address and the multicast group
+      #  address.
+      #------------------------------------------------------------------
+      intfAddr = "192.168.168.42";
+      groupAddr = "239.108.111.103";
+      #------------------------------------------------------------------
+      #  For IPv6, we need the interface address, the multicast group
+      #  address and the interface name.
+      #------------------------------------------------------------------
+      intfAddr6 = "fd60:3019:f4a:6aaf::39";
+      groupAddr6 = "ff02::006d:636c:6f67";
+      intfName = "en0";
+      #------------------------------------------------------------------
+      #  We use the same destination port for IPv4 and IPv6.
+      #------------------------------------------------------------------
+      port = 3737;
+
+      outFilter = "$mydaemons";
+   };
+.Ed
+.Ss files stanza
+.Pp
+An example files stanza is shown below.
+.Pp
+.Bd -literal
+   files {
+      logDirectory = "/usr/local/var/logs";
+      logs {
+          { filter="$mydaemons"; path="%H/%I"; user="dwm"; group="staff";
+            perms=0644; period=1d; size=500k; keep=7; compress="bzip2"; },
+          { filter="$myapps"; path="%H/myapps"; perms=0600; }
+      };
+   };
+.Ed
+.Sh SEE ALSO
+.Xr mclogd 8 ,
+.Xr mclog 1 ,
+.Xr credence 1
+.Sh COPYRIGHT
+Copyright (c) 2025, 2026 Daniel W. McRobb
+.Mt dwm@mcplex.net

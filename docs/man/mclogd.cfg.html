@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="stylesheet" href="./mclog.css" type="text/css" media="all"/>
+  <title>mclogd.cfg(5)</title>
+</head>
+<body>
+<table class="head">
+  <tr>
+    <td class="head-ltitle">mclogd.cfg(5)</td>
+    <td class="head-vol">File Formats Manual</td>
+    <td class="head-rtitle">mclogd.cfg(5)</td>
+  </tr>
+</table>
+<div class="manual-text">
+<section class="Sh">
+<h1 class="Sh" id="NAME"><a class="permalink" href="#NAME">NAME</a></h1>
+<p class="Pp"><code class="Nm">mclogd.cfg</code> &#x2014;
+    <span class="Nd">mclogd configuration file.</span></p>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="SYNOPSIS"><a class="permalink" href="#SYNOPSIS">SYNOPSIS</a></h1>
+<table class="Nm">
+  <tr>
+    <td><code class="Nm">mclogd.cfg</code></td>
+    <td></td>
+  </tr>
+</table>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="DESCRIPTION"><a class="permalink" href="#DESCRIPTION">DESCRIPTION</a></h1>
+<p class="Pp"><code class="Nm">mclogd.cfg</code> is the configuration file for
+    <a class="Xr">mclogd(8)</a>. Its default location is
+    <i>/usr/local/etc/mclogd.cfg</i> and an example can be found in
+    <i>/usr/local/etc/mclogd.cfg.example</i></p>
+<p class="Pp"></p>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="FILE_FORMAT"><a class="permalink" href="#FILE_FORMAT">FILE
+  FORMAT</a></h1>
+<p class="Pp"><code class="Nm">mclogd.cfg</code> contains multiple stanzas. Each
+    stanza contains attributes (name:value pairs) or sub-stanzas. Stanzas are
+    opened with a name and <b>{</b> and closed with a <b>}</b>. Attribute
+    notation is <i>name: value;</i></p>
+<p class="Pp">Comments start with <b>#</b> and continue to the end of the line.
+    Empty lines are ignored.</p>
+<section class="Ss">
+<h2 class="Ss" id="service_"><a class="permalink" href="#service_">service
+  stanza</a></h2>
+<p class="Pp">The service stanza contains settings for authentication.</p>
+<dl class="Bl-tag">
+  <dt><b> keyDirectory = </b><i>path</i>;</dt>
+  <dd>The credence key directory.</dd>
+</dl>
+<p class="Pp">An example service stanza is shown below.</p>
+<div class="Bd Pp Li">
+<pre>    service {
+        keyDirectory = &quot;/usr/local/etc/mclogd&quot;;
+    };</pre>
+</div>
+</section>
+<section class="Ss">
+<h2 class="Ss" id="loopback"><a class="permalink" href="#loopback">loopback
+  stanza</a></h2>
+<p class="Pp">The loopback stanza is used to enable listening on the IPv4
+    loopback and/or IPV6 loopback, and on which UDP port to listen.</p>
+<dl class="Bl-tag">
+  <dt><b> listenV4 = </b><i>boolean</i>;</dt>
+  <dd>Should <a class="Xr">mclogd(8)</a> listen on the IPv4 loopback
+    address?</dd>
+  <dt><b> listenV6 = </b><i>boolean</i>;</dt>
+  <dd>Should <a class="Xr">mclogd(8)</a> listen on the IPv6 loopback
+    address?</dd>
+  <dt><b> port = </b><i>port</i>;</dt>
+  <dd>The UDP port on which <a class="Xr">mclogd(8)</a> should listen for local
+      messages (via the loopback address0.</dd>
+</dl>
+<p class="Pp">An example loopback stanza is below.</p>
+<div class="Bd Pp Li">
+<pre>    loopback {
+       listenV4 = true;    # listen on 127.0.0.1?
+       listenV6 = false;   # listen on ::1?
+       port = 3737;        # port on which to listen (default 3737)
+    };</pre>
+</div>
+</section>
+<section class="Ss">
+<h2 class="Ss" id="filters_stanza"><a class="permalink" href="#filters_stanza">filters
+  stanza</a></h2>
+<p class="Pp">An example filters stanza is shown below.</p>
+<div class="Bd Pp Li">
+<pre>    filters {
+        apps = &quot;ident = /mc(block|curtain|rover|tally)|qmcrover/&quot;;
+        daemons = &quot;ident = /mc(block|curtain|log|rover|tally|weather)d/&quot;;
+        myhosts = &quot;host = /.+.(mcplex.net|rfdm.com)/&quot;;
+        myapps = &quot;($apps) &amp;&amp; ($myhosts)&quot;;
+        mydaemons = &quot;($daemons) &amp;&amp; ($myhosts)&quot;;
+    };</pre>
+</div>
+</section>
+<section class="Ss">
+<h2 class="Ss" id="multicast_stanza"><a class="permalink" href="#multicast_stanza">multicast
+  stanza</a></h2>
+<p class="Pp">An example multicast stanza is shown below.</p>
+<div class="Bd Pp Li">
+<pre>   multicast {
+      #------------------------------------------------------------------
+      #  For IPv4, we need the interface address and the multicast group
+      #  address.
+      #------------------------------------------------------------------
+      intfAddr = &quot;192.168.168.42&quot;;
+      groupAddr = &quot;239.108.111.103&quot;;
+      #------------------------------------------------------------------
+      #  For IPv6, we need the interface address, the multicast group
+      #  address and the interface name.
+      #------------------------------------------------------------------
+      intfAddr6 = &quot;fd60:3019:f4a:6aaf::39&quot;;
+      groupAddr6 = &quot;ff02::006d:636c:6f67&quot;;
+      intfName = &quot;en0&quot;;
+      #------------------------------------------------------------------
+      #  We use the same destination port for IPv4 and IPv6.
+      #------------------------------------------------------------------
+      port = 3737;
+
+      outFilter = &quot;$mydaemons&quot;;
+   };</pre>
+</div>
+</section>
+<section class="Ss">
+<h2 class="Ss" id="files_stanza"><a class="permalink" href="#files_stanza">files
+  stanza</a></h2>
+<p class="Pp">An example files stanza is shown below.</p>
+<div class="Bd Pp Li">
+<pre>   files {
+      logDirectory = &quot;/usr/local/var/logs&quot;;
+      logs {
+          { filter=&quot;$mydaemons&quot;; path=&quot;%H/%I&quot;; user=&quot;dwm&quot;; group=&quot;staff&quot;;
+            perms=0644; period=1d; size=500k; keep=7; compress=&quot;bzip2&quot;; },
+          { filter=&quot;$myapps&quot;; path=&quot;%H/myapps&quot;; perms=0600; }
+      };
+   };</pre>
+</div>
+</section>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="SEE_ALSO"><a class="permalink" href="#SEE_ALSO">SEE
+  ALSO</a></h1>
+<p class="Pp"><a class="Xr">mclogd(8)</a>, <a class="Xr">mclog(1)</a>,
+    <a class="Xr">credence(1)</a></p>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="COPYRIGHT"><a class="permalink" href="#COPYRIGHT">COPYRIGHT</a></h1>
+<p class="Pp">Copyright (c) 2025, 2026 Daniel W. McRobb
+    <a class="Mt" href="mailto:dwm@mcplex.net">dwm@mcplex.net</a></p>
+</section>
+</div>
+<table class="foot">
+  <tr>
+    <td class="foot-date">March 7, 2026</td>
+    <td class="foot-os">macOS 15.7</td>
+  </tr>
+</table>
+</body>
+</html>
