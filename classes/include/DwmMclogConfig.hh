@@ -83,7 +83,7 @@ namespace Dwm {
       LoopbackConfig & operator = (const LoopbackConfig &) = default;
       bool ListenIpv4() const  { return (listenIpv4 && (port != 0)); }
       bool ListenIpv6() const  { return (listenIpv6 && (port != 0)); }
-      void Init() { listenIpv4 = false; listenIpv6 = false; port = 3737; }
+      void Init() { listenIpv4 = true; listenIpv6 = false; port = 3737; }
 
       bool         listenIpv4;  // listen on 127.0.0.1 ?
       bool         listenIpv6;  // listen on ::1 ?

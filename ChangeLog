@@ -1,3 +1,8 @@
+2026-03-20  Daniel W. McRobb  <dwm@spark.mcplex.net>
+
+	* classes/include/DwmMclogConfig.hh: Set
+	LoopbackConfig::listenIpv4 to true by default.
+
 2026-03-19  Daniel W. McRobb  <dwm@spark.mcplex.net>
 
 	* apps/mclogd/mclogd.cc: Use MCLOGD_DEFAULT_CONFIG_PATH.
