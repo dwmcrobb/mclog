@@ -106,7 +106,7 @@ should send and receive IPv6 multicast messages.
 The IPv4 multicast group address to which we will send log messages we
 received via the loopback and from which we will receive log messages
 from other instances of
-.Xr mclogd 8 via multicast.
+.Xr mclogd 8 via multicast.  The default is ff02::006d:636c:6f67
 .It \fB intfName = \(dq\fI<interface name>\fR\(dq;
 The name of the interface on which we will send and receive IPv6
 multicast messages.  This interface must have the address specified
