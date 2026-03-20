@@ -1,5 +1,7 @@
 2026-03-20  Daniel W. McRobb  <dwm@spark.mcplex.net>
 
+	* etc/mclogd.cfg.example: Change multicast port to 3737.
+
 	* doc/man: Work on manpages.
 
 	* classes/include/DwmMclogConfig.hh: Set
