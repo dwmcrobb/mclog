@@ -15,9 +15,10 @@ found in \fI@prefix@/etc/mclogd.cfg.example\fR
 
 .Sh FILE FORMAT
 .Nm
-contains multiple stanzas.  Each stanza contains attributes (name:value pairs)
-or sub-stanzas.  Stanzas are opened with a name and \fB{\fR and closed with
-a \fB}\fR.  Attribute notation is \fIname: value;\fR
+contains multiple stanzas.  Stanzas are opened with a name and \fB{\fR and
+closed with \fB};\fR.  There are five valid top-level stanza names:
+\fIservice\fR, \fIloopback\fR, \fIfilters\fR, \fImulticast\fR and
+\fIfiles\fR.
 .Pp
 Comments start with \fB#\fR and continue to the end of the line.  Empty
 lines are ignored.
@@ -65,7 +66,22 @@ An example loopback stanza is below.
 .Ed
 .Ss filters stanza
 .Pp
-An example filters stanza is shown below.
+The filters stanza may be used to define named filter expressions or
+filter expression fragments which can later be referenced by name
+(with a preceding dollar sign $).  This makes the construction of longer
+filter expressions a bit more convenient.  Note that a name must be fully
+defined set before referenced; referencing a name before its value is
+set is undefined.
+.Pp
+.Bl -tag -width "   " indent
+.It \fB <name> = \(dq\fI<filter expression>\fR\(dq;
+Creates a filter expression named \fB<name>\fR with value
+\fI<filter expression>\fR.
+.El
+.Pp
+An example filters stanza is shown below.  Note how we refer to previously
+defined names \fIapps\fR and \fImyhosts\fR when defining \fImyapps\fR
+and \fIdaemons\fR and \fImyhosts\fR when defining \fImydaemons\fR.
 .Pp
 .Bd -literal
     filters {
@@ -76,7 +92,15 @@ An example filters stanza is shown below.
         mydaemons = "($daemons) && ($myhosts)";
     };
 .Ed
+See the
+.Sx FILTER EXPRESSIONS
+section for filter grammar.
 .Ss multicast stanza
+.Pp
+The multicast stanza is used to set the interface that
+.Xr mclogd 8
+will use for multicast as well as the multicast group and UDP port that
+will be used.
 .Pp
 For IPv4 multicast, two settings are needed: \fIintfAddr\fR and
 \fIgroupAddr\fR.
@@ -126,7 +150,9 @@ A filter expression to select the log messages which
 will send via multicast.  The default value is empty, which will cause
 .Xr mclogd 8
 to send all local messages (received on the loopback) to the IPv4 and
-IPv6 multicast groups.
+IPv6 multicast groups.  See the
+.Sx FILTER EXPRESSIONS
+section for filter grammar.
 .El
 .Pp
 An example multicast stanza is shown below.
@@ -154,6 +180,93 @@ An example multicast stanza is shown below.
    };
 .Ed
 .Ss files stanza
+The files stanza has two components: \fIlogDirectory\fR and \fIlogs\fR.
+.Pp
+.Bl -tag -width "   " indent
+.It \fB logDirectory = \(dq\fI<path to directory>\fR\(dq;
+.El
+.Pp
+Each log entry in \fIlogs\fR has the following settings.
+.Pp
+.Bl -tag -width "   " indent
+.It \fB filter = \(dq\fI<filter expression>\fR\(dq;
+Only messages which match the given \fI<filter expression>\fR will be saved
+to the log.
+.It \fB path = \(dq\fI<path>\fR\(dq;
+The path to the log.  If this is a relative path, it will be rooted at
+\fIlogDirectory\fR.  In addition, three substitutions based on message
+content may be contained in \fI<path>\fR:
+.Pp
+.Bl -compact -tag -width "   " indent
+.It \fB%H\fR
+Replaced by the hostname of the message origin.
+.It \fB%I\fR
+Replaced by the message's identity (program name).
+.It \fB%F\fR
+Replaced by the message's facility ('user', 'daemon', 'local0', et. al.).
+.El
+.Pp
+If no 'path' is specified, \(dq%H/%I\(dq will be used.
+.It \fB period = \fI<period>\fR;
+The period before the log will be rolled to a log archive.  Valid values
+for \fI<period>\fR:
+.Pp
+.Bl -compact -tag -width "   " indent
+.It \fB5m\fR
+5 minutes
+.It \fB15m\fR
+15 minutes
+.It \fB30m\fR
+30 minutes
+.It \fB1h\fR
+1 hour
+.It \fB2h\fR
+2 hours
+.It \fB4h\fR
+4 hours
+.It \fB6h\fR
+6 hours
+.It \fB8h\fR
+8 hours
+.It \fB12h\fR
+12 hours
+.It \fB1d\fR
+1 day
+.It \fB7d\fR
+7 days
+.El
+.Pp
+The default period is \fI1d\fR.
+.Pp
+Note that
+.Xr mclogd 8
+will roll over a log when it exceeds the \fIsize\fR or the \fIperiod\fR
+has transpired, whichever comes first.
+.It \fB size = \fI<size>\fR;
+The allowed size of the log (in bytes) before it will rolled over to a
+log archive.  Note that
+.Xr mclogd 8
+will roll over a log when it exceeds the \fIsize\fR or the \fIperiod\fR
+has transpired, whichever comes first.
+.It \fB keep = \fI<keep>\fR;
+The number of log archives to keep.
+.It \fB compress = \fI<compression>\fR;
+The type of compression to use for log archives, either \(dqbzip2\(dq
+or \(dqgzip\(dq.
+.It \fB perms = \fI<permissions>\fR;
+Sets the permissions of the log file, where \fI<permissions>\fR is a
+standard POSIX.1 permissions value in octal format (see
+.Xr chmod 1 ).
+.It \fB user = \fI<user name>\fR;
+Sets the owner of the log file.  Note that
+.Xr mclogd 8
+must be run as this user or root in order for this to have effect.
+.It \fB group = \fI<group name>\fR;
+Sets the group of the log file.  Note that
+.Xr mclogd 8
+must be run as a user who is a member of this group or root in order
+for this to have effect.
+.El
 .Pp
 An example files stanza is shown below.
 .Pp
@@ -167,6 +280,58 @@ An example files stanza is shown below.
       };
    };
 .Ed
+.Sh FILTER EXPRESSIONS
+Below is the pseudo-EBNF for the filter expression grammar.
+.Pp
+.Bd -literal
+    expression: "(" expression ")"
+      | "!" expression
+      | expression "||" expression
+      | expression "&&" expression
+      | "facility" numerical_op facility_value
+      | "severity" numerical_op severity_value
+      | "host" equality_op quoted_string
+      | "host" equality_op regular_expression
+      | "ident" equality_op quoted_string
+      | "ident" equality_op regular_expression
+      | "pid" numerical_op unsigned_int
+      | "msg" equality_op quoted_string
+      | "msg" equality_op regular_expression;
+
+    numerical_op: "<" | "<=" | ">" | ">=" | equality_op;
+    equality_op: "=" | "!=";
+    quoted_string: "'" [^']* "'";
+    regular_expression: "/" [^/]* "/";
+    unsigned_int: [0-9]{1,10};
+
+    facility_value: kernel | user | mail | daemon | auth | syslog
+      | lpr | news | uucp | cron | authpriv | ftp | local0 | local1
+      | local2 | local3 | local4 | local5 | local6 | local7;
+
+    severity_value: debug | info | notice | warning | err | crit
+      | alert | emerg;
+.Ed
+.Sh FILTER EXPRESSION EXAMPLES
+Select messages with a severity greater than debug from host foo.mcplex.net:
+.Bd -literal
+    (severity > debug) && (host = 'foo.mcplex.net')
+.Ed
+.Pp
+Select messages with identifier \fImcroverd\fR or \fImctallyd\fR from hosts
+outside of the mcplex.net domain:
+.Bd -literal
+    (ident = /(mcroverd|mctallyd)/) && (host != /.*\\.mcplex\\.net/)
+.Ed
+.Sh FILES
+.Ss CONFIGURATION FILE
+The standard location of the
+.Xr mclogd 8
+configuration file is \fI@prefix@/etc/mclogd.cfg\fR
+.Pp
+An example
+.Xr mclogd 8
+configuration is included in \fI@prefix@/etc/mclogd.cfg.example\fR
+.Pp
 .Sh SEE ALSO
 .Xr mclogd 8 ,
 .Xr mclog 1 ,

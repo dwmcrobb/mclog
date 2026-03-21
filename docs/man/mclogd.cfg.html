@@ -40,10 +40,10 @@
 <section class="Sh">
 <h1 class="Sh" id="FILE_FORMAT"><a class="permalink" href="#FILE_FORMAT">FILE
   FORMAT</a></h1>
-<p class="Pp"><code class="Nm">mclogd.cfg</code> contains multiple stanzas. Each
-    stanza contains attributes (name:value pairs) or sub-stanzas. Stanzas are
-    opened with a name and <b>{</b> and closed with a <b>}</b>. Attribute
-    notation is <i>name: value;</i></p>
+<p class="Pp"><code class="Nm">mclogd.cfg</code> contains multiple stanzas.
+    Stanzas are opened with a name and <b>{</b> and closed with <b>};</b>. There
+    are five valid top-level stanza names: <i>service</i>, <i>loopback</i>,
+    <i>filters</i>, <i>multicast</i> and <i>files</i>.</p>
 <p class="Pp">Comments start with <b>#</b> and continue to the end of the line.
     Empty lines are ignored.</p>
 <section class="Ss">
@@ -68,14 +68,14 @@
     loopback and/or IPV6 loopback, and on which UDP port to listen.</p>
 <dl class="Bl-tag">
   <dt><b> listenV4 = </b><i>boolean</i>;</dt>
-  <dd>Should <a class="Xr">mclogd(8)</a> listen on the IPv4 loopback
-    address?</dd>
+  <dd>Should <a class="Xr">mclogd(8)</a> listen on the IPv4 loopback address?
+      The default is <i>true</i>.</dd>
   <dt><b> listenV6 = </b><i>boolean</i>;</dt>
-  <dd>Should <a class="Xr">mclogd(8)</a> listen on the IPv6 loopback
-    address?</dd>
+  <dd>Should <a class="Xr">mclogd(8)</a> listen on the IPv6 loopback address?
+      The default is <i>false</i>.</dd>
   <dt><b> port = </b><i>port</i>;</dt>
   <dd>The UDP port on which <a class="Xr">mclogd(8)</a> should listen for local
-      messages (via the loopback address0.</dd>
+      messages (via the loopback address). The default value is 3737.</dd>
 </dl>
 <p class="Pp">An example loopback stanza is below.</p>
 <div class="Bd Pp Li">
@@ -89,7 +89,21 @@
 <section class="Ss">
 <h2 class="Ss" id="filters_stanza"><a class="permalink" href="#filters_stanza">filters
   stanza</a></h2>
-<p class="Pp">An example filters stanza is shown below.</p>
+<p class="Pp">The filters stanza may be used to define named filter expressions
+    or filter expression fragments which can later be referenced by name (with a
+    preceding dollar sign $). This makes the construction of longer filter
+    expressions a bit more convenient. Note that a name must be fully defined
+    set before referenced; referencing a name before its value is set is
+    undefined.</p>
+<dl class="Bl-tag">
+  <dt><b> &lt;name&gt; = &quot;</b><i>&lt;filter expression&gt;</i>&quot;;</dt>
+  <dd>Creates a filter expression named <b>&lt;name&gt;</b> with value
+      <i>&lt;filter expression&gt;</i>.</dd>
+</dl>
+<p class="Pp">An example filters stanza is shown below. Note how we refer to
+    previously defined names <i>apps</i> and <i>myhosts</i> when defining
+    <i>myapps</i> and <i>daemons</i> and <i>myhosts</i> when defining
+    <i>mydaemons</i>.</p>
 <div class="Bd Pp Li">
 <pre>    filters {
         apps = &quot;ident = /mc(block|curtain|rover|tally)|qmcrover/&quot;;
@@ -99,10 +113,59 @@
         mydaemons = &quot;($daemons) &amp;&amp; ($myhosts)&quot;;
     };</pre>
 </div>
+See the <a class="Sx" href="#FILTER_EXPRESSIONS">FILTER EXPRESSIONS</a> section
+  for filter grammar.
 </section>
 <section class="Ss">
 <h2 class="Ss" id="multicast_stanza"><a class="permalink" href="#multicast_stanza">multicast
   stanza</a></h2>
+<p class="Pp">The multicast stanza is used to set the interface that
+    <a class="Xr">mclogd(8)</a> will use for multicast as well as the multicast
+    group and UDP port that will be used.</p>
+<p class="Pp">For IPv4 multicast, two settings are needed: <i>intfAddr</i> and
+    <i>groupAddr</i>.</p>
+<dl class="Bl-tag">
+  <dt><b> intfAddr = &quot;</b><i>&lt;IPv4 address&gt;</i>&quot;;</dt>
+  <dd>The IPv4 address of the interface on which <a class="Xr">mclogd(8)</a>
+      should send and receive IPv4 multicast messages.</dd>
+  <dt><b> groupAddr = &quot;</b><i>&lt;IPv4 multicast
+    address&gt;</i>&quot;;</dt>
+  <dd>The IPv4 multicast group address to which we will send log messages we
+      received via the loopback and from which we will receive log messages from
+      other instances of <a class="Xr">mclogd(8)</a> via multicast. The default
+      value is 239.108.111.103</dd>
+</dl>
+<p class="Pp">For IPv6 multicast, three settings are needed: <i>intfAddr6</i>,
+    <i>groupAddr6</i> and <i>intfName</i>.</p>
+<dl class="Bl-tag">
+  <dt><b> intfAddr6 = &quot;</b><i>&lt;IPv6 address&gt;</i>&quot;;</dt>
+  <dd>The IPv6 address of the interface on which <a class="Xr">mclogd(8)</a>
+      should send and receive IPv6 multicast messages.</dd>
+  <dt><b> groupAddr6 = &quot;</b><i>&lt;IPv6 multicast
+    address&gt;</i>&quot;;</dt>
+  <dd>The IPv4 multicast group address to which we will send log messages we
+      received via the loopback and from which we will receive log messages from
+      other instances of <a class="Xr">mclogd(8)</a> via multicast. The default
+      is ff02::006d:636c:6f67</dd>
+  <dt><b> intfName = &quot;</b><i>&lt;interface name&gt;</i>&quot;;</dt>
+  <dd>The name of the interface on which we will send and receive IPv6 multicast
+      messages. This interface must have the address specified as
+      <i>intfAddr6</i>.</dd>
+</dl>
+<p class="Pp">Both IPv4 and IPv6 multicast utilize the same UDP port number and
+    output filter expression.</p>
+<dl class="Bl-tag">
+  <dt><b> port = </b><i>&lt;port number&gt;</i>;</dt>
+  <dd>The port number to use for sending and receiving multicast messages. the
+      default is 3737.</dd>
+  <dt><b> outFilter = &quot;</b><i>&lt;filter expression&gt;</i>&quot;;</dt>
+  <dd>A filter expression to select the log messages which
+      <a class="Xr">mclogd(8)</a> will send via multicast. The default value is
+      empty, which will cause <a class="Xr">mclogd(8)</a> to send all local
+      messages (received on the loopback) to the IPv4 and IPv6 multicast groups.
+      See the <a class="Sx" href="#FILTER_EXPRESSIONS">FILTER EXPRESSIONS</a>
+      section for filter grammar.</dd>
+</dl>
 <p class="Pp">An example multicast stanza is shown below.</p>
 <div class="Bd Pp Li">
 <pre>   multicast {
@@ -142,6 +205,64 @@
       };
    };</pre>
 </div>
+</section>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="FILTER_EXPRESSIONS"><a class="permalink" href="#FILTER_EXPRESSIONS">FILTER
+  EXPRESSIONS</a></h1>
+<p class="Pp">Below is the pseudo-EBNF for the filter expression grammar.</p>
+<div class="Bd Pp Li">
+<pre>    expression: &quot;(&quot; expression &quot;)&quot;
+      | &quot;!&quot; expression
+      | expression &quot;||&quot; expression
+      | expression &quot;&amp;&amp;&quot; expression
+      | &quot;facility&quot; numerical_op facility_value
+      | &quot;severity&quot; numerical_op severity_value
+      | &quot;host&quot; equality_op quoted_string
+      | &quot;host&quot; equality_op regular_expression
+      | &quot;ident&quot; equality_op quoted_string
+      | &quot;ident&quot; equality_op regular_expression
+      | &quot;pid&quot; numerical_op unsigned_int
+      | &quot;msg&quot; equality_op quoted_string
+      | &quot;msg&quot; equality_op regular_expression;
+
+    numerical_op: &quot;&lt;&quot; | &quot;&lt;=&quot; | &quot;&gt;&quot; | &quot;&gt;=&quot; | equality_op;
+    equality_op: &quot;=&quot; | &quot;!=&quot;;
+    quoted_string: &quot;'&quot; [^']* &quot;'&quot;;
+    regular_expression: &quot;/&quot; [^/]* &quot;/&quot;;
+    unsigned_int: [0-9]{1,10};
+
+    facility_value: kernel | user | mail | daemon | auth | syslog
+      | lpr | news | uucp | cron | authpriv | ftp | local0 | local1
+      | local2 | local3 | local4 | local5 | local6 | local7;
+
+    severity_value: debug | info | notice | warning | err | crit
+      | alert | emerg;</pre>
+</div>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="FILTER_EXPRESSION_EXAMPLES"><a class="permalink" href="#FILTER_EXPRESSION_EXAMPLES">FILTER
+  EXPRESSION EXAMPLES</a></h1>
+<p class="Pp">Select messages with a severity greater than debug from host
+    foo.mcplex.net:</p>
+<div class="Bd Pp Li">
+<pre>    (severity &gt; debug) &amp;&amp; (host = 'foo.mcplex.net')</pre>
+</div>
+<p class="Pp">Select messages with identifier <i>mcroverd</i> or <i>mctallyd</i>
+    from hosts outside of the mcplex.net domain:</p>
+<div class="Bd Pp Li">
+<pre>    (ident = /(mcroverd|mctallyd)/) &amp;&amp; (host != /.*\.mcplex\.net/)</pre>
+</div>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="FILES"><a class="permalink" href="#FILES">FILES</a></h1>
+<section class="Ss">
+<h2 class="Ss" id="CONFIGURATION_FILE"><a class="permalink" href="#CONFIGURATION_FILE">CONFIGURATION
+  FILE</a></h2>
+<p class="Pp">The standard location of the <a class="Xr">mclogd(8)</a>
+    configuration file is <i>/usr/local/etc/mclogd.cfg</i></p>
+<p class="Pp">An example <a class="Xr">mclogd(8)</a> configuration is included
+    in <i>/usr/local/etc/mclogd.cfg.example</i></p>
 </section>
 </section>
 <section class="Sh">
