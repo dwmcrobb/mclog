@@ -1,5 +1,5 @@
 .Dd March 2, 2026
-.Dt mclogd 1
+.Dt mclogd 8
 .Os mcplex.net
 .Sh NAME
 .Nm mclogd
@@ -15,13 +15,23 @@ saves log messages received via the loopback interface and/or
 encrypted multicast to files, and sends log messages via
 encrypted multicast.
 .Pp
+.TS
+left;
+l  l
+l  l.
+Input	Possible output(s)
+_
+loopback	files, multicast
+multicast	files
+.TE
+.Pp
 The following command line options are available:
 .Pp
 .Bl -tag -width indent
 .It Fl c Ar configFile
 Specify the
 .Xr mclogd 8
-configuration file.  If not specified, /usr/local/etc/mclogd.cfg is
+configuration file.  If not specified, @prefix@/etc/mclogd.cfg is
 used.
 .It Fl d
 Do not daemonize.  Useful for debugging.
@@ -31,7 +41,7 @@ Specify the path to the file where
 .El
 .Sh STARTING AT BOOT
 .Ss FreeBSD
-/usr/local/etc/rc.d/mclogd is installed as part of the FreeBSD
+@prefix@/etc/rc.d/mclogd is installed as part of the FreeBSD
 package.  It is a standard FreeBSD start/stop script.  To enable
 .Xr mclogd 8
 at boot, set \fImclogd_enable\fR to "YES" in \fI/etc/rc.conf\fR:
@@ -58,10 +68,10 @@ but if not, it can be started with:
 .Sh FILES
 .Ss CONFIGURATION FILE
 The standard location of the configuration file is
-\fI/usr/local/etc/mclogd.cfg\fR
+\fI@prefix@/etc/mclogd.cfg\fR
 .Pp
 An example configuration is included in
-\fI/usr/local/etc/mclogd.cfg.example\fR
+\fI@prefix@/etc/mclogd.cfg.example\fR
 .Pp
 .Nm
 will reload the configuration on the reception of SIGHUP.

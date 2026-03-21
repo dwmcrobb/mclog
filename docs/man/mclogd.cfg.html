@@ -194,6 +194,97 @@ See the <a class="Sx" href="#FILTER_EXPRESSIONS">FILTER EXPRESSIONS</a> section
 <section class="Ss">
 <h2 class="Ss" id="files_stanza"><a class="permalink" href="#files_stanza">files
   stanza</a></h2>
+<p class="Pp">The files stanza has two components: <i>logDirectory</i> and
+    <i>logs</i>.</p>
+<dl class="Bl-tag">
+  <dt><b> logDirectory = &quot;</b><i>&lt;path to directory&gt;</i>&quot;;</dt>
+  <dd>Specify the top level directory for log files. The default value is
+      <i>/usr/local/var/mclog</i>.</dd>
+  <dt><b> logs { </b><i>&lt;log entry&gt;</i> [, <i>log entry&gt; ...]
+    };</i></dt>
+  <dd><i>Specify a list of log entries. Log entries are described
+    below.</i></dd>
+</dl>
+<p class="Pp"><i>Each log entry in </i><i>logs</i> is started with a <b>{</b>
+    and ended with a <b>}</b>, with a comma <b>,</b> between entries. Each log
+    entry has the following settings.</p>
+<dl class="Bl-tag">
+  <dt><b> filter = &quot;</b><i>&lt;filter expression&gt;</i>&quot;;</dt>
+  <dd>Only messages which match the given <i>&lt;filter expression&gt;</i> will
+      be saved to the log.</dd>
+  <dt><b> path = &quot;</b><i>&lt;path&gt;</i>&quot;;</dt>
+  <dd>The path to the log. If this is a relative path, it will be rooted at
+      <i>logDirectory</i>. In addition, three substitutions based on message
+      content may be contained in <i>&lt;path&gt;</i>:
+    <p class="Pp"></p>
+    <dl class="Bl-tag Bl-compact">
+      <dt><b>%H</b></dt>
+      <dd>Replaced by the hostname of the message origin.</dd>
+      <dt><b>%I</b></dt>
+      <dd>Replaced by the message's identity (program name).</dd>
+      <dt><b>%F</b></dt>
+      <dd>Replaced by the message's facility ('user', 'daemon', 'local0', et.
+          al.).</dd>
+    </dl>
+    <p class="Pp">If no 'path' is specified, &quot;%H/%I&quot; will be used.</p>
+  </dd>
+  <dt><b> period = </b><i>&lt;period&gt;</i>;</dt>
+  <dd>The period before the log will be rolled to a log archive. Valid values
+      for <i>&lt;period&gt;</i>:
+    <p class="Pp"></p>
+    <dl class="Bl-tag Bl-compact">
+      <dt><b>5m</b></dt>
+      <dd>5 minutes</dd>
+      <dt><b>15m</b></dt>
+      <dd>15 minutes</dd>
+      <dt><b>30m</b></dt>
+      <dd>30 minutes</dd>
+      <dt><b>1h</b></dt>
+      <dd>1 hour</dd>
+      <dt><b>2h</b></dt>
+      <dd>2 hours</dd>
+      <dt><b>4h</b></dt>
+      <dd>4 hours</dd>
+      <dt><b>6h</b></dt>
+      <dd>6 hours</dd>
+      <dt><b>8h</b></dt>
+      <dd>8 hours</dd>
+      <dt><b>12h</b></dt>
+      <dd>12 hours</dd>
+      <dt><b>1d</b></dt>
+      <dd>1 day</dd>
+      <dt><b>7d</b></dt>
+      <dd>7 days</dd>
+    </dl>
+    <p class="Pp">The default period is <i>1d</i>.</p>
+    <p class="Pp">Note that <a class="Xr">mclogd(8)</a> will roll over a log
+        when it exceeds the <i>size</i> or the <i>period</i> has transpired,
+        whichever comes first.</p>
+  </dd>
+  <dt><b> size = </b><i>&lt;size&gt;</i>;</dt>
+  <dd>The allowed size of the log (in bytes) before it will rolled over to a log
+      archive. Note that <a class="Xr">mclogd(8)</a> will roll over a log when
+      it exceeds the <i>size</i> or the <i>period</i> has transpired, whichever
+      comes first. ,Pp The default value is 0, which disables size-based log
+      rollover.</dd>
+  <dt><b> keep = </b><i>&lt;keep&gt;</i>;</dt>
+  <dd>The number of log archives to keep. The default is 7.</dd>
+  <dt><b> compress = </b><i>&lt;compression&gt;</i>;</dt>
+  <dd>The type of compression to use for log archives, either &quot;bzip2&quot;
+    <br/>
+     or &quot;gzip&quot;. The default is &quot;bzip2&quot;.</dd>
+  <dt><b> perms = </b><i>&lt;permissions&gt;</i>;</dt>
+  <dd>Sets the permissions of the log file, where <i>&lt;permissions&gt;</i> is
+      a standard POSIX.1 permissions value in octal format (see
+      <a class="Xr">chmod(1)</a> ). The default is 0644.</dd>
+  <dt><b> user = </b><i>&lt;user name&gt;</i>;</dt>
+  <dd>Sets the owner of the log file. Note that <a class="Xr">mclogd(8)</a> must
+      be run as this user or root in order for this to have effect.</dd>
+  <dt><b> group = </b><i>&lt;group name&gt;</i>;</dt>
+  <dd>Sets the group of the log file. Note that <a class="Xr">mclogd(8)</a> must
+      be run as a user who is a member of this group or root in order for this
+      to have effect.</dd>
+</dl>
 <p class="Pp">An example files stanza is shown below.</p>
 <div class="Bd Pp Li">
 <pre>   files {

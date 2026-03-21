@@ -184,9 +184,15 @@ The files stanza has two components: \fIlogDirectory\fR and \fIlogs\fR.
 .Pp
 .Bl -tag -width "   " indent
 .It \fB logDirectory = \(dq\fI<path to directory>\fR\(dq;
+Specify the top level directory for log files.  The default value
+is \fI/usr/local/var/mclog\fR.
+.It \fB logs { \fI<log entry>\fR [, \fIlog entry> ...] };
+Specify a list of log entries.  Log entries are described below.
 .El
 .Pp
-Each log entry in \fIlogs\fR has the following settings.
+Each log entry in \fIlogs\fR is started with a \fB{\fR and ended with
+a \fB}\fR, with a comma \fB,\fR between entries.  Each log entry has
+the following settings.
 .Pp
 .Bl -tag -width "   " indent
 .It \fB filter = \(dq\fI<filter expression>\fR\(dq;
@@ -248,15 +254,17 @@ log archive.  Note that
 .Xr mclogd 8
 will roll over a log when it exceeds the \fIsize\fR or the \fIperiod\fR
 has transpired, whichever comes first.
+,Pp
+The default value is 0, which disables size-based log rollover.    
 .It \fB keep = \fI<keep>\fR;
-The number of log archives to keep.
+The number of log archives to keep.  The default is 7.
 .It \fB compress = \fI<compression>\fR;
 The type of compression to use for log archives, either \(dqbzip2\(dq
-or \(dqgzip\(dq.
+    or \(dqgzip\(dq.  The default is \(dqbzip2\(dq.
 .It \fB perms = \fI<permissions>\fR;
 Sets the permissions of the log file, where \fI<permissions>\fR is a
 standard POSIX.1 permissions value in octal format (see
-.Xr chmod 1 ).
+.Xr chmod 1 ).  The default is 0644.
 .It \fB user = \fI<user name>\fR;
 Sets the owner of the log file.  Note that
 .Xr mclogd 8
