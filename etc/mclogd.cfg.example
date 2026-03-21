@@ -85,7 +85,7 @@ files {
     #     %H will be replaced by the hostname of the message origin.
     #     %I will be replaced by the message's identity (program name).
     #     %F will be replaced by the message's facility ('user', 'daemon',
-    #     'local0', et. al.
+    #     'local0', et. al.).
     #
     #  If no 'path' is specified, "%H/%I" will be used.
     #
