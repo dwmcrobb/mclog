@@ -44,6 +44,7 @@ extern "C" {
 #include <cstring>
 
 #include "DwmMclogLoopbackSender.hh"
+#include "DwmMclogSettings.hh"
 
 namespace Dwm {
 
@@ -162,7 +163,8 @@ namespace Dwm {
     //------------------------------------------------------------------------
     bool LoopbackSender::SendPacket(MessagePacket & pkt)
     {
-      static const  UdpEndpoint  dstAddr4(Ipv4Address("127.0.0.1"), 3737);
+      static const  UdpEndpoint  dstAddr4(Ipv4Address("127.0.0.1"),
+                                          MCLOGD_DEFAULT_PORT);
       ssize_t  sendrc = pkt.SendTo(_ofd, dstAddr4);
       pkt.Reset();
       return (0 < sendrc);
