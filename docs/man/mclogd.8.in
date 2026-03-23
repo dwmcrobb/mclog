@@ -104,7 +104,7 @@ with
 .El
 .Pp
 .Sh SEE ALSO
-.Xr mclogd.cfg 5,
+.Xr mclogd.cfg 5 ,
 .Xr mclog 1 ,
 .Xr credence 1
 .Sh COPYRIGHT
