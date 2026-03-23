@@ -1,5 +1,7 @@
 2026-03-23  Daniel W. McRobb  <dwm@spark.mcplex.net>
 
+	* README.md: initial README markdown for github
+
 	* classes/src/DwmMclogLoopbackSender.cc: Use MCLOGD_DEFAULT_PORT
 	instead of 3737.
 
