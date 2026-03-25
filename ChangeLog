@@ -1,3 +1,8 @@
+2026-03-24  Daniel W. McRobb  <dwm@spark.mcplex.net>
+
+	* configure, configure.ac: Update required version of libDwm,
+	libDwmCredence and dwmgmk.
+
 2026-03-23  Daniel W. McRobb  <dwm@spark.mcplex.net>
 
 	* tagged as mclog-0.0.13
