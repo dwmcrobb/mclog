@@ -1,5 +1,9 @@
 2026-08-28  dwm  <dwm@nomnom.mcplex.net>
 
+	* classes/tests/TestLogger.cc
+	Emit standard unit test results and exit 0 on success.  If -v
+	argument is given, emit each log mesage on cerr.
+
 	* classes/tests/TestFuzzer.cc
 	If no arguments are given, only output standard unit test results
 	while using defaults for interface address (127.0.0.1) and group
