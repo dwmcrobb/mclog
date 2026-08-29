@@ -1,3 +1,10 @@
+2026-08-28  dwm  <dwm@nomnom.mcplex.net>
+
+	* classes/tests/TestFuzzer.cc
+	If no arguments are given, only output standard unit test results
+	while using defaults for interface address (127.0.0.1) and group
+	address (239.108.111.103).
+
 2026-03-24  Daniel W. McRobb  <dwm@spark.mcplex.net>
 
 	* tagged as mclog-0.0.14
