@@ -76,8 +76,8 @@
 
   using namespace std;
   
-  string                 g_configPath;
-  Dwm::Mclog::Config    *g_config = nullptr;
+  static string                 g_configPath;
+  static Dwm::Mclog::Config    *g_config = nullptr;
 
   //-------------------------------------------------------------------------
   static bool IsValidIpv4MulticastAddr(const Dwm::Ipv4Address & addr)
