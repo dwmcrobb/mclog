@@ -1,5 +1,7 @@
 2026-08-29  dwm  <dwm@nomnom.mcplex.net>
 
+	* tagged as mclog-0.0.16
+
 	* classes/src/DwmMclogConfigParse.y: g_configPath and g_config are
 	now static.
 
