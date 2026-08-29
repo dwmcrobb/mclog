@@ -43,25 +43,84 @@ extern "C" {
 
 #include <cassert>
 #include <chrono>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
 
 #include "DwmMclogLogger.hh"
 #include "DwmSysLogger.hh"
+#include "DwmUnitAssert.hh"
 
+using namespace std;
+using namespace Dwm;
+
+//----------------------------------------------------------------------------
+//!  
+//----------------------------------------------------------------------------
+static void Usage(const char *argv0)
+{
+  cerr << "usage: " << argv0 << " [-v]\n";
+  return;
+}
+
+//----------------------------------------------------------------------------
+//!  
+//----------------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
   using Dwm::Mclog::logger;
+
+  int  optChar;
+  bool verbose = false;
+  
+  while ((optChar = getopt(argc, argv, "v")) != -1) {
+    switch (optChar) {
+      case 'v':
+        verbose = true;
+        break;
+      default:
+        Usage(argv[0]);
+        exit(1);
+        break;
+    }
+  }
+  
   assert(logger.Open(Dwm::Mclog::Facility::user));
   logger.LogLocations(true);
-  auto  cerrSink = new Dwm::Mclog::OstreamSink(std::cerr);
-  logger.AddSinks({cerrSink});
-  
-  uint64_t  i = 0;
-  for (;;) {
-    for (int j = 0; j < 10; ++j) {
-      MCLOG(LOG_INFO, "{} hello there info.", i++);
-      MCLOG(Dwm::Mclog::Severity::debug, "{} hello there debug.", i++);
-    }
-    sleep(1);
+
+  if (verbose) {
+    auto  cerrSink = new Dwm::Mclog::OstreamSink(cerr);
+    logger.AddSinks({cerrSink});
   }
+
+  ofstream  os("TestLogger.log");
+  if (UnitAssert(os)) {
+    auto  ofsSink = new Dwm::Mclog::OstreamSink(os);
+    if (UnitAssert(ofsSink)) {
+      logger.AddSinks({ofsSink});
+
+      uint64_t  i = 0;
+      for (; i < 10; ++i) {
+        for (int j = 0; j < 10; ++j) {
+          MCLOG(LOG_INFO, "{} hello there info.", i*10 + j);
+          MCLOG(Dwm::Mclog::Severity::debug, "{} hello there debug.", i*10 + j);
+        }
+        usleep(100000);
+      }
+    }
+    os.close();
+    auto  st = std::filesystem::file_size("TestLogger.log");
+    UnitAssert(st > 2000);
+    std::remove("TestLogger.log");
+  }
+
+  int  rc = 1;
+  if (Assertions::Total().Failed()) {
+    Assertions::Print(cerr, true);
+  }
+  else {
+    cout << Assertions::Total() << " passed" << endl;
+    rc = 0;
+  }
+  return rc;
 }
