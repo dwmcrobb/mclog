@@ -1,5 +1,7 @@
 2026-08-28  dwm  <dwm@nomnom.mcplex.net>
 
+	* tagged as mclog-0.0.15
+
 	* classes/tests/TestLogger.cc
 	Emit standard unit test results and exit 0 on success.  If -v
 	argument is given, emit each log mesage on cerr.
