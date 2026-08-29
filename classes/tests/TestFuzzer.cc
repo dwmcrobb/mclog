@@ -47,6 +47,10 @@ extern "C" {
 #include <iostream>
 
 #include "DwmIpv4Address.hh"
+#include "DwmUnitAssert.hh"
+
+using namespace std;
+using namespace Dwm;
 
 //----------------------------------------------------------------------------
 //!  
@@ -70,7 +74,7 @@ static bool SendTo(int fd, const uint8_t *buf, size_t buflen, sockaddr_in *dst)
 //!  
 //----------------------------------------------------------------------------
 static bool SendToMcastGroup(int fd, const uint8_t *buf, size_t buflen,
-                             const Dwm::Ipv4Address & dst)
+                             const Ipv4Address & dst)
 {
   sockaddr_in  dstAddr;
   memset(&dstAddr, 0, sizeof(dstAddr));
@@ -105,7 +109,7 @@ static bool SendToLocal(int fd, const uint8_t *buf, size_t buflen)
 //!  
 //----------------------------------------------------------------------------
 static bool SendToMcastSource(int fd, const uint8_t *buf, size_t buflen,
-                              const Dwm::Ipv4Address & intfAddr,
+                              const Ipv4Address & intfAddr,
                               uint16_t port)
 {
   sockaddr_in  dst;
@@ -125,8 +129,14 @@ static bool SendToMcastSource(int fd, const uint8_t *buf, size_t buflen,
 //----------------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
-  Dwm::Ipv4Address  intfAddr(argv[1]);
-  Dwm::Ipv4Address  groupAddr(argv[2]);
+  Ipv4Address  intfAddr("127.0.0.1");
+  Ipv4Address  groupAddr("239.108.111.103");
+  if (argc > 1) {
+    intfAddr = Ipv4Address(argv[1]);
+  }
+  if (argc > 2) {
+    groupAddr = Ipv4Address(argv[2]);
+  }
   
   int  fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
   if (0 <= fd) {
@@ -140,10 +150,21 @@ int main(int argc, char *argv[])
     uint8_t  buf[1400];
     for (size_t i = 1; i < sizeof(buf); i += 14) {
       RandomFillBuffer(buf, i);
-      SendToMcastGroup(fd, buf, i, groupAddr);
-      SendToLocal(fd, buf, i);
-      SendToMcastSource(fd, buf, i, intfAddr, 3737);
-      std::cerr << "Sent " << i << " bytes\n";
+      UnitAssert(SendToMcastGroup(fd, buf, i, groupAddr));
+      UnitAssert(SendToLocal(fd, buf, i));
+      UnitAssert(SendToMcastSource(fd, buf, i, intfAddr, 3737));
+      if (argc > 1) {
+        cerr << "Sent " << i << " bytes\n";
+      }
     }
   }
+  int  rc = 1;
+  if (Assertions::Total().Failed()) {
+    Assertions::Print(cerr, true);
+  }
+  else {
+    cout << Assertions::Total() << " passed" << endl;
+    rc = 0;
+  }
+  return rc;
 }
