@@ -1,5 +1,8 @@
 2026-09-18  Daniel W. McRobb  <dwm@spark.mcplex.net>
 
+	* docs/man/mclogger.1.in
+	Tweak documentation of required 'ident' and 'message' arguments.
+
 	* tagged as mclog-0.0.19
 
 	* docs/man/Makefile
@@ -12,7 +15,7 @@
 	* docs/man/.gitignore
 	* docs/man/mclogger.1.in
 	Added mclogger manpage.
-	
+
 	* tagged as mclog-0.0.17
 
 	* apps/Makefile
