@@ -1,5 +1,8 @@
 2026-09-18  Daniel W. McRobb  <dwm@spark.mcplex.net>
 
+	* apps/Makefile
+	Added mclogger target.
+
 	* apps/mclogger/mclogger.cc
 	Add more usage information to Usage().
 	If invalid priority is given, use usr.info and emit a warning on
