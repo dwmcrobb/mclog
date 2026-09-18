@@ -8,7 +8,7 @@ tarprep: otherTarpreps
 otherTarpreps::
 	${MAKE} -C etc tarprep
 	${MAKE} -C packaging tarprep
-#	${MAKE} -C docs tarprep
+	${MAKE} -C docs tarprep
 
 package: ${OSNAME}-pkg
 

@@ -10,6 +10,9 @@ tarprep: ${DOCTARDIR}/mclog_manual.pdf
 ${DOCTARDIR}/mclog_manual.pdf: mclog_manual.pdf
 	${INSTALL} -c -m 644 $< $@
 
+tarprep-clean::
+	rm -f ${DOCTARDIR}/mclog_manual.pdf
+
 clean::
 	rm -f *.log *.aux mclog_manual.fdb_latexmk mclog_manual.fls mclog_manual.lof \
 	  mclog_manual.lot mclog_manual.out mclog_manual.toc

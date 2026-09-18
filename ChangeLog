@@ -1,3 +1,14 @@
+2026-09-18  Daniel W. McRobb  <dwm@spark.mcplex.net>
+
+	* Makefile
+	* docs/Makefile
+	* docs/latex/Makefile
+	* docs/latex/manual/Makefile
+	Start hooking docs into staging area for packaging.
+
+	* docs/man/Makefile
+	Fixed pasto in mclogd.cfg.5 target path.
+
 2026-08-29  dwm  <dwm@nomnom.mcplex.net>
 
 	* tagged as mclog-0.0.16
