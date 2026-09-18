@@ -4,6 +4,7 @@ appsDir := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
 $(dwm_include $(abspath $(appsDir)/mclogd/Makefile))
 $(dwm_include $(abspath $(appsDir)/mclog/Makefile))
+$(dwm_include $(abspath $(appsDir)/mclogger/Makefile))
 
 $(dwm_myns apps)
 $(my apps := $(dwm_rgxreplace \ ,|,$(dwm_subdirs $(appsDir))))
