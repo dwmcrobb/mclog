@@ -1,5 +1,11 @@
 2026-09-18  Daniel W. McRobb  <dwm@spark.mcplex.net>
 
+	* configure
+	* configure.ac
+	* docs/man/.gitignore
+	* docs/man/mclogger.1.in
+	Added mclogger manpage.
+	
 	* tagged as mclog-0.0.17
 
 	* apps/Makefile
