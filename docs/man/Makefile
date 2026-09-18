@@ -14,7 +14,7 @@ ${TARDIR}/man/man1/mclog.1: mclog.1
 ${TARDIR}/man/man8/mclogd.8: mclogd.8
 	../../install-sh -c -m 644 $< $@
 
-${TARDIR}/man/man8/mclogd.cfg.5: mclogd.cfg.5
+${TARDIR}/man/man5/mclogd.cfg.5: mclogd.cfg.5
 	../../install-sh -c -m 644 $< $@
 
 mclog.html: mclog.1 mclog.css
