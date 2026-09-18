@@ -1,0 +1,52 @@
+.Dd Septemper 18, 2026
+.Dt mclogger 1
+.Os mcplex.net
+.Sh NAME
+.Nm mclogger
+.Nd send a log message to mclogd
+.Sh SYNOPSIS
+.Nm
+.Op Fl P Ar port
+.Op Fl p Ar priority
+.Op Ar ident message
+.Sh DESCRIPTION
+.Nm
+may be used to send a log message to
+.Xr mclogd 8 .
+.Pp
+The following command line options are available:
+.Pp
+.Bl -tag -width indent
+.It Fl P Ar port
+Specify the UDP port on which
+.Xr mclogd 8
+is listening on the loopback interface.  The default is 3737.
+.It Fl p Ar priority
+Specify the message priority.  The default is \fIuser.info\fR.
+.Pp
+This is a combination of facility and severity, separated by a dot (.).
+.Pp
+Valid facility values:
+.Bd -literal
+    auth      daemon  local0  local3  local6  mail    user
+    authpriv  ftp     local1  local4  local7  news    uucp 
+    cron      kernel  local2  local5  lpr     syslog
+.Ed
+.Pp
+Valid severity values:
+.Bd -literal
+    emerg  alert  crit  err  warning  notice  info  debug
+.Ed
+.It Ar ident
+Specify the identifier of the message, typically a program name.
+.It Ar message
+The message to send.
+.El
+.Sh SEE ALSO
+.Xr mclog 1 .
+.Xr mclogd 8
+.Sh COPYRIGHT
+Copyright (c) 2026 Daniel W. McRobb
+.Mt dwm@mcplex.net
+.Pp
+
