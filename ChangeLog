@@ -1,5 +1,7 @@
 2026-09-18  Daniel W. McRobb  <dwm@spark.mcplex.net>
 
+	* tagged as mclog-0.0.18
+
 	* configure
 	* configure.ac
 	* docs/man/.gitignore
