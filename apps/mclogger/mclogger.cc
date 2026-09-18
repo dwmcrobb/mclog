@@ -32,7 +32,7 @@
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//!  @file mclog.cc
+//!  @file mclogger.cc
 //!  @author Daniel W. McRobb
 //!  @brief NOT YET DOCUMENTED
 //---------------------------------------------------------------------------
@@ -85,7 +85,14 @@ static Dwm::Mclog::Message MakeMessage(const char *appname,
 //----------------------------------------------------------------------------
 static void Usage(const char *argv0)
 {
-  std::cerr << "usage: " << argv0 << " [-P port] [-p priority] ident message\n";
+  std::cerr << "usage: " << argv0
+            << " [-P port] [-p priority] ident message\n\n"
+            << "-P port\n"
+            << "  Specify the UDP port on which mclogd(8) is listening.  The "
+            << "default port is\n  3737.\n\n"
+            << "-p priority\n"
+            << "  Specify the message priority (a dot-separated pair of facility and severity).\n"
+            << "  The default priority is user.info.\n";
   return;
 }
 
@@ -106,8 +113,8 @@ GetPriorityInfo(const std::string & priority)
                             Dwm::Mclog::SeverityValue(sm[2].str()));
     }
   }
-  std::cerr << "Invalid priority '" << priority << "'\n";
-  exit(1);
+  std::cerr << "warning: invalid priority '" << priority
+            << "', using user.info\n";
   return std::make_pair(Dwm::Mclog::Facility::user,
                         Dwm::Mclog::Severity::info);
 }
@@ -161,9 +168,16 @@ int main(int argc, char *argv[])
       Dwm::Mclog::MessagePacket  pkt(pktbuf, sizeof(pktbuf));
       pkt.Add(msg);
       Dwm::Mclog::UdpEndpoint  dstAddr4(Dwm::Ipv4Address("127.0.0.1"), port);
-      pkt.SendTo(fd, dstAddr4);
-      ::close(fd);
-      exit(0);
+      ssize_t  sendrc = pkt.SendTo(fd, dstAddr4);
+      if (sendrc >= 0) {
+        ::close(fd);
+        exit(0);
+      }
+      else {
+        std::cerr << "error: SendTo(\"127.0.0.1\"," << port << ") failed\n";
+        ::close(fd);
+        exit(1);
+      }
     }
     else {
       exit(1);
