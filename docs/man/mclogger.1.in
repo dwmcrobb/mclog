@@ -8,7 +8,8 @@
 .Nm
 .Op Fl P Ar port
 .Op Fl p Ar priority
-.Op Ar ident message
+.Cm ident
+.Cm message
 .Sh DESCRIPTION
 .Nm
 may be used to send a log message to
@@ -43,7 +44,7 @@ Specify the identifier of the message, typically a program name.
 The message to send.
 .El
 .Sh SEE ALSO
-.Xr mclog 1 .
+.Xr mclog 1 ,
 .Xr mclogd 8
 .Sh COPYRIGHT
 Copyright (c) 2026 Daniel W. McRobb
