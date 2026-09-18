@@ -1,5 +1,11 @@
 2026-09-18  Daniel W. McRobb  <dwm@spark.mcplex.net>
 
+	* apps/mclogger/mclogger.cc
+	Add more usage information to Usage().
+	If invalid priority is given, use usr.info and emit a warning on
+	stderr.
+	Emit error on stderr if SendTo() fails.
+
 	* Makefile.var.in
 	Added DOCTARDIR variable.
 
