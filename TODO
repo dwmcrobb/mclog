@@ -1,6 +1,4 @@
 ------------------------------------------------------------------------
-Write manapge for mclogger(1)
-------------------------------------------------------------------------
 Add validation of messages on loopback interface?
   - header.origin.hostname should be local hostname (or just overwrite
     it?)
@@ -15,3 +13,5 @@ I need configuration knobs for log files:
   - permissions
 
 I then need the code to use the new knobs.
+------------------------------------------------------------------------
+DONE Write manapge for mclogger(1)
