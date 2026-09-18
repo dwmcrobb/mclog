@@ -1,5 +1,7 @@
 2026-09-18  Daniel W. McRobb  <dwm@spark.mcplex.net>
 
+	* tagged as mclog-0.0.20
+
 	* docs/man/mclogger.1.in
 	Tweak documentation of required 'ident' and 'message' arguments.
 
