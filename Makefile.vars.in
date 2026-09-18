@@ -17,6 +17,7 @@ OSNAME           := @OSNAME@
 PTHREADCXXFLAGS  := @PTHREADCXXFLAGS@
 STAGING_DIR      := @STAGING_DIR@
 TARDIR           := @TARDIR@@prefix@
+DOCTARDIR        := @TARDIR@@prefix@/share/doc/mclog
 VERSION          := @DWM_VERSION@
 
 TARGETS := $(TARGETS)

@@ -1,5 +1,8 @@
 2026-09-18  Daniel W. McRobb  <dwm@spark.mcplex.net>
 
+	* Makefile.var.in
+	Added DOCTARDIR variable.
+
 	* Makefile
 	* docs/Makefile
 	* docs/latex/Makefile
