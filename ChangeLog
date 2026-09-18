@@ -1,5 +1,8 @@
 2026-09-18  Daniel W. McRobb  <dwm@spark.mcplex.net>
 
+	* docs/man/Makefile
+	Add mclogger manpage targets.
+
 	* tagged as mclog-0.0.18
 
 	* configure
